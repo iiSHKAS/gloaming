@@ -45,7 +45,6 @@
     if (localStorage.getItem('gloaming-appearance') === 'light' && location.search.indexOf('replayOverlay=1') < 0) {
       document.documentElement.setAttribute('data-theme', 'light');
       bg = '#cdd0d6';
-      ac = 'color-mix(in srgb, ' + ac + ' 55%, #000)';
     }
   } catch (e) {}
   var root = document.documentElement.style;

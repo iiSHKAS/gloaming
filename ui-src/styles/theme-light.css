@@ -35,6 +35,7 @@ html[data-theme='light'] .settings-studio {
   --gloaming-nav-tint:var(--ds-tint)!important;
   --control-hover:var(--ds-secondary)!important;
   --raised-hover:var(--ds-surface-2)!important;
+  --color-text-accent:var(--studio-accent-text)!important;
   --color-overlay-hover:#0000000f!important;
   --color-error:#b3261e!important;
   --color-error-muted:#b3261e24!important;

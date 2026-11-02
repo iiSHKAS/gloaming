@@ -120,12 +120,14 @@ function accentTheme(name: string, a: AccentRamp) {
  * filled tonal button is the mistake this naming exists to make obvious.
  */
 export function accentVars(a: AccentRamp, mode: 'dark' | 'light' = 'dark'): Record<string, string> {
-  // The accents are tuned to sit on a dark surface. On the soft grey theme they
-  // are darkened so text and fills in the accent colour keep their contrast.
+  // Fills use the chosen colour exactly, in both themes, so what the swatch
+  // shows is what the controls get. Only accent-coloured *text* is darkened on
+  // the soft grey theme, where a pastel accent would not be readable.
   const light = mode === 'light';
   return {
-    '--studio-accent': light ? `color-mix(in srgb, ${a.base} 55%, #000)` : a.base,
-    '--studio-on-accent': light ? '#fff' : a.onBase,
+    '--studio-accent': a.base,
+    '--studio-on-accent': a.onBase,
+    '--studio-accent-text': light ? `color-mix(in srgb, ${a.base} 50%, #000)` : a.base,
     '--studio-accent-soft': `color-mix(in srgb, var(--studio-accent) ${light ? 16 : 12}%, var(--ds-surface))`,
     '--studio-accent-subtle': `color-mix(in srgb, var(--studio-accent) ${light ? 9 : 6}%, var(--ds-surface))`,
     '--studio-accent-border': 'color-mix(in srgb, var(--studio-accent) 35%, var(--ds-border))',

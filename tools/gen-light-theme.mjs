@@ -68,6 +68,7 @@ function mapColor(prop, hex) {
 
 const PROPS = /^(background(-color|-image)?|border(-(top|right|bottom|left|inline|block)[\w-]*)?(-color)?|outline(-color)?|color)$/;
 const HEX = /#[0-9a-fA-F]{3,8}\b/g;
+const ACCENT_TEXT = /var\(--(studio-accent|color-accent|color-text-accent)\)/g;
 
 const out = [];
 for (const file of readdirSync(DIR).filter(f => f.endsWith('.css') && !SKIP.has(f) && !f.startsWith('theme-light')).sort()) {
@@ -79,6 +80,11 @@ for (const file of readdirSync(DIR).filter(f => f.endsWith('.css') && !SKIP.has(
     }
     const decls = [];
     rule.walkDecls(decl => {
+      // Accent-coloured text is darkened on the grey theme; fills keep the exact accent.
+      if (decl.prop === 'color' && new RegExp(ACCENT_TEXT.source).test(decl.value)) {
+        decls.push(`color:${decl.value.replace(ACCENT_TEXT, 'var(--studio-accent-text)')}${decl.important ? '!important' : ''}`);
+        return;
+      }
       if (!PROPS.test(decl.prop) || !HEX.test(decl.value)) return;
       HEX.lastIndex = 0;
       let changed = false;
