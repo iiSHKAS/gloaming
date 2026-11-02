@@ -16,7 +16,7 @@ import './styles/editor.css';
 import {initLocale, subscribeLocale, t} from './lib/i18n';
 import {setNativeTrayLabels} from './lib/env';
 import {accentVars, resolveAccent} from './theme/gloamingTheme';
-import {initTheme, useTheme} from './lib/theme';
+import {initTheme, restoreTheme, useTheme} from './lib/theme';
 import {StoreProvider, useStore} from './state/store';
 import {PlaybackProvider} from './state/playback';
 import {ReplayOverlay} from './components/ReplayOverlay';
@@ -108,6 +108,7 @@ function Screen({view}: {view: string}) {
 // Before the first render, so no screen paints in English and then switches.
 initLocale();
 initTheme();
+restoreTheme();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

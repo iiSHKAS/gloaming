@@ -14,6 +14,12 @@ import {PlaylistModal, type PlaylistDraft} from '../components/PlaylistModal';
 import {Modal} from '../components/Modal';
 import {IconMore} from '../components/Icons';
 
+type Layout = 'grid' | 'list';
+const SORTS = ['latest', 'oldest', 'duration'];
+// The library remembers how it was last viewed. Held here as well as on the
+// daemon, so coming back to the screen does not wait on a round trip.
+let viewPrefs: {sort: string; layout: Layout} | null = null;
+
 export function Clips() {
   const {state, dispatch, visibleClips, visibleImages, notify, refreshPlaylists, refreshClips, refreshImages} =
     useStore();
@@ -28,8 +34,37 @@ export function Clips() {
   // section stays images only, so this is the one screen that shows a mix.
   const images = playlist ? visibleImages : [];
   const {actions: imageActions, overlays: imageOverlays} = useImageActions();
-  const [sort, setSort] = useState('latest');
-  const [layout, setLayout] = useState('grid');
+  const [sort, setSortState] = useState(viewPrefs?.sort ?? 'latest');
+  const [layout, setLayoutState] = useState<Layout>(viewPrefs?.layout ?? 'grid');
+  const [prefsReady, setPrefsReady] = useState(viewPrefs !== null);
+  useEffect(() => {
+    if (viewPrefs) return;
+    let alive = true;
+    api
+      .getAppState()
+      .then(saved => {
+        viewPrefs = {
+          sort: SORTS.includes(saved.library_sort as string) ? (saved.library_sort as string) : 'latest',
+          layout: saved.library_layout === 'list' ? 'list' : 'grid',
+        };
+        if (!alive) return;
+        setSortState(viewPrefs.sort);
+        setLayoutState(viewPrefs.layout);
+      })
+      .catch(() => { viewPrefs = {sort: 'latest', layout: 'grid'}; })
+      .finally(() => alive && setPrefsReady(true));
+    return () => { alive = false; };
+  }, []);
+  const setSort = (next: string) => {
+    setSortState(next);
+    viewPrefs = {sort: next, layout};
+    void api.setAppState({library_sort: next}).catch(() => undefined);
+  };
+  const setLayout = (next: Layout) => {
+    setLayoutState(next);
+    viewPrefs = {sort, layout: next};
+    void api.setAppState({library_layout: next}).catch(() => undefined);
+  };
   const sortedClips = [...visibleClips].sort((a,b) => sort === 'duration' ? (b.duration ?? 0)-(a.duration ?? 0) : (sort === 'oldest' ? 1 : -1)*(Date.parse(a.created_at)-Date.parse(b.created_at)));
 
   // Bulk selection. Keys are "c:slug" for clips and "i:slug" for images, in on-screen order.
@@ -224,8 +259,8 @@ export function Clips() {
         </p></div>
       ) : null}
 
-      {count > 0 ? (
-        <div className={`clip-grid library-cards ${layout === 'list' ? 'library-list' : ''}`}>
+      {count > 0 && prefsReady ? (
+        <div key={layout} className={`clip-grid library-cards ${layout === 'list' ? 'library-list' : ''}`}>
           {sortedClips.map(clip => (
             <ClipCard
               key={clip.slug}

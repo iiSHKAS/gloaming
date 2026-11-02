@@ -64,3 +64,16 @@ html[data-theme='light'] .settings.settings-studio {
 html[data-theme='light'] .studio-nav [aria-current] {color:var(--studio-on-accent);background:var(--studio-accent)}
 html[data-theme='light'] ::selection {background:color-mix(in srgb, var(--studio-accent) 28%, transparent)}
 html[data-theme='light'] .settings-studio .settings-body {color-scheme:light}
+
+/* Toggles follow the accent the user picked. The generated neutral track colour
+   would otherwise win over the checked state on specificity. */
+html[data-theme='light'] .gloaming-app .switch[aria-checked=true],
+html[data-theme='light'] .settings-studio .switch[aria-checked=true] {background:var(--studio-accent)}
+html[data-theme='light'] .gloaming-app .switch[aria-checked=true] .switch-thumb,
+html[data-theme='light'] .settings-studio .switch[aria-checked=true] .switch-thumb {background:var(--studio-on-accent)}
+
+/* Text that inherits its colour, and the editor's Easy / Advanced switch. */
+html[data-theme='light'] .gloaming-app,
+html[data-theme='light'] .editor {color:var(--ds-text)}
+html[data-theme='light'] .cut-modes {background:var(--ds-secondary)}
+html[data-theme='light'] .cut-modes button[aria-pressed=true] {color:var(--studio-on-accent)}

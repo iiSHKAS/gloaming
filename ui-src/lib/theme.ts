@@ -1,5 +1,7 @@
 import {useSyncExternalStore} from 'react';
 
+import {api} from './api';
+
 /**
  * Dark, or a soft grey light theme. The light one is deliberately not white:
  * it is a muted, slightly dark grey that stays easy on the eyes.
@@ -52,6 +54,28 @@ export function setTheme(next: ThemeName): void {
   }
   paint();
   for (const fn of listeners) fn();
+  // Native WebKit does not always keep localStorage, so the daemon holds it too.
+  void api.setAppState({theme: next}).catch(() => undefined);
+}
+
+/** Pick up the choice the daemon kept, for builds that lost localStorage. */
+export function restoreTheme(): void {
+  if (isOverlayWindow()) return;
+  void api
+    .getAppState()
+    .then(saved => {
+      const next: ThemeName = saved.theme === 'light' ? 'light' : 'dark';
+      if (next === current) return;
+      current = next;
+      try {
+        localStorage.setItem(KEY, next);
+      } catch {
+        // Applied for this session regardless.
+      }
+      paint();
+      for (const fn of listeners) fn();
+    })
+    .catch(() => undefined);
 }
 
 const subscribe = (fn: () => void) => {
