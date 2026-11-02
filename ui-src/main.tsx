@@ -16,6 +16,7 @@ import './styles/editor.css';
 import {initLocale, subscribeLocale, t} from './lib/i18n';
 import {setNativeTrayLabels} from './lib/env';
 import {accentVars, resolveAccent} from './theme/gloamingTheme';
+import {initTheme, useTheme} from './lib/theme';
 import {StoreProvider, useStore} from './state/store';
 import {PlaybackProvider} from './state/playback';
 import {ReplayOverlay} from './components/ReplayOverlay';
@@ -33,6 +34,8 @@ import './styles/redesign.css';
 import './styles/controls.css';
 import './styles/settings-workspace.css';
 import './styles/capture-home.css';
+import './styles/theme-light.generated.css';
+import './styles/theme-light.css';
 
 function syncNativeTrayLabels(): void {
   setNativeTrayLabels(t('tray.openGloaming'), t('tray.quitGloaming'));
@@ -45,6 +48,7 @@ function App() {
   // custom properties, so a custom accent cannot be derived three times.
   const {ramp, theme} = resolveAccent(accent, customAccent);
   const [, retranslate] = useState(0);
+  const mode = useTheme();
 
   useEffect(() => {
     syncNativeTrayLabels();
@@ -72,15 +76,15 @@ function App() {
   // that element and would otherwise never see the themed background.
   useEffect(() => {
     const root = document.documentElement;
-    const vars = accentVars(ramp);
+    const vars = accentVars(ramp, mode);
     for (const [key, value] of Object.entries(vars)) root.style.setProperty(key, value);
-  }, [ramp]);
+  }, [ramp, mode]);
 
   return (
-    <Theme theme={theme} mode="dark">
-      <div className="gloaming-ambient" style={accentVars(ramp)} aria-hidden="true" />
+    <Theme theme={theme} mode={mode}>
+      <div className="gloaming-ambient" style={accentVars(ramp, mode)} aria-hidden="true" />
       <PlaybackProvider>
-        <div className="gloaming-app" style={accentVars(ramp)}>
+        <div className="gloaming-app" style={accentVars(ramp, mode)}>
           <OverlayRoot>
           {new URLSearchParams(location.search).get("replayOverlay") === "1" ? (new URLSearchParams(location.search).has("saveMenu") ? <SaveMenu/> : <ReplayOverlay experimental={new URLSearchParams(location.search).get("overlayDesign")==="test"}/>) : <AppFrame>
             <Screen view={view} />
@@ -103,6 +107,7 @@ function Screen({view}: {view: string}) {
 
 // Before the first render, so no screen paints in English and then switches.
 initLocale();
+initTheme();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

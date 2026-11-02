@@ -18,7 +18,8 @@
     "typecheck": "tsc --noEmit",
     "accents": "node --import ./tools/mcu-resolve.mjs tools/derive-accents.mjs",
     "i18n:check": "node tools/check-locales.mjs",
-    "i18n:new": "node tools/new-locale.mjs"
+    "i18n:new": "node tools/new-locale.mjs",
+    "theme:light": "node tools/gen-light-theme.mjs"
   },
   "dependencies": {
     "@astryxdesign/cli": "^0.4.1",

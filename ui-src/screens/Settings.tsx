@@ -32,6 +32,7 @@ import {
 import {ACCENTS, ACCENT_NAMES} from '../theme/accents';
 import {useStore} from '../state/store';
 import {Modal} from '../components/Modal';
+import {THEMES, setTheme, useTheme, type ThemeName} from '../lib/theme';
 import {IconCheck, IconClose, IconFolder, IconFolderOpen, IconPlus, IconTrash} from '../components/Icons';
 import {AccentPicker} from '../components/AccentPicker';
 import {useAccentChoice} from '../lib/accentChoice';
@@ -82,6 +83,7 @@ interface DisplayInfo {
 }
 
 export function Settings() {
+  const theme = useTheme();
   const {state, saveConfig, notify} = useStore();
   const {choose, chooseCustom, seed} = useAccentChoice();
   const [picking, setPicking] = useState(false);
@@ -534,6 +536,15 @@ export function Settings() {
               value={currentLocale()}
               onChange={name => setLocale(name as LocaleName)}
               options={availableLocales().map(name => [name, LOCALE_LABELS[name]] as [string, string])}
+            />
+          </Row>
+
+          <Row label={t('settingsUi.theme')} help={t('settingsUi.themeHelp')}>
+            <Select
+              label={t('settingsUi.theme')}
+              value={theme}
+              onChange={name => setTheme(name as ThemeName)}
+              options={THEMES.map(name => [name, t(name === 'light' ? 'settingsUi.themeLight' : 'settingsUi.themeDark')] as [string, string])}
             />
           </Row>
 

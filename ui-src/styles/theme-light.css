@@ -1,0 +1,66 @@
+/* Soft grey light theme. Not white on purpose: a muted, slightly dark grey that
+   is easy on the eyes. Everything keys off these tokens; the hardcoded neutrals
+   that remain in the stylesheets are covered by theme-light.generated.css. */
+html[data-theme='light'] {
+  color-scheme: light;
+  --ds-bg:#cdd0d6;
+  --ds-surface:#dadde2;
+  --ds-surface-2:#e4e6ea;
+  --ds-surface-sunken:#c5c8ce;
+  --ds-surface-deep:#bfc3c9;
+  --ds-recessed:#c8cbd1;
+  --ds-secondary:#bcc0c7;
+  --ds-outline:#9aa0aa;
+  --ds-border:#b0b5bd;
+  --ds-text:#1c2025;
+  --ds-text-strong:#0d0f12;
+  --ds-text-muted:#4a505a;
+  --ds-text-dim:#6c727d;
+  --ds-scrim:#00000066;
+  --ds-tint:#0000000a;
+}
+
+/* Tokens the accent ramp sets inline as dark values, and the app pins with !important. */
+html[data-theme='light'],
+html[data-theme='light'] .gloaming-app,
+html[data-theme='light'] .settings-studio {
+  --gloaming-surface-lowest:var(--ds-surface-sunken)!important;
+  --gloaming-surface:var(--ds-surface)!important;
+  --gloaming-surface-highest:var(--ds-secondary)!important;
+  --gloaming-outline-variant:var(--ds-border)!important;
+  --gloaming-primary-container:var(--ds-secondary)!important;
+  --gloaming-on-primary-container:var(--ds-text)!important;
+  --gloaming-tertiary-container:var(--ds-secondary)!important;
+  --gloaming-on-tertiary-container:var(--ds-text)!important;
+  --gloaming-nav-tint:var(--ds-tint)!important;
+  --control-hover:var(--ds-secondary)!important;
+  --raised-hover:var(--ds-surface-2)!important;
+  --color-overlay-hover:#0000000f!important;
+  --color-error:#b3261e!important;
+  --color-error-muted:#b3261e24!important;
+  --color-warning:#8a5a00!important;
+  --color-warning-muted:#8a5a0026!important;
+}
+
+/* Settings tokens that carry their own values. */
+html[data-theme='light'] .settings.settings-studio {
+  --pref-line:#b0b5bd;
+  --pref-line-strong:#9aa0aa;
+  --pref-surface-sunken:#c8cbd1;
+  --pref-dim:var(--ds-text-dim);
+  --pref-tint:#0000000a;
+  --pref-tint-mid:#00000010;
+  --pref-tint-strong:#0000001c;
+  --pref-ink-strong:#0d0f12;
+  --pref-danger:#b3261e;
+  --pref-danger-bg:#b3261e1c;
+  --pref-warning:#8a5a00;
+  --pref-warning-text:#6b4500;
+  --pref-warning-border:#c79a3d;
+  --pref-invalid:#a35426;
+  --pref-shadow:#00000014;
+}
+
+html[data-theme='light'] .studio-nav [aria-current] {color:var(--studio-on-accent);background:var(--studio-accent)}
+html[data-theme='light'] ::selection {background:color-mix(in srgb, var(--studio-accent) 28%, transparent)}
+html[data-theme='light'] .settings-studio .settings-body {color-scheme:light}

@@ -39,6 +39,15 @@
     bg = BG[name];
     ac = AC[name];
   }
+  // The soft grey theme: same early read, so a light install does not open on
+  // a dark cover. Overlay windows drawn over a game are always dark.
+  try {
+    if (localStorage.getItem('gloaming-appearance') === 'light' && location.search.indexOf('replayOverlay=1') < 0) {
+      document.documentElement.setAttribute('data-theme', 'light');
+      bg = '#cdd0d6';
+      ac = 'color-mix(in srgb, ' + ac + ' 55%, #000)';
+    }
+  } catch (e) {}
   var root = document.documentElement.style;
   root.setProperty('--gloaming-bg', bg);
   root.setProperty('--boot-accent', ac);
