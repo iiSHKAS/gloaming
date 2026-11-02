@@ -1,6 +1,8 @@
 /* Visual system from gloaming-redesign.html. Live media and controls remain native to the app. */
-html:root, .gloaming-app, .settings-studio {
+html:root {
  --ds-bg:#101113;--ds-border:#2c2e32;--ds-text:#f0f1f3;--ds-text-strong:#fff;--ds-text-muted:#91969f;--ds-text-dim:#747981;--ds-surface:#191b1e;--ds-surface-2:#222428;--ds-surface-sunken:#151719;--ds-surface-deep:#141618;--ds-recessed:#16181a;--ds-secondary:#303236;--ds-outline:#41454b;--ds-scrim:#0007;--ds-tint:#ffffff09;
+}
+html:root, .gloaming-app, .settings-studio {
  --gloaming-bg:var(--ds-bg)!important;--color-background-body:var(--ds-bg)!important;
  --color-text-primary:var(--ds-text)!important;--color-text-secondary:var(--ds-text-muted)!important;--color-text-disabled:var(--ds-text-dim)!important;
  --color-accent:var(--studio-accent)!important;--color-text-accent:var(--studio-accent)!important;--color-on-accent:var(--studio-on-accent)!important;
