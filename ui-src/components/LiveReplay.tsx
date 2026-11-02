@@ -9,8 +9,8 @@ type Range = {start: number; end: number};
 const clock = (n?: number) => n ? new Date(n * 1000).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—';
 const duration = (n: number) => `${Math.floor(Math.max(0,n) / 60)}:${String(Math.floor(Math.max(0,n) % 60)).padStart(2, '0')}`;
 
-export function ReplayIcon({name}: {name: 'play'|'pause'|'back'|'sound'|'mute'|'expand'|'cut'|'save'}) {
-  const paths = {play:'M9 5l11 7-11 7z',pause:'M8 5v14M16 5v14',back:'M4 8V3m0 5h5M4 8a9 9 0 1 1-1 8',sound:'M4 9h4l5-4v14l-5-4H4zM17 8a6 6 0 0 1 0 8M20 5a10 10 0 0 1 0 14',mute:'M4 9h4l5-4v14l-5-4H4zM17 9l5 6m0-6-5 6',expand:'M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5',cut:'M8 8l12 12M8 16 20 4M5 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6m0 10a3 3 0 1 0 0 6 3 3 0 0 0 0-6',save:'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5'};
+export function ReplayIcon({name}: {name: 'play'|'pause'|'back'|'forward'|'sound'|'mute'|'expand'|'cut'|'save'}) {
+  const paths = {play:'M9 5l11 7-11 7z',pause:'M8 5v14M16 5v14',back:'M4 8V3m0 5h5M4 8a9 9 0 1 1-1 8',forward:'M20 8V3m0 5h-5M20 8a9 9 0 1 0 1 8',sound:'M4 9h4l5-4v14l-5-4H4zM17 8a6 6 0 0 1 0 8M20 5a10 10 0 0 1 0 14',mute:'M4 9h4l5-4v14l-5-4H4zM17 9l5 6m0-6-5 6',expand:'M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5',cut:'M8 8l12 12M8 16 20 4M5 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6m0 10a3 3 0 1 0 0 6 3 3 0 0 0 0-6',save:'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5'};
   return <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]}/></svg>;
 }
 
@@ -413,8 +413,9 @@ export function LiveReplay({fullscreen = false, onToggleFullscreen, lens = false
         </div>
       </aside>;
   const transport = <div className="replay-transport">
-            <button aria-label={paused?'Play replay':'Pause replay'} disabled={!ready||positionExpired} onClick={()=>{if(paused) void video.current?.play().catch(()=>{});else video.current?.pause();}}><ReplayIcon name={paused?'play':'pause'}/></button>
             <button aria-label="Back 10 seconds" disabled={!ready} onClick={()=>{previewEnd.current=null;jump(Math.max(beginning,playhead-10));}}><ReplayIcon name="back"/><small>10</small></button>
+            <button aria-label={paused?'Play replay':'Pause replay'} disabled={!ready||positionExpired} onClick={()=>{if(paused) void video.current?.play().catch(()=>{});else video.current?.pause();}}><ReplayIcon name={paused?'play':'pause'}/></button>
+            <button className="replay-skip-forward" aria-label="Forward 10 seconds" disabled={!ready||positionExpired||playhead>=edge-1} onClick={()=>{previewEnd.current=null;jump(Math.min(edge,playhead+10));}}><ReplayIcon name="forward"/><small>10</small></button>
             <span className="replay-playtime">{clock(position)}</span><span className="replay-transport-spacer"/>
             <button aria-label={muted?'Unmute replay':'Mute replay'} disabled={!ready} onClick={()=>setMuted(!muted)}><ReplayIcon name={muted?'mute':'sound'}/></button>
             <input className="replay-volume" aria-label="Replay volume" type="range" min="0" max="1" step="0.05" value={muted?0:volume} onChange={e=>{const v=Number(e.target.value);setVolume(v);setMuted(v===0);if(video.current)video.current.volume=v;}}/>
