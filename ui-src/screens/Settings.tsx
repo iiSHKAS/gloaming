@@ -63,11 +63,11 @@ const SECTIONS = [
 ] as const;
 
 const BASIC_SECTIONS = [
-  ['quality', 'Recording quality', 'Picture quality & replay buffer', 'recording'],
-  ['capture', 'Capture', 'Display & clip duration', 'recording'],
-  ['sound', 'Audio', 'Desktop sound & microphone', 'audio'],
-  ['shortcuts', 'Shortcuts', 'Every key and controller button, in one place', 'hotkeys'],
-  ['general', 'General', 'Language, colors, startup & window', 'advanced'],
+  ['quality', 'settingsUi.navQuality', 'settingsUi.navQualityHint', 'recording'],
+  ['capture', 'settingsUi.navCapture', 'settingsUi.navCaptureHint', 'recording'],
+  ['sound', 'settingsUi.navAudio', 'settingsUi.navAudioHint', 'audio'],
+  ['shortcuts', 'settingsUi.navShortcuts', 'settingsUi.navShortcutsHint', 'hotkeys'],
+  ['general', 'settingsUi.navGeneral', 'settingsUi.navGeneralHint', 'advanced'],
 ] as const;
 type BasicSectionId = (typeof BASIC_SECTIONS)[number][0];
 
@@ -366,16 +366,16 @@ export function Settings() {
     <div className="settings settings-studio">
       <div className="settings-workspace" data-mode={mode} data-searching={searching || undefined}>
         <nav className="settings-categories" aria-label={t('settings.sections')}>
-          <div className="settings-nav-heading"><span className="settings-section-icon" aria-hidden="true"><CategoryIcon section="advanced"/></span><div><strong>Preferences<span>.</span></strong><small>GLOAMING / YOUR WORKSPACE</small></div></div>
-          <div className="settings-search" role="search" aria-label="Search preferences">
+          <div className="settings-nav-heading"><span className="settings-section-icon" aria-hidden="true"><CategoryIcon section="advanced"/></span><div><strong>{t('settingsUi.preferences')}<span>.</span></strong><small>{t('settingsUi.workspaceTagline')}</small></div></div>
+          <div className="settings-search" role="search" aria-label={t('settingsUi.searchPreferences')}>
             <span className="settings-search-icon" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></span>
-            <input type="search" value={query} placeholder="Find a setting…" aria-label="Search settings"
+            <input type="search" value={query} placeholder={t('settingsUi.findASetting')} aria-label={t('settingsUi.searchSettings')}
               onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'Escape') { setQuery(''); e.stopPropagation(); } }} />
-            {query && <button type="button" className="settings-search-clear" aria-label="Clear search" onClick={() => setQuery('')}><IconClose size={13}/></button>}
+            {query && <button type="button" className="settings-search-clear" aria-label={t('settingsUi.clearSearch')} onClick={() => setQuery('')}><IconClose size={13}/></button>}
           </div>
           <div className="settings-nav-groups">
             <div className="settings-nav-group" role="group" aria-labelledby="basic-settings-label">
-              <NavGroupToggle id="basic-settings-label" label="Basic Settings" count={BASIC_SECTIONS.length}
+              <NavGroupToggle id="basic-settings-label" label={t('settingsUi.basicSettings')} count={BASIC_SECTIONS.length}
                 open={groupOpen.basic} onToggle={() => setGroupOpen(open => ({...open, basic: !open.basic}))}/>
               <div className="settings-nav-items" id="basic-settings-items" data-open={groupOpen.basic || undefined} inert={!groupOpen.basic}>
               <div className="settings-nav-items-inner">
@@ -383,14 +383,14 @@ export function Settings() {
                 aria-current={!searching && mode === 'basic' && basicSection === id ? 'page' : undefined}
                 onClick={() => { setQuery(''); setMode('basic'); setBasicSection(id); }}>
                 <span className="settings-category-icon" aria-hidden="true"><CategoryIcon section={icon}/></span>
-                <span className="settings-category-copy"><strong>{label}</strong><small>{hint}</small></span>
+                <span className="settings-category-copy"><strong>{t(label)}</strong><small>{t(hint)}</small></span>
                 <span className="settings-category-arrow" aria-hidden="true">›</span>
               </button>)}
               </div>
               </div>
             </div>
             <div className="settings-nav-group" role="group" aria-labelledby="advanced-settings-label">
-              <NavGroupToggle id="advanced-settings-label" label="Advanced Settings" count={SECTIONS.length}
+              <NavGroupToggle id="advanced-settings-label" label={t('settingsUi.advancedSettings')} count={SECTIONS.length}
                 open={groupOpen.advanced} onToggle={() => setGroupOpen(open => ({...open, advanced: !open.advanced}))}/>
               <div className="settings-nav-items" id="advanced-settings-items" data-open={groupOpen.advanced || undefined} inert={!groupOpen.advanced}>
               <div className="settings-nav-items-inner">
@@ -408,19 +408,19 @@ export function Settings() {
         </nav>
         <div className="settings-body" ref={bodyRef} role="region" aria-labelledby="settings-content-title" tabIndex={0}>
           {saveError && <div className="settings-save-error" role="alert">
-            <span>Changes could not be saved. Your edits are still here.</span>
-            <button type="button" className="btn btn-sm" onClick={() => void autosave.current?.flush()}>Retry</button>
+            <span>{t('settingsUi.changesCouldNotBeSaved')}</span>
+            <button type="button" className="btn btn-sm" onClick={() => void autosave.current?.flush()}>{t('settingsUi.retry')}</button>
           </div>}
           <header className="settings-section-intro">
-            <h2 id="settings-content-title">{searching ? 'Search results' : mode === 'basic' ? BASIC_SECTIONS.find(([id]) => id === basicSection)![1] : t(SECTIONS.find(([id]) => id === section)![1])}</h2>
-            <p>{searching ? `${resultCount} matching ${resultCount === 1 ? 'category' : 'categories'} for “${query.trim()}”` : mode === 'basic' ? BASIC_SECTIONS.find(([id]) => id === basicSection)![2] : t(`settings.sectionHint_${section}`)}</p>
+            <h2 id="settings-content-title">{searching ? t('settingsUi.searchResults') : mode === 'basic' ? t(BASIC_SECTIONS.find(([id]) => id === basicSection)![1]) : t(SECTIONS.find(([id]) => id === section)![1])}</h2>
+            <p>{searching ? t('settingsUi.searchSummary', {count: resultCount, query: query.trim()}) : mode === 'basic' ? t(BASIC_SECTIONS.find(([id]) => id === basicSection)![2]) : t(`settings.sectionHint_${section}`)}</p>
           </header>
-        {searching ? <p className="adv-empty" data-when-empty>No setting matches your search.</p> : null}
+        {searching ? <p className="adv-empty" data-when-empty>{t('settingsUi.noSettingMatchesYourSearch')}</p> : null}
         {(mode === 'basic' || searching) && <div className="settings-basic-grid">
         {(basicSection === 'quality' || searching) && <QualityCard draft={draft} update={update} persistNow={persistNow} failure={t('settings.errSave')}
           onAdvanced={() => goTo('recording')} onCustomBuffer={() => goTo('recording', 'settings-buffer-duration')} searching={searching} wfTenBit={displays.wf_10bit_supported} />}
         {(basicSection === 'capture' || searching) && <Card id="capture" title={t('settings.basicCapture')}>
-          <Row label={t('settings.clipDuration')} help={t('settings.clipDurationHelp')} note={{text: `Maximum: ${formatLengthLong(draft.bufferDuration)} — your current buffer.`}}>
+          <Row label={t('settings.clipDuration')} help={t('settings.clipDurationHelp')} note={{text: t('settingsUi.bufferMax', {length: formatLengthLong(draft.bufferDuration)})}}>
             <Slider
               label={t('settings.clipDuration')}
               exact
@@ -458,7 +458,7 @@ export function Settings() {
             }} />
         </Card>}
         {(basicSection === 'shortcuts' || searching) && <Card id="shortcuts" title={t('settings.basicShortcuts')}>
-          <h3 className="adv-group">Clips</h3>
+          <h3 className="adv-group">{t('settingsUi.clips')}</h3>
           {keyRow({label: t('settings.clipKey'), help: t('settings.clipKeyHelp'), field: 'clipKey', api: 'clip', saved: key => t('settings.clipKeyNow', {key}),
             note: status.hotkeys_available === false ? {text: t('settings.hotkeysUnavailable'), tone: 'warning' as const} : null})}
           <Row
@@ -474,45 +474,45 @@ export function Settings() {
               }
             />
           </Row>
-          <h3 className="adv-group">Screenshot &amp; overlays</h3>
+          <h3 className="adv-group">{t('settingsUi.screenshotOverlays')}</h3>
           {keyRow({label: t('settings.screenshotKey'), help: t('settings.screenshotKeyHelp'), field: 'screenshotKey', api: 'screenshot', saved: key => t('settings.screenshotKeyNow', {key})})}
           {keyRow({label: t('settings.replayShortcut'), help: t('settings.replayShortcutHelp'), field: 'replayOverlayKey', api: 'replay_overlay', saved: () => t('settings.replayShortcutUpdated')})}
-          {keyRow({label: 'Quick save menu', help: 'Open the save-length menu: pick the last 1, 2, 5 or 10 minutes, the whole buffer, or open the replay. Press again to close. Arrow keys and Enter pick; Escape cancels.', field: 'menuKey', api: 'menu', saved: key => `Quick save menu is now ${key}`})}
+          {keyRow({label: t('settingsUi.quickSaveMenu'), help: t('settingsUi.openTheSaveLengthMenu'), field: 'menuKey', api: 'menu', saved: key => `Quick save menu is now ${key}`})}
           {keyRow({label: t('settings.keyOverlayKey'), help: t('settings.keyOverlayKeyHelp'), field: 'keyOverlayKey', api: 'key_overlay', saved: key => t('settings.keyOverlayKeyNow', {key})})}
           {keyRow({label: t('settings.padOverlayKey'), help: t('settings.padOverlayKeyHelp'), field: 'padOverlayKey', api: 'pad_overlay', saved: key => t('settings.padOverlayKeyNow', {key})})}
-          <h3 className="adv-group">Controller</h3>
+          <h3 className="adv-group">{t('settingsUi.controller')}</h3>
           <ControllerStatus/>
-          <Row label="Smart button" help="One button, two gestures. Tap saves the last Clip duration instantly. Hold opens a menu to open the replay overlay or save the last 1, 2, 5, 10 minutes or the whole buffer. Pick with the D-pad, left stick or bumpers; you can let go once it appears. Tap again to close.">
+          <Row label={t('settingsUi.smartButton')} help={t('settingsUi.oneButtonTwoGesturesTap')}>
             <ControllerCapture value={draft.controllerSmart} onCapture={controllerSmart=>{
               update({controllerSmart});
-              void persistNow({hotkeys:{controller_smart:controllerSmart}},()=>say('Smart button saved'),t('settings.errSaveKey'));
+              void persistNow({hotkeys:{controller_smart:controllerSmart}},()=>say(t('settingsUi.smartButtonSaved')),t('settings.errSaveKey'));
             }}/>
           </Row>
-          <Row label="Quick save menu" help="Opens the save-length menu on its own button, without the smart button's tap and hold: pick the last 1, 2, 5 or 10 minutes, the whole buffer, or open the replay. Browse with the D-pad, left stick or bumpers. Press again to close.">
+          <Row label={t('settingsUi.quickSaveMenu')} help={t('settingsUi.opensTheSaveLengthMenu')}>
             <ControllerCapture value={draft.controllerMenu} onCapture={controllerMenu=>{
               update({controllerMenu});
-              void persistNow({hotkeys:{controller_menu:controllerMenu}},()=>say('Quick save menu button saved'),t('settings.errSaveKey'));
+              void persistNow({hotkeys:{controller_menu:controllerMenu}},()=>say(t('settingsUi.quickSaveMenuButtonSaved')),t('settings.errSaveKey'));
             }}/>
           </Row>
-          <Row label="Save last moments" help="Saves the last Clip duration selected in Capture & replay — seconds or minutes. This saves a video, without starting a recording session.">
+          <Row label={t('settingsUi.saveLastMoments')} help={t('settingsUi.savesTheLastClipDuration')}>
             <ControllerCapture value={draft.controllerClip} onCapture={controllerClip=>{
               update({controllerClip});
-              void persistNow({hotkeys:{controller_clip:controllerClip}},()=>say('Controller clip shortcut saved'),t('settings.errSaveKey'));
+              void persistNow({hotkeys:{controller_clip:controllerClip}},()=>say(t('settingsUi.controllerClipShortcutSaved')),t('settings.errSaveKey'));
             }}/>
           </Row>
-          <Row label="Screenshot" help="Take a still image with a controller button or combination. Triggers and the D-pad are supported. Executes when you release the buttons.">
+          <Row label={t('settingsUi.screenshot')} help={t('settingsUi.takeAStillImageWith')}>
             <ControllerCapture value={draft.controllerScreenshot} onCapture={controllerScreenshot=>{
               update({controllerScreenshot});
-              void persistNow({hotkeys:{controller_screenshot:controllerScreenshot}},()=>say('Controller shortcut saved'),t('settings.errSaveKey'));
+              void persistNow({hotkeys:{controller_screenshot:controllerScreenshot}},()=>say(t('settingsUi.controllerShortcutSaved')),t('settings.errSaveKey'));
             }}/>
           </Row>
-          <Row label="Replay overlay" help="Open or close the replay overlay from your game. Assign a different button combination for each action. Button names show Xbox / PlayStation labels; face buttons follow physical positions.">
+          <Row label={t('settingsUi.replayOverlay')} help={t('settingsUi.openOrCloseTheReplay')}>
             <ControllerCapture value={draft.controllerReplayOverlay} onCapture={controllerReplayOverlay=>{
               update({controllerReplayOverlay});
-              void persistNow({hotkeys:{controller_replay_overlay:controllerReplayOverlay}},()=>say('Controller shortcut saved'),t('settings.errSaveKey'));
+              void persistNow({hotkeys:{controller_replay_overlay:controllerReplayOverlay}},()=>say(t('settingsUi.controllerShortcutSaved')),t('settings.errSaveKey'));
             }}/>
           </Row>
-          <h3 className="adv-group">Game compatibility</h3>
+          <h3 className="adv-group">{t('settingsUi.gameCompatibility')}</h3>
           <Row
             label={t('settings.blocklist')}
             stack
@@ -526,8 +526,8 @@ export function Settings() {
           </Row>
         </Card>}
 
-        {(basicSection === 'general' || searching) && <Card id="general" title="General">
-          <h3 className="adv-group">Appearance</h3>
+        {(basicSection === 'general' || searching) && <Card id="general" title={t('settingsUi.general')}>
+          <h3 className="adv-group">{t('settingsUi.appearance')}</h3>
           <Row label={t('settings.language')} help={t('settings.languageHelp')}>
             <Select
               label={t('settings.language')}
@@ -583,10 +583,10 @@ export function Settings() {
               options={EFFECTS_MODES.map(m => [m, t(`settings.effects${m[0].toUpperCase()}${m.slice(1)}`)] as [string, string])}
             />
           </Row>
-          <h3 className="adv-group">Startup &amp; window</h3>
-          <Row label="Start with the system" help="Open Gloaming automatically when you log in, so clipping is ready before the game starts.">
+          <h3 className="adv-group">{t('settingsUi.startupWindow')}</h3>
+          <Row label={t('settingsUi.startWithTheSystem')} help={t('settingsUi.openGloamingAutomaticallyWhenYou')}>
             <Toggle
-              label="Start with the system"
+              label={t('settingsUi.startWithTheSystem')}
               checked={draft.startWithSystem}
               onChange={startWithSystem => {
                 update({startWithSystem});
@@ -594,9 +594,9 @@ export function Settings() {
               }}
             />
           </Row>
-          <Row label="Start minimized" help="When it opens at login, start hidden in the tray.">
+          <Row label={t('settingsUi.startMinimized')} help={t('settingsUi.whenItOpensAtLogin')}>
             <Toggle
-              label="Start minimized"
+              label={t('settingsUi.startMinimized')}
               checked={draft.startMinimized}
               disabled={!draft.startWithSystem}
               onChange={startMinimized => {
@@ -606,11 +606,11 @@ export function Settings() {
             />
           </Row>
           <Row
-            label="Minimize to tray"
-            help="Minimizing the window hides it to the tray instead of the taskbar."
-            note={IS_NATIVE && !trayOk ? {text: 'No system tray detected on this desktop, so minimizing uses the taskbar.', tone: 'warning'} : null}>
+            label={t('settingsUi.minimizeToTray')}
+            help={t('settingsUi.minimizingTheWindowHidesIt')}
+            note={IS_NATIVE && !trayOk ? {text: t('settingsUi.noSystemTrayDetectedOn'), tone: 'warning'} : null}>
             <Toggle
-              label="Minimize to tray"
+              label={t('settingsUi.minimizeToTray')}
               checked={draft.minimizeToTray}
               onChange={minimizeToTray => {
                 update({minimizeToTray});
@@ -619,11 +619,11 @@ export function Settings() {
             />
           </Row>
           <Row
-            label="Close to tray"
-            help="Closing the window hides it to the tray and keeps recording. Use Quit in the tray menu to exit."
-            note={IS_NATIVE && !trayOk ? {text: 'No system tray detected on this desktop, so closing the window quits Gloaming.', tone: 'warning'} : null}>
+            label={t('settingsUi.closeToTray')}
+            help={t('settingsUi.closingTheWindowHidesIt')}
+            note={IS_NATIVE && !trayOk ? {text: t('settingsUi.noSystemTrayDetectedOn2'), tone: 'warning'} : null}>
             <Toggle
-              label="Close to tray"
+              label={t('settingsUi.closeToTray')}
               checked={draft.closeToTray}
               onChange={closeToTray => {
                 update({closeToTray});
@@ -637,8 +637,8 @@ export function Settings() {
         {(mode === 'advanced' || searching) && <>
         {/* ── Recording ─────────────────────────────────────────── */}
         {(section === 'recording' || searching) ? <Card id="recording" title={t('settings.secRecording')}>
-          <div className="recording-group"><h3>Replay history</h3><p className="recording-group-help">Set how far back you can save, and where that history is kept.</p><div className="recording-fields">
-          <Row label={t('settings.bufferDuration')} note={caps.bufferNote ?? buffer} help="Hold Shift while dragging for one-second adjustments. You can also click the duration to type an exact value.">
+          <div className="recording-group"><h3>{t('settingsUi.replayHistory')}</h3><p className="recording-group-help">{t('settingsUi.setHowFarBackYou')}</p><div className="recording-fields">
+          <Row label={t('settings.bufferDuration')} note={caps.bufferNote ?? buffer} help={t('settingsUi.holdShiftWhileDraggingFor')}>
             <Slider
               label={t('settings.bufferDuration')}
               id="settings-buffer-duration"
@@ -655,7 +655,7 @@ export function Settings() {
 
           <Row
             label={t('settings.replayStorage')}
-            note={caps.liveNote ?? caps.storageNote ?? (!caps.gsr ? {text: 'This recorder keeps its replay buffer on disk.'} : undefined)} help={t('settings.replayStorageHelp')}>
+            note={caps.liveNote ?? caps.storageNote ?? (!caps.gsr ? {text: t('settingsUi.thisRecorderKeepsItsReplay')} : undefined)} help={t('settings.replayStorageHelp')}>
             <Select
               label={t('settings.replayStorage')}
               disabled={draft.liveReplay || !caps.gsr}
@@ -669,7 +669,7 @@ export function Settings() {
             />
           </Row>
 
-          </div></div><div className="recording-group"><h3>Video & encoding</h3><p className="recording-group-help">Choose frame rate, colour depth, encoder and the saved file format.</p><div className="recording-fields">
+          </div></div><div className="recording-group"><h3>{t('settingsUi.videoEncoding')}</h3><p className="recording-group-help">{t('settingsUi.chooseFrameRateColourDepth')}</p><div className="recording-fields">
           <Row label={t('settings.frameRate')} note={caps.fpsNote} help={t('settings.frameRateHelp')}>
             <Select
               label={t('settings.frameRate')}
@@ -682,7 +682,7 @@ export function Settings() {
 
           <Row
             label={t('settings.container')}
-            note={caps.liveNote ?? caps.containerNote ?? (!caps.gsr ? {text: 'This recorder saves MP4 clips.'} : undefined)} help={t('settings.containerHelp')}>
+            note={caps.liveNote ?? caps.containerNote ?? (!caps.gsr ? {text: t('settingsUi.thisRecorderSavesMp4Clips')} : undefined)} help={t('settings.containerHelp')}>
             <Select
               label={t('settings.container')}
               disabled={draft.liveReplay || !caps.gsr}
@@ -695,7 +695,7 @@ export function Settings() {
             />
           </Row>
 
-          <Row label={t('settings.encoder')} note={caps.liveNote ?? (caps.wf ? {text: 'wf-recorder supports Auto, H.264 NVENC, HEVC NVENC, H.264 VAAPI and software H.264. Other saved codecs use software H.264.'} : caps.codecNote)} help={t('settings.encoderHelp')}>
+          <Row label={t('settings.encoder')} note={caps.liveNote ?? (caps.wf ? {text: t('settingsUi.wfRecorderSupportsAutoH')} : caps.codecNote)} help={t('settings.encoderHelp')}>
             <Select
               label={t('settings.encoder')}
               disabled={draft.liveReplay}
@@ -735,7 +735,7 @@ export function Settings() {
             />
           </Row>
 
-          </div></div><div className="recording-group"><h3>Capture method</h3><p className="recording-group-help">Choose the recorder and how it follows your screen or window.</p><div className="recording-fields">
+          </div></div><div className="recording-group"><h3>{t('settingsUi.captureMethod')}</h3><p className="recording-group-help">{t('settingsUi.chooseTheRecorderAndHow')}</p><div className="recording-fields">
           <Row label={t('settings.backend')} note={caps.liveNote} help={t('settings.backendHelp')}>
             <Select
               label={t('settings.backend')}
@@ -802,7 +802,7 @@ export function Settings() {
             />
           </Row>
 
-</div></div><div className="recording-group recording-playback"><h3>Playback</h3><p className="recording-group-help">Controls video playback in the app, independently of recording quality.</p>          <Row
+</div></div><div className="recording-group recording-playback"><h3>{t('settingsUi.playback')}</h3><p className="recording-group-help">{t('settingsUi.controlsVideoPlaybackInThe')}</p>          <Row
             label={t('settings.hardwareDecode')}
             help={t('settings.hardwareDecodeHelp')}>
             <Toggle
@@ -828,7 +828,7 @@ export function Settings() {
               void loadSources().finally(() => setRefreshing(false));
             }} />
 
-          <h3 className="adv-group">Notification sounds</h3>
+          <h3 className="adv-group">{t('settingsUi.notificationSounds')}</h3>
           <Row
             label={t('settings.notifyVolume')}
             help={t('settings.notifyVolumeHelp')}>
@@ -871,7 +871,7 @@ export function Settings() {
 
         {/* ── Storage ───────────────────────────────────────────── */}
         {(section === 'storage' || searching) ? <Card id="storage" title={t('settings.secStorage')}>
-          <h3 className="adv-group">Folders</h3>
+          <h3 className="adv-group">{t('settingsUi.folders')}</h3>
           <Row label={t('settings.directory')} help={t('settings.directoryHelp')}>
             <FolderField
               label={t('settings.directory')}
@@ -889,7 +889,7 @@ export function Settings() {
               onChange={imageDirectory => update({imageDirectory})}
             />
           </Row>
-          <h3 className="adv-group">Names and organisation</h3>
+          <h3 className="adv-group">{t('settingsUi.namesAndOrganisation')}</h3>
           <Row
             label={t('settings.tagWithGame')}
             help={t('settings.tagWithGameHelp')}>
@@ -936,7 +936,7 @@ export function Settings() {
 
         {/* ── Sharing ───────────────────────────────────────────── */}
         {(section === 'sharing' || searching) ? <Card id="sharing" title={t('settings.secSharing')}>
-          <h3 className="adv-group">Local server</h3>
+          <h3 className="adv-group">{t('settingsUi.localServer')}</h3>
           <Row label={t('settings.port')} help={t('settings.portHelp')}>
             <TextField
               label={t('settings.port')}
@@ -948,7 +948,7 @@ export function Settings() {
               onChange={port => update({port: Number(port) || 0})}
             />
           </Row>
-          <h3 className="adv-group">Links</h3>
+          <h3 className="adv-group">{t('settingsUi.links')}</h3>
           <Row
             label={t('settings.publicLink')}
             help={t('settings.publicLinkHelp')}>
@@ -972,7 +972,7 @@ export function Settings() {
 
         {/* ── Discord ───────────────────────────────────────────── */}
         {(section === 'discord' || searching) ? <Card id="discord" title={t('settings.cardDiscord')}>
-          <h3 className="adv-group">Presence</h3>
+          <h3 className="adv-group">{t('settingsUi.presence')}</h3>
           <Row
             label={t('settings.discordEnabled')}
             help={t('settings.discordEnabledHelp')}>
@@ -992,7 +992,7 @@ export function Settings() {
               onChange={discordGameIcons => update({discordGameIcons})}
             />
           </Row>
-          <h3 className="adv-group">Games and branding</h3>
+          <h3 className="adv-group">{t('settingsUi.gamesAndBranding')}</h3>
           <Row
             label={t('settings.discordCustomGames')}
             stack
@@ -1028,7 +1028,7 @@ export function Settings() {
 
         {/* ── Overlay ───────────────────────────────────────────── */}
         {(section === 'overlay' || searching) ? <Card id="overlay" title={t('settings.secOverlay')}>
-          <h3 className="adv-group">Keyboard overlay</h3>
+          <h3 className="adv-group">{t('settingsUi.keyboardOverlay')}</h3>
           <Row
             label={t('settings.keyOverlay')}
             help={t('settings.keyOverlayHelp')}
@@ -1141,10 +1141,10 @@ export function Settings() {
               onChange={keyOverlayInClips => update({keyOverlayInClips})}
             />
           </Row>
-          <h3 className="adv-group">Controller overlay</h3>
-          <Row label="Controller overlay" note={keyOverlayNote(status.pad_overlay ?? null, draft.padOverlay && !draft.padRecordingOnly)} help="Shows a gamepad over your game that lights up the buttons you press and follows the sticks and triggers, so recordings and streams show your inputs. It draws an Xbox or a PlayStation pad to match the controller you use.">
+          <h3 className="adv-group">{t('settingsUi.controllerOverlay')}</h3>
+          <Row label={t('settingsUi.controllerOverlay')} note={keyOverlayNote(status.pad_overlay ?? null, draft.padOverlay && !draft.padRecordingOnly)} help={t('settingsUi.showsAGamepadOverYour')}>
             <Toggle
-              label="Controller overlay"
+              label={t('settingsUi.controllerOverlay')}
               checked={draft.padOverlay}
               onChange={padOverlay => {
                 update({padOverlay});
@@ -1152,9 +1152,9 @@ export function Settings() {
               }}
             />
           </Row>
-          <Row label="Controller overlay style" help="Auto follows the controller you are pressing. Pick one to always show that drawing.">
+          <Row label={t('settingsUi.controllerOverlayStyle')} help={t('settingsUi.autoFollowsTheControllerYou')}>
             <Select
-              label="Controller overlay style"
+              label={t('settingsUi.controllerOverlayStyle')}
               value={draft.padStyle}
               onChange={padStyle => {
                 update({padStyle});
@@ -1163,10 +1163,10 @@ export function Settings() {
               options={[['auto', 'Auto'], ['xbox', 'Xbox'], ['playstation', 'PlayStation']]}
             />
           </Row>
-          <Row label="Controller overlay position" help="Pick a corner, or press Move and drag the pad anywhere on its screen. Press Done when it is where you want it.">
+          <Row label={t('settingsUi.controllerOverlayPosition')} help={t('settingsUi.pickACornerOrPress')}>
             <div className="key-pair">
               <Select
-                label="Controller overlay position"
+                label={t('settingsUi.controllerOverlayPosition')}
                 value={draft.padPosition}
                 onChange={padPosition => {
                   update({padPosition});
@@ -1202,9 +1202,9 @@ export function Settings() {
               </button>
             </div>
           </Row>
-          <Row label="Controller overlay size">
+          <Row label={t('settingsUi.controllerOverlaySize')}>
             <Slider
-              label="Controller overlay size"
+              label={t('settingsUi.controllerOverlaySize')}
               value={draft.padScale}
               min={50}
               max={200}
@@ -1258,10 +1258,10 @@ export function Settings() {
 
         {/* ── Advanced ──────────────────────────────────────────── */}
         {(section === 'advanced' || searching) ? <Card id="advanced" title={t('settings.secSystem')}>
-          <h3 className="adv-group">Recorder</h3>
+          <h3 className="adv-group">{t('settingsUi.recorder')}</h3>
           <Row
             label={t('settings.gsrArgs')}
-            note={caps.liveNote ?? caps.overrideNote ?? (!caps.gsr ? {text: 'Extra GSR arguments require GPU Screen Recorder.'} : undefined)}
+            note={caps.liveNote ?? caps.overrideNote ?? (!caps.gsr ? {text: t('settingsUi.extraGsrArgumentsRequireGpu')} : undefined)}
             stack
             help={
               <>
@@ -1280,7 +1280,7 @@ export function Settings() {
               onChange={gsrArgs => update({gsrArgs})}
             />
           </Row>
-          <h3 className="adv-group">Updates</h3>
+          <h3 className="adv-group">{t('settingsUi.updates')}</h3>
           <Row
             label={t('settings.checkForUpdates')}
             help={t('settings.checkForUpdatesHelp')}>
