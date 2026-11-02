@@ -40,7 +40,7 @@ export function AudioTracks({draft, sources, onChange, onMicToggle, onRefresh, r
       </div>
       <p className="audio-device-description">{t('audioTracks.mainDescription')}</p>
       <div className="audio-device-source"><span>{t('audioTracks.sourceLabel')}</span>
-      <Select label={t('audioTracks.outputSource', {number: 1})} value={draft.desktopSource} disabled={!draft.captureAudio}
+      <Select segmented={false} label={t('audioTracks.outputSource', {number: 1})} value={draft.desktopSource} disabled={!draft.captureAudio}
         options={choices(outputs, draft.desktopSource, 'default_output')}
         onChange={desktopSource => onChange({desktopSource})} /></div>
       {!basic && <fieldset className="audio-device-volume" disabled={!draft.captureAudio}><legend>{t('audioTracks.volumeLabel')}</legend><Slider label={t('settings.desktopVolume')} value={draft.desktopVolume} min={0} max={200} step={5}
@@ -58,7 +58,7 @@ export function AudioTracks({draft, sources, onChange, onMicToggle, onRefresh, r
         </div>
         <p className="audio-device-description">{t('audioTracks.extraDescription')}</p>
         <div className="audio-device-source"><span>{t('audioTracks.sourceLabel')}</span>
-        <Select label={t('audioTracks.outputSource', {number: index + 2})} value={enabled ? slot.source : ''} disabled={!enabled || !draft.captureAudio}
+        <Select segmented={false} label={t('audioTracks.outputSource', {number: index + 2})} value={enabled ? slot.source : ''} disabled={!enabled || !draft.captureAudio}
           options={[['', t('audioTracks.disabledOutput')], ...available]}
           onChange={source => setSlot(index, {source, enabled: Boolean(source)})} /></div>
         <fieldset className="audio-device-volume" disabled={!enabled || !draft.captureAudio}><legend>{t('audioTracks.volumeLabel')}</legend><Slider label={title} value={draft.audioTrackVolumes[slot.source] ?? 100} min={0} max={200} step={5}
@@ -71,7 +71,7 @@ export function AudioTracks({draft, sources, onChange, onMicToggle, onRefresh, r
       </div>
       <p className="audio-device-description">{t('audioTracks.micDescription')}</p>
       <div className="audio-device-source"><span>{t('audioTracks.sourceLabel')}</span>
-      <Select label={t('settings.micSource')} value={draft.micSource} disabled={!draft.captureMic}
+      <Select segmented={false} label={t('settings.micSource')} value={draft.micSource} disabled={!draft.captureMic}
         options={choices(inputs, draft.micSource, 'default_input')} onChange={micSource => onChange({micSource})} /></div>
       {!basic && <fieldset className="audio-device-volume" disabled={!draft.captureMic}><legend>{t('audioTracks.volumeLabel')}</legend><Slider label={t('settings.micVolume')} value={draft.micVolume} min={0} max={200} step={5}
         onChange={micVolume => onChange({micVolume})} format={v => `${v}%`} /></fieldset>}

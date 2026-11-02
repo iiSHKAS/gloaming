@@ -49,7 +49,32 @@ export function Row({
 }
 
 export {Toggle} from '../controls/Toggle';
-export {Select} from '../controls/Select';
+import {Select as DropdownSelect, type SelectProps} from '../controls/Select';
+import {Segmented} from '../controls/Segmented';
+
+/** Few, short choices are shown side by side; longer lists stay a dropdown. */
+const SEGMENT_MAX_OPTIONS = 3;
+const SEGMENT_MAX_CHARACTERS = 34;
+
+/**
+ * The settings select. With up to three short options a dropdown only hides
+ * what could simply be shown, so those render as a segmented control. Pass
+ * `segmented={false}` for lists that are really data, such as audio devices.
+ */
+export function Select({segmented, ...props}: SelectProps & {segmented?: boolean}) {
+  const flat = props.options.length > 0 && Array.isArray(props.options[0]);
+  const options = props.options as [string, string][];
+  const fits =
+    flat &&
+    options.length >= 2 &&
+    options.length <= SEGMENT_MAX_OPTIONS &&
+    options.reduce((sum, [, text]) => sum + text.length, 0) <= SEGMENT_MAX_CHARACTERS;
+  if (segmented ?? fits) {
+    return <Segmented value={props.value} onChange={props.onChange} options={options}
+      disabled={props.disabled} label={props.label} />;
+  }
+  return <DropdownSelect {...props} />;
+}
 
 export function Slider({
   value,

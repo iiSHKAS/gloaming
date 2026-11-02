@@ -357,3 +357,5 @@
 @media (prefers-reduced-motion:reduce) {
   .settings-nav-items,.settings-nav-items[data-open],.settings-nav-items>.settings-nav-items-inner>button,.settings-nav-chevron {transition:none!important}
 }
+
+.settings-studio .settings-card>.srow:not([data-stack])>.srow-control>.segmented {width:100%}

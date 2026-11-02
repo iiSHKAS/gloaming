@@ -220,3 +220,16 @@
 .controller-status[data-connected=true] .controller-connection-dot{background:var(--studio-accent);box-shadow:0 0 0 4px var(--studio-accent-soft)}
 
 .ui-select-menu[data-placement=top] {transform-origin:bottom center}
+
+/* Segmented choice: a few options in a row with one highlight that slides
+   between them. Used by settings with two or three short options. */
+.segmented{--seg-gap:4px;position:relative;display:grid;grid-template-columns:repeat(var(--seg-count),minmax(0,1fr));gap:var(--seg-gap);width:100%;min-width:0;padding:4px;border:1px solid var(--ds-border);border-radius:10px;background:var(--ds-surface-sunken)}
+.segmented::before{content:'';position:absolute;top:4px;bottom:4px;inset-inline-start:4px;width:calc((100% - 8px - (var(--seg-count) - 1) * var(--seg-gap)) / var(--seg-count));border-radius:7px;background:var(--studio-accent);transform:translateX(calc(var(--seg-index) * (100% + var(--seg-gap))));transition:transform 320ms cubic-bezier(.34,1.3,.64,1),opacity .2s;pointer-events:none}
+[dir='rtl'] .segmented::before{transform:translateX(calc(var(--seg-index) * (-100% - var(--seg-gap))))}
+.segmented[data-none]::before{opacity:0}
+.segmented button{position:relative;z-index:1;min-width:0;padding:9px 12px;border:0;border-radius:7px;background:transparent;color:var(--ds-text-muted);font:inherit;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;transition:color 200ms ease}
+.segmented button:hover:not(:disabled){color:var(--ds-text)}
+.segmented button[aria-checked=true]{color:var(--studio-on-accent)}
+.segmented button:focus-visible{outline:2px solid var(--studio-accent);outline-offset:2px}
+.segmented[aria-disabled=true]{opacity:.5}
+.segmented button:disabled{cursor:default}
