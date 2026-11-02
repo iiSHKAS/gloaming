@@ -42,7 +42,9 @@
   // The soft grey theme: same early read, so a light install does not open on
   // a dark cover. Overlay windows drawn over a game are always dark.
   try {
-    if (localStorage.getItem('gloaming-appearance') === 'light' && location.search.indexOf('replayOverlay=1') < 0) {
+    var mode = localStorage.getItem('gloaming-appearance');
+    var light = mode === 'light' || (mode === 'system' && window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches);
+    if (light && location.search.indexOf('replayOverlay=1') < 0) {
       document.documentElement.setAttribute('data-theme', 'light');
       bg = '#cdd0d6';
     }

@@ -1170,8 +1170,9 @@
       "other": "{count} matching categories for “{query}”"
     },
     "theme": "Theme",
-    "themeHelp": "Dark, or a soft grey light theme that is easy on the eyes. The replay overlay always stays dark.",
+    "themeHelp": "Dark, a soft grey light theme that is easy on the eyes, or follow your system. The replay overlay always stays dark.",
     "themeDark": "Dark",
-    "themeLight": "Light (soft grey)"
+    "themeLight": "Light (soft grey)",
+    "themeSystem": "System"
   }
 }

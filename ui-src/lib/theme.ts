@@ -11,25 +11,43 @@ import {api} from './api';
  * Windows drawn over a game, the replay overlay and its save menu, are always
  * dark.
  */
-export const THEMES = ['dark', 'light'] as const;
-export type ThemeName = (typeof THEMES)[number];
+export const THEMES = ['dark', 'light', 'system'] as const;
+/** What the user chose. 'system' follows the desktop's light or dark setting. */
+export type ThemePreference = (typeof THEMES)[number];
+/** What is actually drawn. */
+export type ThemeName = 'dark' | 'light';
 
 const KEY = 'gloaming-appearance';
 
 export const isOverlayWindow = (): boolean =>
   new URLSearchParams(location.search).get('replayOverlay') === '1';
 
-function stored(): ThemeName {
+const asPreference = (value: unknown): ThemePreference =>
+  value === 'light' || value === 'system' ? value : 'dark';
+
+function stored(): ThemePreference {
   try {
-    const value = localStorage.getItem(KEY);
-    return value === 'light' ? 'light' : 'dark';
+    return asPreference(localStorage.getItem(KEY));
   } catch {
     return 'dark';
   }
 }
 
-let current: ThemeName = isOverlayWindow() ? 'dark' : stored();
+const systemQuery = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: light)') : null;
+const resolve = (choice: ThemePreference): ThemeName =>
+  choice === 'system' ? (systemQuery?.matches ? 'light' : 'dark') : choice;
+
+let preference: ThemePreference = isOverlayWindow() ? 'dark' : stored();
+let current: ThemeName = resolve(preference);
 const listeners = new Set<() => void>();
+
+// 'system' follows the desktop live, so switching it at night recolours the app.
+systemQuery?.addEventListener('change', () => {
+  if (preference !== 'system' || isOverlayWindow()) return;
+  current = resolve(preference);
+  paint();
+  for (const fn of listeners) fn();
+});
 
 function paint(): void {
   document.documentElement.dataset.theme = current;
@@ -43,9 +61,14 @@ export function getTheme(): ThemeName {
   return current;
 }
 
-export function setTheme(next: ThemeName): void {
-  if (next === current) return;
-  current = next;
+export function getThemePreference(): ThemePreference {
+  return preference;
+}
+
+export function setTheme(next: ThemePreference): void {
+  if (next === preference) return;
+  preference = next;
+  current = resolve(next);
   try {
     localStorage.setItem(KEY, next);
   } catch (err) {
@@ -64,9 +87,10 @@ export function restoreTheme(): void {
   void api
     .getAppState()
     .then(saved => {
-      const next: ThemeName = saved.theme === 'light' ? 'light' : 'dark';
-      if (next === current) return;
-      current = next;
+      const next = asPreference(saved.theme);
+      if (next === preference) return;
+      preference = next;
+      current = resolve(next);
       try {
         localStorage.setItem(KEY, next);
       } catch {
@@ -85,4 +109,8 @@ const subscribe = (fn: () => void) => {
 
 export function useTheme(): ThemeName {
   return useSyncExternalStore(subscribe, getTheme);
+}
+
+export function useThemePreference(): ThemePreference {
+  return useSyncExternalStore(subscribe, getThemePreference);
 }
