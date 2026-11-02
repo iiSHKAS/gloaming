@@ -529,7 +529,7 @@ export function Settings() {
         </Card>}
 
         {(basicSection === 'general' || searching) && <Card id="general" title={t('settingsUi.general')}>
-          <h3 className="adv-group">{t('settingsUi.appearance')}</h3>
+          <h3 className="adv-group">{t('settingsUi.interface')}</h3>
           <Row label={t('settings.language')} help={t('settings.languageHelp')}>
             <Select
               label={t('settings.language')}
@@ -594,7 +594,7 @@ export function Settings() {
               options={EFFECTS_MODES.map(m => [m, t(`settings.effects${m[0].toUpperCase()}${m.slice(1)}`)] as [string, string])}
             />
           </Row>
-          <h3 className="adv-group">{t('settingsUi.startupWindow')}</h3>
+          <h3 className="adv-group">{t('settingsUi.startup')}</h3>
           <Row label={t('settingsUi.startWithTheSystem')} help={t('settingsUi.openGloamingAutomaticallyWhenYou')}>
             <Toggle
               label={t('settingsUi.startWithTheSystem')}
@@ -616,6 +616,7 @@ export function Settings() {
               }}
             />
           </Row>
+          <h3 className="adv-group">{t('settingsUi.windowBehavior')}</h3>
           <Row
             label={t('settingsUi.minimizeToTray')}
             help={t('settingsUi.minimizingTheWindowHidesIt')}

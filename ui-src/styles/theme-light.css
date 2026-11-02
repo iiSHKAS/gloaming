@@ -78,3 +78,16 @@ html[data-theme='light'] .gloaming-app,
 html[data-theme='light'] .editor {color:var(--ds-text)}
 html[data-theme='light'] .cut-modes {background:var(--ds-secondary)}
 html[data-theme='light'] .cut-modes button[aria-pressed=true] {color:var(--studio-on-accent)}
+
+/* Video stages stay black in every theme, so what is drawn on them keeps the
+   dark theme's text colours instead of inheriting the grey theme's dark ones. */
+html[data-theme='light'] :is(.ed-stage, .replay-stage, .viewer-stage, .trim-stage, .image-morph-stage) {
+  color: #f0f1f3;
+  --ds-text: #f0f1f3;
+  --ds-text-strong: #fff;
+  --ds-text-muted: #91969f;
+  --ds-text-dim: #747981;
+  --color-text-primary: #f0f1f3;
+  --color-text-secondary: #91969f;
+  --color-text-disabled: #747981;
+}

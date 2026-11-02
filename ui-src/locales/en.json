@@ -1128,8 +1128,6 @@
     "screenshotOverlays": "Screenshot & overlays",
     "controller": "Controller",
     "gameCompatibility": "Game compatibility",
-    "appearance": "Appearance",
-    "startupWindow": "Startup & window",
     "replayHistory": "Replay history",
     "videoEncoding": "Video & encoding",
     "captureMethod": "Capture method",
@@ -1173,6 +1171,9 @@
     "themeHelp": "Dark, a soft grey light theme that is easy on the eyes, or follow your system. The replay overlay always stays dark.",
     "themeDark": "Dark",
     "themeLight": "Light (soft grey)",
-    "themeSystem": "System"
+    "themeSystem": "System",
+    "interface": "Interface",
+    "startup": "Startup",
+    "windowBehavior": "Window"
   }
 }

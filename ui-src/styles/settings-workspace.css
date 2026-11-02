@@ -359,3 +359,9 @@
 }
 
 .settings-studio .settings-card>.srow:not([data-stack])>.srow-control>.segmented {width:100%}
+
+/* General: larger accent swatches that lift on hover. */
+.settings-studio .swatches {gap:12px;justify-content:flex-end}
+.settings-studio .swatch {width:34px;height:34px;transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s}
+.settings-studio .swatch:hover {transform:scale(1.12)}
+.settings-studio .swatch[data-active] {box-shadow:0 0 0 3px var(--pref-paper),0 0 0 5px var(--studio-accent)}
