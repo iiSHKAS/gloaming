@@ -1,5 +1,7 @@
-import {useId, useState, type ReactNode} from 'react';
+import {useEffect, useId, useRef, useState, type ReactNode, type PointerEvent} from 'react';
+import {api} from '../../lib/api';
 import {t} from '../../lib/i18n';
+import {IconFolder} from '../Icons';
 
 /**
  * One setting: what it is on the left, the control on the right.
@@ -46,74 +48,8 @@ export function Row({
   );
 }
 
-export function Toggle({
-  checked,
-  onChange,
-  disabled,
-  label,
-}: {
-  checked: boolean;
-  onChange: (next: boolean) => void;
-  disabled?: boolean;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      className="switch"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      disabled={disabled}
-      onClick={() => onChange(!checked)}>
-      <span className="switch-thumb" />
-    </button>
-  );
-}
-
-export function Select({
-  value,
-  onChange,
-  options,
-  disabled,
-  label,
-}: {
-  value: string;
-  onChange: (next: string) => void;
-  /** Flat options, or groups of them. */
-  options: Array<[string, string]> | Array<{group: string; options: Array<[string, string]>}>;
-  disabled?: boolean;
-  label: string;
-}) {
-  const grouped = options.length > 0 && !Array.isArray(options[0]);
-  return (
-    <div className="select-wrap">
-      <select
-        className="select"
-        value={value}
-        aria-label={label}
-        disabled={disabled}
-        onChange={e => onChange(e.target.value)}>
-        {grouped
-          ? (options as Array<{group: string; options: Array<[string, string]>}>).map(g => (
-              <optgroup key={g.group} label={g.group}>
-                {g.options.map(([v, text]) => (
-                  <option key={v} value={v}>
-                    {text}
-                  </option>
-                ))}
-              </optgroup>
-            ))
-          : (options as Array<[string, string]>).map(([v, text]) => (
-              <option key={v} value={v}>
-                {text}
-              </option>
-            ))}
-      </select>
-      <Chevron />
-    </div>
-  );
-}
+export {Toggle} from '../controls/Toggle';
+export {Select} from '../controls/Select';
 
 export function Slider({
   value,
@@ -124,6 +60,8 @@ export function Slider({
   format,
   label,
   exact,
+  id,
+  fineStep,
 }: {
   value: number;
   min: number;
@@ -136,8 +74,19 @@ export function Slider({
    * too long to land on an exact number by dragging: clip length steps 5 s
    * across half an hour, so 60 s sat between two pixels (#240). */
   exact?: boolean;
+  id?: string;
+  /** Shift-drag adjusts by this many units per pixel, relative to the current value. */
+  fineStep?: number;
 }) {
   const [typing, setTyping] = useState<string | null>(null);
+  const drag = useRef<{x: number; value: number; fine: boolean} | null>(null);
+  const clamp = (next: number) => Math.min(max, Math.max(min, next));
+  const pointerValue = (event: PointerEvent<HTMLInputElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const rtl = getComputedStyle(event.currentTarget).direction === 'rtl';
+    const fraction = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+    return clamp(min + Math.round((rtl ? 1 - fraction : fraction) * (max - min) / step) * step);
+  };
   // The filled portion is painted from a custom property so the track can be
   // one element rather than a stack of them.
   const filled = ((value - min) / (max - min)) * 100;
@@ -151,14 +100,55 @@ export function Slider({
   return (
     <div className="slider">
       <input
+        id={id}
         type="range"
         value={value}
         min={min}
         max={max}
-        step={step}
+        step={fineStep ?? step}
         aria-label={label}
         style={{['--filled' as string]: `${Math.min(100, Math.max(0, filled))}%`}}
         onChange={e => onChange(Number(e.target.value))}
+        onPointerDown={e => {
+          if (fineStep === undefined || e.button !== 0 || !e.isPrimary) return;
+          e.preventDefault();
+          e.currentTarget.focus();
+          e.currentTarget.setPointerCapture(e.pointerId);
+          const next = e.shiftKey ? value : pointerValue(e);
+          drag.current = {x: e.clientX, value: next, fine: e.shiftKey};
+          if (next !== value) onChange(next);
+        }}
+        onPointerMove={e => {
+          const previous = drag.current;
+          if (!previous || fineStep === undefined) return;
+          e.preventDefault();
+          // Re-anchor when Shift changes, so switching precision never jumps.
+          if (previous.fine !== e.shiftKey) {
+            drag.current = {x: e.clientX, value: previous.value, fine: e.shiftKey};
+            return;
+          }
+          const direction = getComputedStyle(e.currentTarget).direction === 'rtl' ? -1 : 1;
+          const next = e.shiftKey
+            ? clamp(previous.value + Math.round((e.clientX - previous.x) * direction) * fineStep)
+            : pointerValue(e);
+          if (next !== previous.value) {
+            drag.current = {x: e.clientX, value: next, fine: e.shiftKey};
+            onChange(next);
+          }
+        }}
+        onPointerUp={e => {
+          drag.current = null;
+          if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+        }}
+        onPointerCancel={() => {drag.current = null;}}
+        onLostPointerCapture={() => {drag.current = null;}}
+        onKeyDown={e => {
+          if (fineStep === undefined || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+          e.preventDefault();
+          let direction = e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : 1;
+          if (['ArrowLeft', 'ArrowRight'].includes(e.key) && getComputedStyle(e.currentTarget).direction === 'rtl') direction *= -1;
+          onChange(clamp(value + direction * (e.shiftKey ? fineStep : step)));
+        }}
       />
       {!exact ? (
         <span className="slider-value mono">{format(value)}</span>
@@ -205,6 +195,7 @@ export function TextField({
   mono,
   wide,
   type = 'text',
+  disabled,
   min,
   max,
 }: {
@@ -214,6 +205,7 @@ export function TextField({
   label: string;
   mono?: boolean;
   wide?: boolean;
+  disabled?: boolean;
   type?: 'text' | 'number';
   min?: number;
   max?: number;
@@ -224,6 +216,7 @@ export function TextField({
       data-mono={mono || undefined}
       data-wide={wide || undefined}
       type={type}
+      disabled={disabled}
       min={min}
       max={max}
       value={value}
@@ -292,18 +285,50 @@ export function SoundGrid({
   );
 }
 
-const Chevron = () => (
-  <svg
-    className="select-chevron"
-    width={14}
-    height={14}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2.2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true">
-    <path d="m6 9 6 6 6-6" />
-  </svg>
-);
+
+// One answer per page load: the desktop does not gain a portal while we run.
+let folderPickerSupport: Promise<boolean> | null = null;
+const folderPickerAvailable = () =>
+  (folderPickerSupport ??= api.folderPickerAvailable().then(r => r.available, () => false));
+
+/**
+ * A path field that can also be filled from the desktop's folder chooser.
+ * The Browse button only exists where the desktop can actually show one, so
+ * nobody is offered a button that does nothing.
+ */
+export function FolderField({value, onChange, placeholder, label}: {
+  value: string;
+  onChange: (next: string) => void;
+  placeholder?: string;
+  label: string;
+}) {
+  const [canBrowse, setCanBrowse] = useState(false);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void folderPickerAvailable().then(ok => alive && setCanBrowse(ok));
+    return () => {alive = false;};
+  }, []);
+  const browse = async () => {
+    setBusy(true);
+    try {
+      const result = await api.pickFolder(label, value);
+      if (result.path) onChange(result.path);
+    } catch {
+      // The chooser failing leaves the typed path alone.
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="folder-field">
+      <TextField label={label} wide value={value} placeholder={placeholder} onChange={onChange} />
+      {canBrowse ? (
+        <button type="button" className="btn btn-quiet folder-browse" disabled={busy} onClick={() => void browse()}
+          title={t('settings.browseFolder')}>
+          <IconFolder size={15} /> {busy ? t('settings.browsing') : t('settings.browse')}
+        </button>
+      ) : null}
+    </div>
+  );
+}

@@ -1,12 +1,12 @@
 # Maintainer: Andrew Marin <andrewmarin367@gmail.com>
-pkgname=vice-clipper
+pkgname=gloaming-clipper
 pkgver=2.15.0
 pkgrel=1
 pkgdesc="Medal.tv-style game clip recorder for Linux: instant replay, session recording, and one-click sharing"
 arch=('x86_64')
 url="https://github.com/splitshotz/Vice"
 license=('GPL-3.0-or-later')
-install=vice-clipper.install
+install=gloaming-clipper.install
 depends=(
     'python'
     'systemd'
@@ -56,7 +56,7 @@ build() {
 
 check() {
     cd "$srcdir/Vice-$pkgver"
-    python -m compileall vice
+    python -m compileall gloaming
 }
 
 package() {
@@ -64,15 +64,15 @@ package() {
 
     python -m installer --destdir="$pkgdir" dist/*.whl
 
-    install -Dm644 vice.desktop \
-        "$pkgdir/usr/share/applications/vice.desktop"
+    install -Dm644 gloaming.desktop \
+        "$pkgdir/usr/share/applications/gloaming.desktop"
 
-    install -Dm644 assets/vice.svg \
-        "$pkgdir/usr/share/icons/hicolor/scalable/apps/vice.svg"
+    install -Dm644 assets/gloaming.svg \
+        "$pkgdir/usr/share/icons/hicolor/scalable/apps/gloaming.svg"
 
-    install -Dm644 packaging/vice.rules \
-        "$pkgdir/usr/lib/udev/rules.d/70-vice-input.rules"
+    install -Dm644 packaging/gloaming.rules \
+        "$pkgdir/usr/lib/udev/rules.d/70-gloaming-input.rules"
 
-    install -Dm644 packaging/vice.service \
-        "$pkgdir/usr/lib/systemd/user/vice.service"
+    install -Dm644 packaging/gloaming.service \
+        "$pkgdir/usr/lib/systemd/user/gloaming.service"
 }

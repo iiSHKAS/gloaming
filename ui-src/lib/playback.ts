@@ -10,7 +10,8 @@ import {t} from './i18n';
  */
 export function clipNeedsProxy(clip: Clip | null | undefined): boolean {
   const codec = (clip?.vcodec ?? '').toLowerCase();
-  return (codec === 'hevc' || codec === 'h265') && !HEVC_SUPPORTED;
+  const separateOnly = (clip?.audio_tracks?.length ?? 0) > 1 && !clip?.audio_tracks?.some(track => track.title === 'Combined mix');
+  return separateOnly || ((codec === 'hevc' || codec === 'h265') && !HEVC_SUPPORTED);
 }
 
 /**
@@ -70,8 +71,8 @@ export function videoFailureMessage(): string {
  *
  * A broken file fires `error`. A WebEngine build missing the codec does not:
  * the audio track plays normally and the video track is dropped in silence,
- * leaving videoWidth at 0. Every Vice clip has a video track, so a zero width
- * after load is a failure (#79). Clearing src on close also fires `error`,
+ * leaving videoWidth at 0. Every Gloaming clip has a video track, so a zero width
+ * after the track has had time to initialise is a failure (#79). Clearing src on close also fires `error`,
  * which is not one.
  */
 export function useVideoFailure(
@@ -87,6 +88,8 @@ export function useVideoFailure(
     const video = ref.current;
     if (!video) return;
     const hasSource = () => Boolean(video.getAttribute('src'));
+    let trackCheck: ReturnType<typeof setTimeout> | undefined;
+    const cancelTrackCheck = () => clearTimeout(trackCheck);
     // Which of the two shapes it took, and on what, is the only thing that
     // makes a playback report diagnosable from the reporter's machine.
     const report = (why: string) =>
@@ -95,23 +98,50 @@ export function useVideoFailure(
           `src=${(video.currentSrc || '').slice(-80)}`,
       );
     const onError = () => {
+      cancelTrackCheck();
       if (!hasSource()) return;
       report(mediaErrorName(video.error));
       setFailed(true);
     };
     const onLoadedData = () => {
       if (!hasSource()) return;
-      if (video.videoWidth === 0) report('NO_VIDEO_TRACK');
-      setFailed(video.videoWidth === 0);
+      cancelTrackCheck();
+      if (video.videoWidth > 0) {
+        setFailed(false);
+        return;
+      }
+      // WebKit may deliver audio's loadeddata before the video dimensions.
+      // Give the video track time to initialise before declaring it missing.
+      trackCheck = setTimeout(() => {
+        if (!hasSource() || video.readyState < 2) return;
+        if (video.videoWidth === 0) report('NO_VIDEO_TRACK');
+        setFailed(video.videoWidth === 0);
+      }, 1500);
     };
-    const onLoadStart = () => hasSource() && setFailed(false);
+    const onVideoReady = () => {
+      if (hasSource() && video.videoWidth > 0 && !video.error) {
+        cancelTrackCheck();
+        setFailed(false);
+      }
+    };
+    const onLoadStart = () => {
+      cancelTrackCheck();
+      if (hasSource()) setFailed(false);
+    };
     video.addEventListener('error', onError);
     video.addEventListener('loadeddata', onLoadedData);
     video.addEventListener('loadstart', onLoadStart);
+    video.addEventListener('resize', onVideoReady);
+    video.addEventListener('playing', onVideoReady);
+    video.addEventListener('timeupdate', onVideoReady);
     return () => {
+      cancelTrackCheck();
       video.removeEventListener('error', onError);
       video.removeEventListener('loadeddata', onLoadedData);
       video.removeEventListener('loadstart', onLoadStart);
+      video.removeEventListener('resize', onVideoReady);
+      video.removeEventListener('playing', onVideoReady);
+      video.removeEventListener('timeupdate', onVideoReady);
     };
   }, [ref, present]);
 

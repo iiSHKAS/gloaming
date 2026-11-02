@@ -1,17 +1,17 @@
 { config, lib, pkgs, ... }:
 
 let
-  cfg = config.services.vice;
+  cfg = config.services.gloaming;
 in
 {
-  options.services.vice = {
-    enable = lib.mkEnableOption "the Vice game clip recorder";
+  options.services.gloaming = {
+    enable = lib.mkEnableOption "the Gloaming game clip recorder";
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = pkgs.vice-clipper;
-      defaultText = lib.literalExpression "pkgs.vice-clipper";
-      description = "The Vice package to use.";
+      default = pkgs.gloaming-clipper;
+      defaultText = lib.literalExpression "pkgs.gloaming-clipper";
+      description = "The Gloaming package to use.";
     };
 
     autoStart = lib.mkOption {
@@ -19,7 +19,7 @@ in
       default = true;
       description = ''
         Start the clipping daemon with the graphical session. With this off,
-        Vice only records while its window is open.
+        Gloaming only records while its window is open.
       '';
     };
   };
@@ -34,8 +34,8 @@ in
     # keyboard without the user being in the `input` group.
     services.udev.packages = [ cfg.package ];
 
-    systemd.user.services.vice = {
-      description = "Vice game clip recorder daemon";
+    systemd.user.services.gloaming = {
+      description = "Gloaming game clip recorder daemon";
       after = [ "graphical-session.target" ];
       wantedBy = lib.optionals cfg.autoStart [ "graphical-session.target" "default.target" ];
 
@@ -46,7 +46,7 @@ in
 
       serviceConfig = {
         Type = "simple";
-        ExecStart = "${cfg.package}/bin/vice start --no-open-ui";
+        ExecStart = "${cfg.package}/bin/gloaming start --no-open-ui";
         Restart = "on-failure";
         RestartSec = 3;
         # Everything the recorder needs to find the session is set by the

@@ -13,8 +13,10 @@ import {KEY_LAYOUT, keysAt, type KeyInterval} from '../lib/keyLayout';
 export function KeyOverlay({
   video,
   intervals,
+  clock,
 }: {
-  video: RefObject<HTMLVideoElement | null>;
+  video?: RefObject<HTMLVideoElement | null>;
+  clock?: () => number;
   intervals: KeyInterval[];
 }) {
   const root = useRef<HTMLDivElement>(null);
@@ -22,10 +24,10 @@ export function KeyOverlay({
   useEffect(() => {
     let frame = 0;
     const tick = () => {
-      const el = video.current;
+      const el = video?.current;
       const panel = root.current;
-      if (el && panel) {
-        const held = keysAt(intervals, el.currentTime);
+      if ((el || clock) && panel) {
+        const held = keysAt(intervals, clock ? clock() : el!.currentTime);
         for (const cap of panel.querySelectorAll<HTMLElement>('[data-key]')) {
           const down = held.has(cap.dataset.key ?? '');
           if (down !== cap.hasAttribute('data-down')) cap.toggleAttribute('data-down', down);
@@ -35,7 +37,7 @@ export function KeyOverlay({
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [video, intervals]);
+  }, [video, intervals, clock]);
 
   return (
     <div className="key-overlay" ref={root} aria-label={t('viewer.keysAria')} role="img">

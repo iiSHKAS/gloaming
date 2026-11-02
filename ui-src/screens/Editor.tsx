@@ -1,14 +1,16 @@
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {readPadPosition} from '../components/PadReplay';
+import {EditorController, EditorKeyboard} from '../components/EditorController';
 
 import {api} from '../lib/api';
 import {onWsMessage} from '../lib/ws';
-import {resolveAccent} from '../theme/viceTheme';
+import {resolveAccent} from '../theme/gloamingTheme';
 import {useStore} from '../state/store';
 import {createEditorEngine, type EditorEngine} from '../engine/editor';
-import {ED_FONTS, ED_SWATCHES, edFmt} from '../engine/editorConstants';
+import {ED_FONTS, ED_SWATCHES, edFmt, fxName} from '../engine/editorConstants';
 import type {EdSnapshot, EdTab} from '../engine/editorTypes';
 import {Modal} from '../components/Modal';
-import {IconClose} from '../components/Icons';
+import {IconClose, IconExpand} from '../components/Icons';
 import {Select, TextField, Toggle} from '../components/settings/Fields';
 import {t} from '../lib/i18n';
 
@@ -97,107 +99,90 @@ export function Editor() {
     if (editorProjectRevision > 0) void engine.onProjectChanged();
   }, [engine, editorProjectRevision]);
 
-  // Panel sizes live on the frame as custom properties, the same shape the
-  // old editor used, so the CSS grid does not need to know about the drag.
-  const [libWidth, setLibWidth] = useState(() =>
-    Math.max(240, Math.min(324, Math.round(window.innerWidth * 0.22))),
-  );
-  const [timelineHeight, setTimelineHeight] = useState(300);
-
-  const startResize = (axis: 'x' | 'y') => (e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const el = e.currentTarget;
-    try {
-      el.setPointerCapture(e.pointerId);
-    } catch {
-      // A drag still works without capture; it just leaves the element sooner.
-    }
-    const origin = axis === 'x' ? e.clientX : e.clientY;
-    const base = axis === 'x' ? libWidth : timelineHeight;
-    const move = (ev: PointerEvent) => {
-      const delta = (axis === 'x' ? ev.clientX : ev.clientY) - origin;
-      if (axis === 'x') setLibWidth(Math.max(232, Math.min(520, base + delta)));
-      else {
-        const cap = Math.round((frameRef.current?.clientHeight ?? 800) * 0.7);
-        setTimelineHeight(Math.max(170, Math.min(cap, base - delta)));
-      }
-    };
-    const up = () => {
-      el.removeEventListener('pointermove', move);
-      el.removeEventListener('pointerup', up);
-    };
-    el.addEventListener('pointermove', move);
-    el.addEventListener('pointerup', up);
+  const [mode,setMode]=useState<'easy'|'advanced'>(()=>{try{return localStorage.getItem('gloaming-editor-mode')==='advanced'?'advanced':'easy';}catch{return 'easy';}});
+  const [drawer,setDrawer]=useState(false);
+  const [focus,setFocus]=useState(false);
+  const [timelineHeight,setTimelineHeight]=useState(220);
+  useEffect(()=>{engine.setEasy(mode==='easy');try{localStorage.setItem('gloaming-editor-mode',mode);}catch{}},[mode,engine]);
+  const resizeTimeline=(e:React.PointerEvent<HTMLDivElement>)=>{
+    e.preventDefault();const target=e.currentTarget,origin=e.clientY,base=timelineHeight;target.setPointerCapture(e.pointerId);
+    const move=(ev:PointerEvent)=>setTimelineHeight(Math.max(140,Math.min(window.innerHeight*.5,base+origin-ev.clientY)));
+    const stop=()=>{target.removeEventListener('pointermove',move);target.removeEventListener('pointerup',stop);target.removeEventListener('pointercancel',stop);};
+    target.addEventListener('pointermove',move);target.addEventListener('pointerup',stop);target.addEventListener('pointercancel',stop);
   };
-
-  const selected = snap.selected;
-  const isText = selected?.kind === 'text';
-
-  return (
-    <div
-      className="editor"
-      ref={frameRef}
-      style={{
-        ['--ed-lib-w' as string]: `${libWidth}px`,
-        ['--ed-tl-h' as string]: `${timelineHeight}px`,
-      }}>
-      <div className="ed-top">
-        {/* ── library panel ─────────────────────────────────────── */}
-        <aside className="ed-panel ed-library">
-          <div className="ed-tabs" role="tablist">
-            <div className="ed-tab-glider" style={{left: `${TABS.findIndex(t => t[0] === snap.tab) * 33.333}%`}} />
-            {TABS.map(([id, tabLabel]) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                className="ed-tab"
-                aria-selected={snap.tab === id}
-                onClick={() => engine.setTab(id)}>
-                {tabLabel()}
-              </button>
-            ))}
+  const selected=snap.selected,isText=selected?.kind==='text';
+  const project=engine.project();
+  const defaultController=useRef({enabled:true,position:readPadPosition()});
+  const controller=project?.controller ?? defaultController.current;
+  const projectHasPad=Boolean(project?.items.some(i=>i.kind==='clip' && clips.some(c=>c.slug===i.clipId && c.pad_inputs)));
+  const projectHasKeys=Boolean(project?.items.some(i=>i.kind==='clip' && clips.some(c=>c.slug===i.clipId && c.keys)));
+  const audioTracks=project?.tracks.filter(tr=>tr.type==='audio' && project.items.some(i=>i.trackId===tr.id)) ?? [];
+  const chooseTool=(tab:EdTab)=>{engine.setTab(tab);setDrawer(!(drawer && snap.tab===tab));};
+  const displaySource=(label:string)=>label.replace(/^device:/,'').replace(/\.monitor$/,'').replace(/^sink[_-]/,'').replace(/[_-]/g,' ');
+  return <div className="editor cut-editor" data-mode={mode} data-focus={focus} ref={frameRef} style={{['--ed-tl-h' as string]:`${mode==='easy'?158:timelineHeight}px`}}>
+    <header className="cut-header">
+      <div className="cut-title"><span>{t('editor.workspace')}</span><small>{t(mode==='easy'?'editor.easyDescription':'editor.advancedDescription')}</small></div>
+      <div className="cut-modes" role="group" aria-label={t('editor.editingMode')}>
+        <button type="button" aria-pressed={mode==='easy'} onClick={()=>{setMode('easy');setDrawer(false);}}>{t('editor.easyMode')}</button>
+        <button type="button" aria-pressed={mode==='advanced'} onClick={()=>setMode('advanced')}>{t('editor.advancedMode')}</button>
+      </div>
+      <div className="cut-header-actions">
+        <button type="button" className="cut-history" disabled={!snap.canUndo} onClick={()=>engine.undo()} aria-label={t('editor.undo')} title="Ctrl+Z">↶ <span>{t('editor.undo')}</span></button>
+        <button type="button" className="cut-history" disabled={!snap.canRedo} onClick={()=>engine.redo()} aria-label={t('editor.redo')} title="Ctrl+Shift+Z">↷ <span>{t('editor.redo')}</span></button>
+        <button type="button" className="btn btn-primary" disabled={!snap.duration} onClick={()=>setExportOpen(true)}>{t('editor.exportBtn')}</button>
+      </div>
+    </header>
+    <div className="cut-workspace">
+      <main className="cut-screen">
+        <div className="cut-toolstrip">
+          <div className="cut-edit-tools" role="group" aria-label={t('editor.clipTools')}>
+          {TABS.filter(([id])=>mode==='advanced'||id==='library').map(([id,label])=><button type="button" key={id} aria-pressed={drawer && snap.tab===id} onClick={()=>chooseTool(id)}>{label()}</button>)}
           </div>
-
-          {snap.tab === 'library' ? (
-            <div className="ed-lib-search">
-              <SearchGlyph />
-              <input
-                value={snap.query}
-                placeholder={t('editor.searchClips')}
-                aria-label={t('editor.searchClips')}
-                spellCheck={false}
-                onChange={e => engine.search(e.target.value)}
-              />
-            </div>
-          ) : null}
-
-          <div className="ed-lib-scroll" ref={libraryRef} />
-          <p className="ed-lib-hint">{t(EDITOR_LIB_HINT[snap.tab])}</p>
-        </aside>
-
-        <div className="ed-resize ed-resize-x" onPointerDown={startResize('x')}>
-          <span />
+          <span className="cut-tool-hint">{t(mode==='easy'?'editor.easyHint':'editor.advancedHint')}</span>
+          <button type="button" className="cut-clear" onClick={()=>setResetOpen(true)}>{t('editor.reset')}</button>
         </div>
-
-        {/* ── preview panel ─────────────────────────────────────── */}
-        <div className="ed-panel ed-preview">
-          <div className="ed-preview-main">
-          <div className="ed-stage-wrap" ref={stageWrapRef}>
-            <div className="ed-stage" ref={stageRef}>
-              {snap.empty ? (
-                <div className="ed-stage-empty">
-                  <b>{t('editor.nothingAtPlayhead')}</b>
-                  <span>{t('editor.dragFromLibrary')}</span>
-                </div>
-              ) : null}
-              {snap.preparing ? (
-                <div className="ed-stage-preparing">{t('editor.preparingMedia')}</div>
-              ) : null}
-              <div className="ed-fade-overlay" ref={fadeRef} />
-            </div>
-          </div>
-
+        <div className="cut-monitor">
+          <div className="ed-stage-wrap" ref={stageWrapRef}><div className="ed-stage" ref={stageRef}>
+            {snap.empty ? <div className="ed-stage-empty"><b>{t('editor.nothingAtPlayhead')}</b><button type="button" className="btn btn-primary" onClick={()=>{engine.setTab('library');setDrawer(true);}}>{t('editor.chooseClip')}</button></div> : null}
+            {snap.preparing ? <div className="ed-stage-preparing">{t('editor.preparingMedia')}</div> : null}
+            <div className="ed-fade-overlay" ref={fadeRef}/>
+            {projectHasPad && controller.enabled ? <EditorController engine={engine} container={stageRef} position={controller.position} onPositionChange={position=>engine.setController({...controller,position})}/> : null}
+            {projectHasKeys && project?.keyboard ? <EditorKeyboard engine={engine}/> : null}
+          </div></div>
+          <aside className="cut-drawer" hidden={!drawer}>
+            <div className="cut-drawer-head"><b>{TABS.find(([id])=>id===snap.tab)?.[1]()}</b><button type="button" className="ed-iconbtn" onClick={()=>setDrawer(false)} aria-label={t('common.close')}><IconClose/></button></div>
+            {snap.tab==='library' ? <input className="cut-search" value={snap.query} onChange={e=>engine.search(e.target.value)} placeholder={t('editor.searchClips')} aria-label={t('editor.searchClips')}/> : null}
+            <div className="ed-lib-scroll" ref={libraryRef}/><p className="ed-lib-hint">{t(EDITOR_LIB_HINT[snap.tab])}</p>
+          </aside>
+        </div>
+        <div className="cut-transport">
+          <span className="mono">{edFmt(snap.playhead)} <span className="dim">/ {edFmt(snap.duration)}</span></span>
+          <div><button type="button" className="ed-iconbtn" onClick={()=>engine.seek(0)} aria-label={t('editor.backToStart')}><StartGlyph/></button><button type="button" className="ed-play" onClick={()=>engine.setPlaying(!snap.playing)} aria-label={snap.playing?t('editor.pause'):t('editor.play')}>{snap.playing?<PauseGlyph/>:<PlayGlyph/>}</button></div>
+          <button type="button" className="cut-clear" onClick={()=>setFocus(!focus)} aria-label={t(focus?'editor.exitFocus':'editor.focusPreview')} title={t(focus?'editor.exitFocus':'editor.focusPreview')}><IconExpand collapse={focus}/></button>
+        </div>
+      </main>
+      <aside className="cut-properties">
+        <section><h3>{t('editor.soundSection')}</h3><p>{t('editor.soundHelp')}</p>
+          {audioTracks.length ? audioTracks.map(track=><div className="cut-source" key={track.id}>
+            <span title={track.label}>{displaySource(track.label)}</span>
+            <button type="button" className="ed-track-mute" aria-pressed={Boolean(track.muted)} aria-label={`${t(track.muted?'editor.unmuteTrack':'editor.muteTrack')}: ${track.label}`} onClick={()=>engine.muteTrack(track.id)}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/>{track.muted?<path d="m16 9 5 6m0-6-5 6"/>:<path d="M15 8q5 4 0 8m3-11q8 7 0 14"/>}</svg>
+            </button></div>):<p className="dim">{t('editor.noAudioSources')}</p>}
+        </section>
+        <section><h3>{t('editor.recordedInputs')}</h3>
+          {projectHasPad ? <><label className="cut-input-toggle"><span>{t('viewer.controllerInputs')}</span><Toggle label={t('viewer.controllerInputs')} checked={controller.enabled} onChange={enabled=>engine.setController({...controller,enabled})}/></label>{controller.enabled?<p>{t('editor.dragControllerHint')}</p>:null}</>:null}
+          {projectHasKeys ? <label className="cut-input-toggle"><span>{t('editor.keyboardInputs')}</span><Toggle label={t('editor.keyboardInputs')} checked={Boolean(project?.keyboard)} onChange={value=>engine.setKeyboard(value)}/></label>:null}
+          {!projectHasKeys && !projectHasPad ? <p>{t('editor.noRecordedInputs')}</p>:<p>{t('editor.inputsExportHint')}</p>}
+        </section>
+        {mode==='advanced' && selected ? <section className="cut-selection"><h3>{t('editor.selectionSection')}</h3>
+          {selected?.kind==='clip' && !selected.trans ? <p>{clips.find(c=>c.slug===selected.clipId)?.name || selected.clipId}<br/>{edFmt(selected.dur)} · {t(selected.groupId?'editor.linkedStatus':'editor.independentStatus')}</p>:null}
+          {selected?.kind === 'clip' && selected.trans ? <div className="ed-inspector">
+            <b>{fxName(selected.trans.fx)}</b>
+            <label className="ed-insp-field"><span>{t('editor.transitionDuration')} {selected.trans.len.toFixed(1)}s</span>
+              <input type="range" min=".2" max={Math.min(3,selected.dur*.8)} step=".1" value={selected.trans.len}
+                onChange={e=>engine.inspectorChange('transitionLen',Number(e.target.value))}/></label>
+            <button type="button" className="btn btn-quiet btn-sm" onClick={()=>engine.inspectorChange('removeTransition',true)}>{t('editor.removeEffect')}</button>
+          </div> : null}
           {selected?.kind === 'audio' ? (
             <div className="ed-inspector ed-audio-inspector">
               <span className="eyebrow">{t('editor.audioTrack')}</span>
@@ -218,6 +203,9 @@ export function Editor() {
                   value={Math.round((selected.volume ?? 1) * 100)}
                   onChange={e => engine.inspectorChange('volume', Number(e.target.value) / 100)} />
               </label>
+              <button type="button" className="btn btn-quiet btn-sm" onClick={() => engine.remove()}>
+                {t('editor.removeAudioSource')}
+              </button>
               <label className="ed-audio-mute">
                 <span>{t('editor.audioMuted')}</span>
                 <Toggle label={t('editor.audioMuted')} checked={Boolean(selected.muted)}
@@ -301,88 +289,27 @@ export function Editor() {
               </button>
             </div>
           ) : null}
-          </div>
-
-          <div className="ed-transport">
-            <button
-              type="button"
-              className="btn btn-quiet btn-danger btn-sm"
-              onClick={() => setResetOpen(true)}>
-              {t('editor.reset')}
-            </button>
-            <div className="ed-spacer" />
-            <button
-              type="button"
-              className="ed-iconbtn ed-round"
-              onClick={() => engine.seek(0)}
-              title={t('editor.backToStart')}
-              aria-label={t('editor.backToStart')}>
-              <StartGlyph />
-            </button>
-            <button
-              type="button"
-              className="ed-play"
-              onClick={() => engine.setPlaying(!snap.playing)}
-              title={t('editor.playPause')}
-              aria-label={snap.playing ? t('editor.pause') : t('editor.play')}>
-              {snap.playing ? <PauseGlyph /> : <PlayGlyph />}
-            </button>
-            <div className="ed-spacer" />
-            <span className="ed-time mono">
-              {edFmt(snap.playhead)} <span className="dim">/ {edFmt(snap.duration)}</span>
-            </span>
-            <button
-              type="button"
-              className="btn btn-sm"
-              disabled={snap.duration <= 0}
-              onClick={() => setExportOpen(true)}>
-              {t('editor.exportBtn')}
-            </button>
-          </div>
-        </div>
+          {!selected ? <p>{t('editor.selectItemHint')}</p>:null}
+        </section>:null}
+      </aside>
+    </div>
+    {mode==='advanced'?<div className="ed-resize ed-resize-y" onPointerDown={resizeTimeline}><span/></div>:null}
+    <section className="cut-timeline ed-timeline">
+      <div className="ed-tl-toolbar">
+        <button type="button" className="btn btn-quiet btn-sm" disabled={!snap.canSplit} onClick={()=>engine.split()}>{t('editor.split')}</button>
+        <button type="button" className="btn btn-quiet btn-sm" disabled={!snap.canDelete} onClick={()=>engine.remove()}>{t('common.delete')}</button>
+        {mode==='advanced'?<>
+          <button type="button" className="btn btn-quiet btn-sm" disabled={!selected?.groupId && !snap.canRelink} onClick={()=>selected?.groupId?engine.unlinkAudio():engine.relinkAudio()}>{t(selected?.groupId?'editor.unlinkAudio':'editor.relinkAudio')}</button>
+          <button type="button" className="btn btn-quiet btn-sm" disabled={!snap.canDuplicate} onClick={()=>engine.duplicate()}>{t('editor.duplicate')}</button>
+        </>:<span className="cut-trim-hint">{t('editor.trimHint')}</span>}
+        <div className="ed-spacer"/>
+        <button type="button" className="ed-iconbtn" onClick={()=>engine.zoom(1/1.3)} aria-label={t('editor.zoomOut')}><MinusGlyph/></button>
+        <button type="button" className="ed-iconbtn" onClick={()=>engine.zoom(1.3)} aria-label={t('editor.zoomIn')}><PlusGlyph/></button>
+        <button type="button" className="btn btn-quiet btn-sm" onClick={()=>engine.fit()}>{t('editor.fit')}</button>
+        {mode==='advanced'?<AddTrackButton onAdd={type=>engine.addTrack(type)}/>:null}
       </div>
-
-      <div className="ed-resize ed-resize-y" onPointerDown={startResize('y')}>
-        <span />
-      </div>
-
-      {/* ── timeline panel ──────────────────────────────────────── */}
-      <div className="ed-panel ed-timeline">
-        <div className="ed-tl-toolbar">
-          <button type="button" className="btn btn-quiet btn-sm" disabled={!snap.canSplit} onClick={() => engine.split()}>
-            {t('editor.split')}
-          </button>
-          <button type="button" className="btn btn-quiet btn-sm" disabled={!snap.canDetach} onClick={() => engine.detachAudio()}>
-            {t('editor.detachAudio')}
-          </button>
-          <button type="button" className="btn btn-quiet btn-sm" disabled={!snap.canDuplicate} onClick={() => engine.duplicate()}>
-            {t('editor.duplicate')}
-          </button>
-          <button
-            type="button"
-            className="btn btn-quiet btn-danger btn-sm"
-            disabled={!snap.canDelete}
-            onClick={() => engine.remove()}>
-            {t('common.delete')}
-          </button>
-          <div className="ed-spacer" />
-          <span className="ed-pps mono">{Math.round(snap.pps)} px/s</span>
-          <button type="button" className="ed-iconbtn" onClick={() => engine.zoom(1 / 1.3)} title={t('editor.zoomOut')} aria-label={t('editor.zoomOut')}>
-            <MinusGlyph />
-          </button>
-          <button type="button" className="ed-iconbtn" onClick={() => engine.zoom(1.3)} title={t('editor.zoomIn')} aria-label={t('editor.zoomIn')}>
-            <PlusGlyph />
-          </button>
-          <button type="button" className="btn btn-quiet btn-sm" onClick={() => engine.fit()}>
-            {t('editor.fit')}
-          </button>
-          <AddTrackButton onAdd={type => engine.addTrack(type)} />
-        </div>
-        <div className="ed-tl-scroll" ref={scrollRef}>
-          <div className="ed-tl-canvas" ref={canvasRef} />
-        </div>
-      </div>
-
+      <div className="ed-tl-scroll" ref={scrollRef}><div className="ed-tl-canvas" ref={canvasRef}/></div>
+    </section>
       <Modal
         open={resetOpen}
         title={t('editor.clearTitle')}
@@ -411,17 +338,16 @@ export function Editor() {
         onClose={() => setExportOpen(false)}
         engine={engine}
         duration={snap.duration}
-        libraryDir={(config?.output?.directory as string) ?? '~/Videos/Vice'}
+        libraryDir={(config?.output?.directory as string) ?? '~/Videos/Gloaming'}
         accent={accentBase}
         recording={state.status.recording || state.status.session_active}
         clipsWithKeys={state.clips.filter(c => c.keys).map(c => c.slug)}
+        clipsWithPad={state.clips.filter(c => c.pad_inputs).map(c => c.slug)}
         notify={notify}
         onExported={() => dispatch({type: 'setView', view: 'editor'})}
       />
-    </div>
-  );
+  </div>;
 }
-
 /** Export runs on the daemon, and its progress arrives over the WebSocket. */
 function ExportModal({
   open,
@@ -432,6 +358,7 @@ function ExportModal({
   accent,
   recording,
   clipsWithKeys,
+  clipsWithPad,
   notify,
 }: {
   open: boolean;
@@ -444,6 +371,7 @@ function ExportModal({
   notify: ReturnType<typeof useStore>['notify'];
   /** Slugs of clips with keys kept beside them (#209). */
   clipsWithKeys: string[];
+  clipsWithPad: string[];
   onExported: () => void;
 }) {
   const [name, setName] = useState('');
@@ -451,7 +379,10 @@ function ExportModal({
   const [custom, setCustom] = useState('');
   const [addToLibrary, setAddToLibrary] = useState(true);
   const [discordOptimized, setDiscordOptimized] = useState(false);
-  const [showKeys, setShowKeys] = useState(true);
+
+
+  const [preparingExport, setPreparingExport] = useState(false);
+  const projectHasPad = open && Boolean(engine.project()?.items.some(item => item.clipId && clipsWithPad.includes(item.clipId)));
   const projectHasKeys =
     open &&
     Boolean(engine.project()?.items.some(item => item.clipId && clipsWithKeys.includes(item.clipId)));
@@ -505,10 +436,11 @@ function ExportModal({
   const summary = t('editor.exportSummary', {
     seconds: Math.round(duration),
     format: discordOptimized ? t('editor.exportFormatDiscord') : t('editor.exportFormatDefault'),
-    path: `${dir || t('editor.exportFolderUnpicked')}/${(name.trim() || 'Vice_Edit_N').replace(/\.mp4$/i, '')}.mp4`,
+    path: `${dir || t('editor.exportFolderUnpicked')}/${(name.trim() || 'Gloaming_Edit_N').replace(/\.mp4$/i, '')}.mp4`,
   });
 
   const start = async () => {
+    if (preparingExport) return;
     if (location === 'custom' && !custom.trim()) {
       notify({kind: 'error', title: t('editor.pickFolder'), tone: 'error', holdMs: 4000});
       return;
@@ -520,11 +452,14 @@ function ExportModal({
       add_to_library: addToLibrary,
       accent,
       discord_optimized: discordOptimized,
-      keys: projectHasKeys && showKeys,
+      keys: projectHasKeys && Boolean(engine.project()?.keyboard),
+      pad_inputs: projectHasPad && (engine.project()?.controller?.enabled ?? true),
+      pad_position: engine.project()?.controller?.position ?? readPadPosition(),
     };
     if (name.trim()) body.filename = name.trim();
     if (location === 'custom') body.path = custom.trim();
     try {
+      setPreparingExport(true);
       const result = (await api.startExport(body)) as {
         ok?: boolean;
         job_id?: string;
@@ -547,6 +482,8 @@ function ExportModal({
         tone: 'error',
         holdMs: 8000,
       });
+    } finally {
+      setPreparingExport(false);
     }
   };
 
@@ -565,7 +502,7 @@ function ExportModal({
             <button type="button" className="btn btn-quiet" onClick={onClose}>
               {t('common.cancel')}
             </button>
-            <button type="button" className="btn" onClick={() => void start()}>
+            <button type="button" className="btn" disabled={preparingExport} onClick={() => void start()}>
               {t('editor.startExport')}
             </button>
           </>
@@ -603,7 +540,7 @@ function ExportModal({
               value={location}
               onChange={setLocation}
               options={[
-                ['library', t('editor.viceLibrary')],
+                ['library', t('editor.gloamingLibrary')],
                 ['videos', '~/Videos'],
                 ['custom', t('editor.customPath')],
               ]}
@@ -632,12 +569,8 @@ function ExportModal({
               />
             </label>
           ) : null}
-          {projectHasKeys ? (
-            <label className="ed-export-field">
-              <span>{t('editor.exportKeys')}</span>
-              <Toggle label={t('editor.exportKeys')} checked={showKeys} onChange={setShowKeys} />
-            </label>
-          ) : null}
+          {preparingExport ? <p role="status">{t("editor.preparingMedia")}</p> : null}
+
           <label className="ed-export-field">
             <span>{t('editor.discordOptimize')}</span>
             <Toggle
@@ -649,7 +582,7 @@ function ExportModal({
           <p className="ed-export-summary mono">{summary}</p>
           {recording ? (
             <p className="ed-export-warn">
-              Vice is recording right now. Exporting will compete with the encoder for the GPU, so
+              Gloaming is recording right now. Exporting will compete with the encoder for the GPU, so
               expect the game to stutter.
             </p>
           ) : null}
@@ -747,12 +680,6 @@ const stroke = {
   'aria-hidden': true,
 };
 
-const SearchGlyph = () => (
-  <svg {...stroke} width={13} height={13}>
-    <circle cx="11" cy="11" r="8" />
-    <path d="m21 21-4.3-4.3" />
-  </svg>
-);
 const StartGlyph = () => (
   <svg {...stroke} width={13} height={13}>
     <polygon points="19 20 9 12 19 4 19 20" />

@@ -8,7 +8,7 @@ import {t} from '../lib/i18n';
 import {Modal} from '../components/Modal';
 import {IconMark} from '../components/Icons';
 
-const UNINSTALL_CMD = 'vice uninstall';
+const UNINSTALL_CMD = 'gloaming uninstall';
 
 export function About() {
   const {state, notify} = useStore();
@@ -62,7 +62,7 @@ export function About() {
 
       <section className="about-hero">
         <span className="about-mark">
-          <IconMark size={30} />
+          <IconMark size={42} />
         </span>
         <div>
           <h2>

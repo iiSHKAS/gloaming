@@ -18,11 +18,8 @@ import type {AccentRamp} from './accents';
  * The same derivation tools/derive-accents.mjs runs at build time, in the
  * browser, for a colour the user picked.
  *
- * This file and the generator have to agree, or a custom accent would be a
- * different design system to the five shipped ones. `npm run accents:verify`
- * derives all five shipped seeds through this code and diffs the result
- * against the generated accents.ts, role by role. It is wired into the Python
- * suite as well, so drift fails the build rather than shipping quietly.
+ * Keep this derivation consistent with tools/derive-accents.mjs so custom
+ * accents and the shipped palettes use the same colour formulas.
  *
  * Everything the generator's comments warn about applies here. In particular:
  * never construct SchemeExpressive directly, because it derives primary from
@@ -57,7 +54,7 @@ function schemeFor(hct: Hct): DynamicScheme {
     contrastLevel: 0,
     isDark: true,
     // 2021, not 2025: the newer spec resolves surfaceContainerLowest to pure
-    // black, and Vice's ambient wash needs somewhere to land.
+    // black, and Gloaming's ambient wash needs somewhere to land.
     specVersion: '2021',
     primaryPalette: TonalPalette.fromHueAndChroma(h, CHROMA.primary),
     secondaryPalette: TonalPalette.fromHueAndChroma(h, CHROMA.secondary),
@@ -130,7 +127,7 @@ function build(hct: Hct, tone: number): AccentRamp {
   return {
     base: p(tone),
     onBase: g(M.onPrimary),
-    // M3 expresses hover and press as state layers. Vice paints solid colours
+    // M3 expresses hover and press as state layers. Gloaming paints solid colours
     // because several of these sit under a CSS transition, so the ends of the
     // ramp come off the palette either side of the base.
     hover: p(Math.min(tone + 6, 100)),
@@ -197,4 +194,31 @@ export function normalizeHex(value: string): string | null {
   const text = value.trim().replace(/^#/, '');
   const full = text.length === 3 ? text.replace(/./g, c => c + c) : text;
   return /^[0-9a-fA-F]{6}$/.test(full) ? `#${full.toLowerCase()}` : null;
+}
+
+/**
+ * The ramp for a colour the user picked, where the picked colour is the accent.
+ *
+ * `deriveAccent` keeps only the hue and re-tones it to the shipped accents' tone 80, which is right for the five
+ * presets and wrong for a picker: a vivid red came back as pastel salmon, so the colour on screen was never the
+ * colour chosen. Here the accent is the seed itself. Only if it would be unreadable as text on the dark surfaces is
+ * it lightened, keeping its hue and chroma, until it reads. The surfaces and containers still come from the hue.
+ */
+export function deriveCustomAccent(seed: string): {ramp: AccentRamp; failures: string[]} {
+  const {ramp} = deriveAccent(seed);
+  const hct = Hct.fromInt(argbFromHex(seed));
+  const surfaces = [ramp.bg, ramp.surfaceLow, ramp.surface];
+  const readable = (hex: string) => surfaces.every(surface => contrastRatio(surface, hex) >= 4.5);
+  let base = normalizeHex(seed) ?? ramp.base;
+  for (let tone = Math.round(hct.tone); !readable(base) && tone <= 96; tone += 2) {
+    base = hexFromArgb(Hct.from(hct.hue, hct.chroma, tone).toInt());
+  }
+  const baseHct = Hct.fromInt(argbFromHex(base));
+  const shifted = (delta: number) =>
+    hexFromArgb(Hct.from(baseHct.hue, baseHct.chroma, Math.max(0, Math.min(100, baseHct.tone + delta))).toInt());
+  const onBase = ['#0b0b0e', ramp.onBase, '#ffffff']
+    .map(color => [color, contrastRatio(base, color)] as const)
+    .sort((a, b) => b[1] - a[1])[0][0];
+  const custom: AccentRamp = {...ramp, base, onBase, hover: shifted(6), active: shifted(-6)};
+  return {ramp: custom, failures: rampFailures(custom)};
 }

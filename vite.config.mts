@@ -8,7 +8,7 @@ import react from '@vitejs/plugin-react-swc';
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: 'vice/ui',
+    outDir: 'gloaming/ui',
     // fonts/ and index.html live here already and are not ours to delete.
     emptyOutDir: false,
     target: 'es2020',

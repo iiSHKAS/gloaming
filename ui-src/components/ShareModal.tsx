@@ -20,7 +20,7 @@ function fileUri(path: string): string {
 /**
  * The share sheet, over the viewer.
  *
- * Two ways out of Vice, in the order people reach for them: the share link for
+ * Two ways out of Gloaming, in the order people reach for them: the share link for
  * anywhere a URL goes, and the clip itself for Discord, which will not unfurl
  * a link to a machine it cannot reach.
  */

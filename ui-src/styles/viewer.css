@@ -139,7 +139,7 @@
   pointer-events: none;
   transition:
     opacity var(--duration-medium) var(--ease-standard),
-    transform var(--duration-medium) var(--vice-ease-spring);
+    transform var(--duration-medium) var(--gloaming-ease-spring);
 }
 
 .viewer-play svg {
@@ -222,7 +222,7 @@
   position: relative;
   height: 8px;
   border-radius: var(--radius-full);
-  background: var(--vice-surface-low);
+  background: var(--gloaming-surface-low);
   cursor: pointer;
 }
 
@@ -302,7 +302,7 @@ kbd {
   margin: 0;
   padding: var(--spacing-3);
   border-radius: var(--radius-inner);
-  background: var(--vice-surface-low);
+  background: var(--gloaming-surface-low);
   color: var(--color-text-secondary);
   font-size: 12.5px;
 }
@@ -445,7 +445,7 @@ kbd {
   border-radius: var(--radius-container);
   background: var(--color-background-popover);
   box-shadow: var(--shadow-high);
-  animation: player-in var(--duration-medium) var(--vice-ease-spring);
+  animation: player-in var(--duration-medium) var(--gloaming-ease-spring);
 }
 
 @keyframes player-in {
@@ -470,7 +470,7 @@ kbd {
   height: 26px;
   border-radius: 7px;
   object-fit: cover;
-  background: var(--vice-surface-low);
+  background: var(--gloaming-surface-low);
 }
 
 .player-titles {
@@ -536,7 +536,7 @@ kbd {
   background: var(--color-accent);
   color: var(--color-on-accent);
   cursor: pointer;
-  transition: transform var(--duration-fast) var(--vice-ease-spring);
+  transition: transform var(--duration-fast) var(--gloaming-ease-spring);
 }
 
 .player-main:hover {
@@ -639,7 +639,7 @@ kbd {
   border-radius: var(--radius-full);
   background: var(--color-accent);
   cursor: grab;
-  transition: transform var(--duration-fast) var(--vice-ease-spring);
+  transition: transform var(--duration-fast) var(--gloaming-ease-spring);
 }
 
 .player-volume-range:hover::-webkit-slider-thumb {
@@ -671,7 +671,7 @@ kbd {
   border-radius: var(--radius-full);
   background: var(--color-accent);
   cursor: grab;
-  transition: transform var(--duration-fast) var(--vice-ease-spring);
+  transition: transform var(--duration-fast) var(--gloaming-ease-spring);
 }
 
 .player-volume-range:hover::-moz-range-thumb {
@@ -825,7 +825,7 @@ kbd {
 
 /* ── expanded ───────────────────────────────────────────────────── */
 
-/* The player fills the Vice window rather than going through the Fullscreen
+/* The player fills the Gloaming window rather than going through the Fullscreen
    API, which QtWebEngine ships with turned off: requestFullscreen rejected
    with "fullscreen is not supported" on the native window, which is the one
    place this button matters (#177).
@@ -1084,7 +1084,7 @@ kbd {
   flex-direction: column;
   gap: 5px;
   border-radius: 24px;
-  background: color-mix(in srgb, var(--vice-surface-low) 88%, transparent);
+  background: color-mix(in srgb, var(--gloaming-surface-low) 88%, transparent);
   pointer-events: none;
 }
 
@@ -1105,15 +1105,15 @@ kbd {
   display: grid;
   place-items: center;
   border-radius: 12px;
-  background: var(--vice-secondary-container);
-  color: var(--vice-on-secondary-container);
+  background: var(--gloaming-secondary-container);
+  color: var(--gloaming-on-secondary-container);
   font-size: 11px;
   font-weight: 700;
   transition:
-    background-color 90ms var(--vice-ease-spring),
-    color 90ms var(--vice-ease-spring),
-    border-radius 90ms var(--vice-ease-spring),
-    transform 90ms var(--vice-ease-spring);
+    background-color 90ms var(--gloaming-ease-spring),
+    color 90ms var(--gloaming-ease-spring),
+    border-radius 90ms var(--gloaming-ease-spring),
+    transform 90ms var(--gloaming-ease-spring);
 }
 
 .key-cap[data-down] {
@@ -1122,3 +1122,10 @@ kbd {
   border-radius: 7px;
   transform: scale(0.94);
 }
+
+ .pad-replay-area { position: absolute; pointer-events: none; z-index: 3; }
+.pad-replay { position: absolute; pointer-events: auto; cursor: grab; touch-action: none; user-select: none; filter: drop-shadow(0 3px 8px #0008); }
+.pad-replay:active { cursor: grabbing; }
+.pad-replay:focus-visible { outline: 2px solid var(--color-accent); border-radius: 12px; }
+.pad-replay canvas { display: block; width: 100%; height: 100%; }
+.pad-replay span { position: absolute; inset: 0; font-size: 12px; }

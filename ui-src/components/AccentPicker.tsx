@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 
 import {Modal} from './Modal';
-import {deriveAccent, normalizeHex} from '../theme/deriveAccent';
+import {deriveCustomAccent, normalizeHex} from '../theme/deriveAccent';
 import type {AccentRamp} from '../theme/accents';
 import {t} from '../lib/i18n';
 
@@ -78,7 +78,7 @@ export function AccentPicker({
 
   // Deriving a full scheme is a few milliseconds, so the preview can follow
   // the drag rather than waiting for confirm. Only the apply waits.
-  const preview = useMemo(() => deriveAccent(seed), [seed]);
+  const preview = useMemo(() => deriveCustomAccent(seed), [seed]);
 
   const drag = useCallback(
     (

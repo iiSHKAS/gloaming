@@ -15,9 +15,11 @@ import './styles/editor.css';
 
 import {initLocale, subscribeLocale, t} from './lib/i18n';
 import {setNativeTrayLabels} from './lib/env';
-import {accentVars, resolveAccent} from './theme/viceTheme';
+import {accentVars, resolveAccent} from './theme/gloamingTheme';
 import {StoreProvider, useStore} from './state/store';
 import {PlaybackProvider} from './state/playback';
+import {ReplayOverlay} from './components/ReplayOverlay';
+import {SaveMenu} from './components/SaveMenu';
 import {AppFrame} from './components/AppFrame';
 import {OverlayRoot} from './components/OverlayPortal';
 import {Home} from './screens/Home';
@@ -27,8 +29,13 @@ import {Settings} from './screens/Settings';
 import {Editor} from './screens/Editor';
 import {About} from './screens/About';
 
+import './styles/redesign.css';
+import './styles/controls.css';
+import './styles/settings-workspace.css';
+import './styles/capture-home.css';
+
 function syncNativeTrayLabels(): void {
-  setNativeTrayLabels(t('tray.openVice'), t('tray.quitVice'));
+  setNativeTrayLabels(t('tray.openGloaming'), t('tray.quitGloaming'));
 }
 
 function App() {
@@ -61,7 +68,7 @@ function App() {
     return () => window.clearTimeout(failsafe);
   }, [ready]);
 
-  // On the root, not on .vice-app: body and the boot cover both sit outside
+  // On the root, not on .gloaming-app: body and the boot cover both sit outside
   // that element and would otherwise never see the themed background.
   useEffect(() => {
     const root = document.documentElement;
@@ -71,13 +78,13 @@ function App() {
 
   return (
     <Theme theme={theme} mode="dark">
-      <div className="vice-ambient" style={accentVars(ramp)} aria-hidden="true" />
+      <div className="gloaming-ambient" style={accentVars(ramp)} aria-hidden="true" />
       <PlaybackProvider>
-        <div className="vice-app" style={accentVars(ramp)}>
+        <div className="gloaming-app" style={accentVars(ramp)}>
           <OverlayRoot>
-          <AppFrame>
+          {new URLSearchParams(location.search).get("replayOverlay") === "1" ? (new URLSearchParams(location.search).has("saveMenu") ? <SaveMenu/> : <ReplayOverlay experimental={new URLSearchParams(location.search).get("overlayDesign")==="test"}/>) : <AppFrame>
             <Screen view={view} />
-          </AppFrame>
+          </AppFrame>}
           </OverlayRoot>
         </div>
       </PlaybackProvider>

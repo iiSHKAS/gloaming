@@ -1,3 +1,4 @@
+import {PadReplay, type PadRecording} from './PadReplay';
 import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
 
 import {api} from '../lib/api';
@@ -54,8 +55,8 @@ export interface ViewerProps {
  * window you are watching in, not a recording setting, and the native window
  * cannot always write it, which is only ever a forgotten level (#174).
  */
-const VOLUME_KEY = 'vice-volume';
-const MUTED_KEY = 'vice-muted';
+const VOLUME_KEY = 'gloaming-volume';
+const MUTED_KEY = 'gloaming-muted';
 
 function storedVolume(): number {
   try {
@@ -74,7 +75,7 @@ function storedMuted(): boolean {
   }
 }
 
-const KEYS_SHOWN_KEY = 'vice-viewer-keys';
+const KEYS_SHOWN_KEY = 'gloaming-viewer-keys';
 
 /** Whether a clip's saved keys are drawn over it. On until turned off. */
 function storedKeysShown(): boolean {
@@ -136,6 +137,14 @@ export function Viewer(props: ViewerProps) {
   const [grabbing, setGrabbing] = useState(false);
   const failed = useVideoFailure(videoRef, mounted);
   const [keysShown, setKeysShown] = useState(storedKeysShown);
+  const [padShown, setPadShown] = useState(() => {try {return localStorage.getItem("gloaming-viewer-pad") !== "0";} catch {return true;}});
+  const [padData, setPadData] = useState<PadRecording | null>(null);
+  const padSlug = clip?.pad_inputs ? clip.slug : null;
+  useEffect(() => {
+    let live = true; setPadData(null);
+    if (padSlug) void fetch(`/api/clips/${encodeURIComponent(padSlug)}/pad-inputs`).then(r => {if(!r.ok) throw new Error("Controller inputs unavailable"); return r.json();}).then(data => {if(live) setPadData(data.pad);}).catch(err => console.debug(err));
+    return () => {live = false;};
+  }, [padSlug]);
   const [keyIntervals, setKeyIntervals] = useState<KeyInterval[] | null>(null);
 
   const index = clip ? clips.findIndex(c => c.slug === clip.slug) : -1;
@@ -207,7 +216,7 @@ export function Viewer(props: ViewerProps) {
     video.muted = muted;
   });
 
-  // Expanding is a layout change inside the Vice window, not the Fullscreen
+  // Expanding is a layout change inside the Gloaming window, not the Fullscreen
   // API. QtWebEngine ships with fullscreen support off, so requestFullscreen
   // rejected with "fullscreen is not supported" on the native window, which is
   // the one place this button actually matters. Growing the player to fill the
@@ -507,7 +516,7 @@ export function Viewer(props: ViewerProps) {
 
   return (
     <div
-      className="scrim viewer-scrim"
+      className="scrim viewer-scrim studio-viewer"
       data-closing={closing || undefined}
       onMouseDown={e => e.target === e.currentTarget && onClose()}>
       <div className="viewer-stack">
@@ -663,6 +672,7 @@ export function Viewer(props: ViewerProps) {
               </div>
             ) : null}
 
+            {padData && padShown && !failed ? <PadReplay video={videoRef} data={padData} /> : null}
             {keyIntervals && keysShown && !failed ? (
               <KeyOverlay video={videoRef} intervals={keyIntervals} />
             ) : null}
@@ -688,10 +698,31 @@ export function Viewer(props: ViewerProps) {
             ) : null}
           </div>
 
+        <PlayerBar
+          clip={clip}
+          paused={paused}
+          current={position.current}
+          duration={duration}
+          volume={volume}
+          muted={muted}
+          canStepBack={index > 0}
+          canStepForward={index >= 0 && index < clips.length - 1}
+          onToggle={toggle}
+          onStep={step}
+          onVolume={applyVolume}
+          onToggleMute={toggleMuted}
+          onShare={() => props.onShare(clip)}
+          onShareMenu={() => props.onShareMenu(clip)}
+          shareLabel={props.shareLabel}
+          onClose={onClose}
+        />
           <div className="viewer-bottom">
             <div
               className="viewer-timeline"
               ref={timelineRef}
+              role="slider" tabIndex={0} aria-label="Playback position"
+              aria-valuemin={0} aria-valuemax={duration} aria-valuenow={position.current}
+              onKeyDown={e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();seekTo(videoRef.current,e.key==='Home'?0:e.key==='End'?duration:Math.max(0,Math.min(duration,position.current+(e.key==='ArrowRight'?5:-5))));}}}
               onClick={e => seekFromPointer(e.clientX)}>
               <div className="viewer-progress" style={{width: `${percent}%`}} />
               <div className="viewer-playhead" style={{left: `${percent}%`}} />
@@ -716,6 +747,7 @@ export function Viewer(props: ViewerProps) {
               ))}
             </div>
 
+            <details className="viewer-notes"><summary>{t('viewer.highlightsHeading')} <span>{highlights.length}</span></summary>
             <div className="viewer-hl-head">
               <span className="eyebrow">{t('viewer.highlightsHeading')}</span>
               <button type="button" className="btn btn-quiet btn-sm" onClick={() => void addHighlight()}>
@@ -788,11 +820,13 @@ export function Viewer(props: ViewerProps) {
               )}
             </div>
 
+            </details>
             <footer className="viewer-foot">
               <span className="viewer-shortcuts mono">
                 {t('viewer.shortcuts')}
               </span>
               <div className="viewer-foot-btns">
+                {padData ? <button type="button" className={padShown ? "btn btn-sm" : "btn btn-quiet btn-sm"} aria-pressed={padShown} onClick={() => {setPadShown(!padShown); remember("gloaming-viewer-pad", padShown ? "0" : "1");}}>{t("viewer.controllerInputs")}</button> : null}
                 {keyIntervals ? (
                   <button
                     type="button"
@@ -833,24 +867,7 @@ export function Viewer(props: ViewerProps) {
           </div>
         </div>
 
-        <PlayerBar
-          clip={clip}
-          paused={paused}
-          current={position.current}
-          duration={duration}
-          volume={volume}
-          muted={muted}
-          canStepBack={index > 0}
-          canStepForward={index >= 0 && index < clips.length - 1}
-          onToggle={toggle}
-          onStep={step}
-          onVolume={applyVolume}
-          onToggleMute={toggleMuted}
-          onShare={() => props.onShare(clip)}
-          onShareMenu={() => props.onShareMenu(clip)}
-          shareLabel={props.shareLabel}
-          onClose={onClose}
-        />
+
       </div>
 
       {picker ? (

@@ -1,0 +1,58 @@
+/* "Lens" dock: fullscreen watching, three primary actions. */
+.replay-lens-page .controller-bottom{left:50%;right:auto;bottom:24px;transform:translateX(-50%);width:min(960px,calc(100% - 80px));padding:0;background:none;text-shadow:none}
+.replay-lens-page .controller-hud::before{content:'';position:absolute;inset:55% 0 0;background:linear-gradient(transparent,#080b10b3);pointer-events:none}
+.replay-lens-page .controller-top{top:22px;left:24px;right:24px}
+.replay-lens-page .controller-tools{gap:2px;padding:4px;border:1px solid #ffffff20;border-radius:24px;background:#151b23a6;backdrop-filter:blur(22px)}
+.replay-lens-page .controller-tools button{width:33px;height:33px;background:none;border:0;border-radius:50%;box-shadow:none}.replay-lens-page .controller-tools button:hover{background:#ffffff16}.replay-lens-page .controller-tools svg{width:16px;height:16px}
+.replay-lens-page .controller-tools .replay-tool-shortcut{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:auto;min-width:66px;height:38px;padding:0 10px;border-radius:18px}
+.replay-tool-key{display:inline-flex;align-items:center;line-height:1}
+.replay-tool-key kbd{display:inline-flex;align-items:center;justify-content:center;min-width:23px;height:24px;padding:0 4px;border:1px solid #ffffff35;border-bottom-width:3px;border-radius:5px;background:#252c36;color:#eef3fa;font-family:inherit;font-size:11px;font-weight:600;box-sizing:border-box}
+.replay-lens-page .controller-tools .replay-tool-key .pad-glyph{height:25px;max-width:75px}
+.replay-lens-page .replay-video-badge{font-size:9px;font-weight:500;letter-spacing:1px;border-radius:6px;border:1px solid #ffffff25;background:#111720b8;backdrop-filter:blur(18px);padding:7px 10px}
+.lab-context{display:flex;align-items:center;justify-content:space-between;padding:0 2px 12px;color:#e2e7ec;font-size:11px;letter-spacing:1px}
+.lab-context>span{padding:4px 7px;background:#11172099;border-radius:4px}
+.lab-context button{display:flex;align-items:center;gap:6px;font:inherit;letter-spacing:0;padding:4px 8px;border:1px solid #ffffff20;border-radius:12px;background:#11172099;color:#e2e7ec;pointer-events:auto;cursor:pointer}
+.lab-context i{width:5px;height:5px;border-radius:50%;background:var(--studio-accent)}
+.replay-lens-page .controller-timeline{padding:14px 0 30px;margin:0 0 18px;height:56px}
+.replay-lens-page .controller-rail{height:9px;background:#ffffff45;border-radius:8px;margin:0}
+.replay-lens-page .controller-rail::before{background:var(--studio-accent);border-radius:4px}
+.replay-lens-page .controller-thumb{width:23px;height:23px;border:4px solid var(--studio-accent);background:#fff;box-shadow:0 0 0 5px #ffffff12,0 2px 8px #0008}
+.replay-lens-page .controller-tick{height:15px;top:-3px;width:1px;background:#ffffff50}.replay-lens-page .controller-tick em{display:block;top:23px;font-size:11px;font-weight:500;color:#d4dce6;text-shadow:0 1px 5px #000}
+.replay-lens-page .controller-rail-ends{display:none}
+.replay-lens-page .controller-hover{top:-26px;font-size:12px;font-weight:500;background:#161d27ed;border:1px solid #ffffff20;border-radius:6px;padding:5px 9px}
+.replay-lens-page .controller-selection{top:-3px;bottom:-3px;background:color-mix(in srgb,var(--studio-accent) 25%,transparent);outline-width:2px}.replay-lens-page .controller-selection i{top:-6px;bottom:-6px;width:8px;border-radius:4px}
+.lab-dock{pointer-events:auto;display:flex;align-items:center;justify-content:center;gap:18px;width:fit-content;max-width:100%;margin:0 auto;padding:12px 16px;background:linear-gradient(130deg,#242c36ee,#111720f2);border:1px solid #ffffff26;border-radius:24px;box-shadow:0 18px 55px #0008,inset 0 1px 0 #ffffff09;backdrop-filter:blur(28px);color:#f1f5f9}
+.lab-dock button{display:flex;align-items:center;justify-content:center;gap:8px;color:inherit;font:inherit;cursor:pointer;border:0;background:none;padding:12px;border-radius:10px;font-size:14px;white-space:nowrap}
+.lab-dock button:hover:not(:disabled){background:#ffffff0d}.lab-dock button:focus-visible,.lab-context button:focus-visible{outline:2px solid var(--studio-accent);outline-offset:3px}.lab-dock button:disabled{opacity:.4;cursor:not-allowed}
+.lab-dock kbd{font:inherit;font-size:11px;color:#d1d9e4;border:1px solid #ffffff24;border-radius:4px;padding:3px 5px;min-width:20px;text-align:center;background:#ffffff05}
+.lab-dock .pad-glyph{width:28px;height:28px;flex-shrink:0}
+.lab-dock .lab-play{position:relative;width:54px;height:54px;flex-shrink:0;border-radius:50%;padding:0;background:#f1f4f8;color:#111720;box-shadow:0 3px 12px #0004}.lab-dock .lab-play:hover{background:white}.lab-play>svg:not(.pad-glyph){width:21px;height:21px}
+.lab-play kbd,.lab-play .pad-glyph{position:absolute;bottom:-8px;right:-7px;background:#27313f;border:1px solid #5a6676;border-radius:5px;color:#f1f5f9;font-size:9px;min-width:0;padding:2px 4px}.lab-play .pad-glyph{width:23px;height:23px;padding:1px}
+.lab-divider{width:1px;height:34px;background:#ffffff1c;flex-shrink:0;margin:0 2px}
+.lab-trim svg{width:19px;height:19px;color:#d1d9e4}.lab-trim kbd{margin-left:6px}
+.lab-save-group{display:flex;align-items:stretch;align-self:stretch;background:var(--studio-accent);color:var(--studio-on-accent);border-radius:14px;box-shadow:0 3px 15px color-mix(in srgb,var(--studio-accent) 12%,transparent)}
+.lab-dock .lab-save{padding:12px 17px;gap:10px;font-weight:600;border-radius:14px 0 0 14px;color:var(--studio-on-accent)}.lab-save>svg{width:19px;height:19px}.lab-save kbd{color:inherit;border-color:color-mix(in srgb,var(--studio-on-accent) 25%,transparent);background:transparent}
+.lab-duration{position:relative;display:flex;border-left:1px solid color-mix(in srgb,var(--studio-on-accent) 20%,transparent)}
+.lab-dock .lab-duration-toggle{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;padding:12px 16px;border-radius:0 14px 14px 0;color:var(--studio-on-accent);gap:7px}
+.lab-duration-toggle>span{font-size:12px;opacity:.65}
+.lab-duration-menu{position:absolute;right:0;bottom:calc(100% + 22px);width:210px;padding:10px;background:#17202bf5;border:1px solid #ffffff26;box-shadow:0 12px 40px #0008;border-radius:14px;backdrop-filter:blur(24px);color:#f1f5f9;z-index:10}
+.lab-duration-menu>span{display:block;font-size:10px;letter-spacing:1.4px;color:#9caabc;padding:7px 9px 10px}.lab-duration-menu button{width:100%;justify-content:space-between;font-size:14px;padding:12px;border-radius:7px}.lab-duration-menu [aria-pressed=true]{color:var(--studio-accent);background:color-mix(in srgb,var(--studio-accent) 10%,transparent)}
+.lab-boundaries{display:flex;align-items:center;gap:4px}.lab-dock .lab-boundaries button{padding:5px;gap:7px}.lab-boundaries button>span{display:flex;flex-direction:column;gap:5px;font-size:9px;letter-spacing:1px;color:#9cabbc;text-align:left}.lab-boundaries b{font-size:15px;font-weight:500;letter-spacing:0;color:#f1f5f9;font-variant-numeric:tabular-nums}.lab-range-arrow{color:#7f90a4;font-size:12px;margin:0 3px}
+.lab-selected-duration{display:flex;align-items:center;padding:0 12px;border-left:1px solid color-mix(in srgb,var(--studio-on-accent) 20%,transparent);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.lab-dock .lab-cancel{display:flex;flex-direction:column;font-size:10px;padding:6px;gap:4px;color:#aeb9c7}
+.lab-footnote{display:flex;align-items:center;justify-content:center;gap:11px;color:#aeb9c7;font-size:11px;margin-top:16px;text-shadow:0 1px 4px #000}.lab-footnote .pad-glyph{width:18px;height:18px}.lab-footnote .pad-glyph-wide{width:40px}
+.replay-lens-page .controller-spinner{font-size:12px;padding:9px 13px;border:1px solid #ffffff20;border-radius:8px;background:#111720d9}
+.replay-lens-page .controller-flash{font-size:22px;font-weight:500;padding:12px 23px;border-radius:14px;border:1px solid #ffffff20;background:#111720d9;backdrop-filter:blur(16px)}
+@media(max-width:650px){.replay-lens-page .controller-bottom{width:calc(100% - 28px);bottom:18px}.lab-dock{gap:7px;padding:8px 10px;border-radius:19px;flex-wrap:wrap}.lab-dock .lab-play{width:39px;height:39px}.lab-divider{display:none}.lab-dock button{font-size:11px;padding:8px;gap:5px}.lab-trim>kbd{display:none}.lab-dock .lab-save{padding:9px}.lab-save>kbd{display:none}.lab-dock .lab-duration-toggle{padding:9px}.lab-footnote{font-size:8px;gap:8px}.lab-boundaries b{font-size:11px}.lab-selected-duration{padding:0 8px;font-size:11px}}
+
+@media(min-width:651px){.lab-dock .lab-trim,.lab-dock .lab-save,.lab-dock .lab-duration-toggle{min-height:52px}.lab-context button{min-height:28px;padding:5px 10px}}
+@media(max-width:650px){.replay-lens-page .controller-timeline{height:52px;margin-bottom:14px}.replay-lens-page .controller-tick em{font-size:9px}.lab-dock .lab-play{width:44px;height:44px}.lab-dock .lab-save,.lab-dock .lab-trim,.lab-dock .lab-duration-toggle{min-height:44px}.lab-footnote{font-size:9px}.lab-dock .lab-boundaries button{min-height:44px}.lab-dock .lab-cancel{min-height:40px}.lab-dock .pad-glyph{width:23px;height:23px}}
+
+.lab-footnote{flex-wrap:wrap;column-gap:18px;row-gap:7px}.lab-shortcut{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.lab-footnote kbd{display:inline-flex;align-items:center;justify-content:center;min-width:25px;height:25px;padding:0 6px;border:1px solid #ffffff30;border-bottom-width:3px;border-radius:6px;background:#252c36;color:#eef3fa;font-family:inherit;font-size:11px;font-weight:500;line-height:1;text-shadow:none;box-sizing:border-box}
+.lab-seek-hints{display:inline-flex;align-items:center;gap:18px;padding:7px 12px;border:1px solid #ffffff1f;border-radius:12px;background:#14191fe6;box-shadow:0 3px 12px #0003}
+.lab-seek-hint{display:inline-flex;align-items:center;gap:9px;white-space:nowrap;color:#dce4ef;font-size:12px;text-shadow:none}
+.lab-seek-hint+ .lab-seek-hint{border-left:1px solid #ffffff20;padding-left:18px}
+.lab-seek-hint kbd{width:30px;height:28px;font-size:19px}
+.lab-seek-hint strong{font-weight:650;color:#fff;font-variant-numeric:tabular-nums}
+@media(max-width:650px){.lab-footnote{column-gap:12px;row-gap:10px;font-size:10px}.lab-seek-hints{gap:12px}.lab-seek-hint+ .lab-seek-hint{padding-left:12px}.lab-seek-hint{font-size:12px}.lab-footnote kbd{font-size:11px}.lab-seek-hint kbd{font-size:19px}}

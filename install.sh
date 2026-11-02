@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Vice installer: sets up system dependencies and Python package. 
+# Gloaming installer: sets up system dependencies and Python package. 
 # Run as your normal user (not root); sudo is used internally where needed.
 
 set -euo pipefail
@@ -11,7 +11,7 @@ for arg in "$@"; do
             ALLOW_MIXED_INSTALL=true
             ;;
         *)
-            echo "[vice] Unknown option: $arg" >&2
+            echo "[gloaming] Unknown option: $arg" >&2
             echo "Usage: ./install.sh [--allow-mixed-install]" >&2
             exit 1
             ;;
@@ -19,15 +19,15 @@ for arg in "$@"; do
 done
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
-info()    { echo -e "${GREEN}[vice]${NC} $*"; }
-warn()    { echo -e "${YELLOW}[vice]${NC} $*"; }
-error()   { echo -e "${RED}[vice]${NC} $*" >&2; }
+info()    { echo -e "${GREEN}[gloaming]${NC} $*"; }
+warn()    { echo -e "${YELLOW}[gloaming]${NC} $*"; }
+error()   { echo -e "${RED}[gloaming]${NC} $*" >&2; }
 need_cmd() { command -v "$1" &>/dev/null || { error "Required: $1 (not found)"; exit 1; }; }
 
 USER_BIN="$HOME/.local/bin"
-VENV_DIR="$HOME/.local/share/vice/venv"
+VENV_DIR="$HOME/.local/share/gloaming/venv"
 SYSTEMD_DIR="$HOME/.config/systemd/user"
-SERVICE_FILE="$SYSTEMD_DIR/vice.service"
+SERVICE_FILE="$SYSTEMD_DIR/gloaming.service"
 
 # ── Detect distro / package manager ───────────────────────────────────────────
 OS_ID=""
@@ -72,7 +72,7 @@ if is_rpm_ostree_system; then
     error "Bazzite / Fedora Atomic (rpm-ostree) is not supported by install.sh yet."
     error "This installer uses distro package managers such as dnf to install host dependencies."
     error "On rpm-ostree systems, dnf is not the right install path and package layering can affect system updates."
-    error "For now, do not run Vice's install.sh on Bazzite, Silverblue, Kinoite, or other atomic desktops."
+    error "For now, do not run Gloaming's install.sh on Bazzite, Silverblue, Kinoite, or other atomic desktops."
     error "A Flatpak or atomic-safe install path is the intended future fix."
     exit 1
 fi
@@ -128,12 +128,12 @@ if [[ -n "$OS_PRETTY_NAME" ]]; then
 fi
 info "Detected package manager: $PKG"
 
-if [[ "$PKG" == "pacman" ]] && pacman -Q vice-clipper &>/dev/null; then
+if [[ "$PKG" == "pacman" ]] && pacman -Q gloaming-clipper &>/dev/null; then
     if ! $ALLOW_MIXED_INSTALL; then
-        error "Detected an existing AUR install of vice-clipper."
+        error "Detected an existing AUR install of gloaming-clipper."
         error "Mixed AUR + install.sh deployments are unsupported."
         error "AUR users should update with yay -Syu or paru -Syu."
-        error "If you want to switch to the git clone installer, remove the AUR package first: yay -Rns vice-clipper"
+        error "If you want to switch to the git clone installer, remove the AUR package first: yay -Rns gloaming-clipper"
         error "If you intentionally want to override this guard, rerun: ./install.sh --allow-mixed-install"
         exit 1
     fi
@@ -240,13 +240,13 @@ install_pkgs_pacman() {
 
 # The PyPI PyQt6-WebEngine wheel is built without proprietary codecs, so it
 # cannot decode H.264 and every clip renders as a grey rectangle inside the
-# Vice window (issue #79). Distro WebEngine packages enable those codecs.
+# Gloaming window (issue #79). Distro WebEngine packages enable those codecs.
 # $1 = the package-manager command that would fix it.
 warn_webengine_wheel() {
     warn "──────────────────────────────────────────────────────────────────────"
     warn "System Qt WebEngine package not available; falling back to PyPI wheels."
     warn "The PyPI wheel has NO H.264 decoder, so clips will NOT play inside the"
-    warn "Vice window. Recording, sharing, and your system video player still work."
+    warn "Gloaming window. Recording, sharing, and your system video player still work."
     warn "To fix in-app playback, run:"
     warn "    $1"
     warn "and then rerun ./install.sh"
@@ -266,7 +266,7 @@ install_pkgs_apt() {
     # back to the PyPI wheel (heavy, and unable to play H.264 clips in-app).
     sudo apt-get install -y python3-pyqt6 python3-pyqt6.qtwebengine python3-qtpy >/dev/null 2>&1 || \
         warn_webengine_wheel "sudo apt install python3-pyqt6 python3-pyqt6.qtwebengine python3-qtpy"
-    # Mirror the pacman branch: install Vice's Python runtime deps as system
+    # Mirror the pacman branch: install Gloaming's Python runtime deps as system
     # packages so --system-site-packages picks them up. Per-package loop,
     # batched apt-get install aborts on the first NotFound, leaving the rest.
     for p in python3-aiohttp python3-tomli-w python3-click python3-psutil python3-evdev; do
@@ -300,7 +300,7 @@ install_pkgs_apt() {
 # Fedora ships ffmpeg-free and RPM Fusion replaces it with the full ffmpeg.
 # The two conflict, so naming either one on a machine that already has the
 # other aborts the whole transaction and takes the install with it (#173).
-# Vice needs a working ffmpeg, not a particular package.
+# Gloaming needs a working ffmpeg, not a particular package.
 _dnf_ffmpeg_pkg() {
     if command -v ffmpeg &>/dev/null && command -v ffprobe &>/dev/null; then
         return 0
@@ -347,7 +347,7 @@ install_pkgs_dnf() {
         warn "python3-QtPy not available via dnf; will fall back to PyPI wheel."
     sudo dnf install -y python3-pyqt6-webengine >/dev/null 2>&1 || \
         warn_webengine_wheel "sudo dnf install python3-pyqt6 python3-pyqt6-webengine python3-QtPy"
-    # Mirror the pacman branch: install Vice's Python runtime deps as system
+    # Mirror the pacman branch: install Gloaming's Python runtime deps as system
     # packages so --system-site-packages picks them up. Per-package loop,
     # a single missing pkg on RHEL-without-EPEL must not skip the rest.
     for p in python3-aiohttp python3-tomli-w python3-click python3-psutil python3-evdev; do
@@ -388,7 +388,7 @@ install_pkgs_zypper() {
     # PyQt6 + QtWebEngine for the Chromium-based native window engine.
     sudo zypper install -y python3-qt6 python3-qt6-webengine python3-qtpy >/dev/null 2>&1 || \
         warn_webengine_wheel "sudo zypper install python3-qt6 python3-qt6-webengine python3-qtpy"
-    # Mirror the pacman branch: install Vice's Python runtime deps as system
+    # Mirror the pacman branch: install Gloaming's Python runtime deps as system
     # packages so --system-site-packages picks them up. Per-package loop,
     # Leap 15.x is missing python3-tomli-w; pip fallback handles it.
     for p in python3-aiohttp python3-tomli-w python3-click python3-psutil python3-evdev; do
@@ -420,16 +420,16 @@ install_pkgs_zypper() {
 }
 
 # ── gpu-screen-recorder install (mandatory; no fallback) ──────────────────────
-# Vice's auto backend is GSR-only. Other recorders (wf-recorder, ffmpeg) only
+# Gloaming's auto backend is GSR-only. Other recorders (wf-recorder, ffmpeg) only
 # fire when the user explicitly sets recording.backend in config, they're
 # edge-case overrides, never defaults. install.sh aborts if GSR can't be installed.
-GSR_REPO_URL="${VICE_GSR_REPO_URL:-https://repo.dec05eba.com/gpu-screen-recorder}"
+GSR_REPO_URL="${GLOAMING_GSR_REPO_URL:-https://repo.dec05eba.com/gpu-screen-recorder}"
 # Upstream's own AUR package builds from these per-tag tarballs rather than from
 # git. They are a second host for the same code, which the clone alone is not:
 # repo.dec05eba.com answered one reporter with a redirect to the cgit browse
 # host, which serves no git protocol at all, and the install had nowhere to go
 # from there (#182).
-GSR_SNAPSHOT_URL="${VICE_GSR_SNAPSHOT_URL:-https://dec05eba.com/snapshot}"
+GSR_SNAPSHOT_URL="${GLOAMING_GSR_SNAPSHOT_URL:-https://dec05eba.com/snapshot}"
 # 6.1.2 hardened gsr-kms-server, the helper meson installs with elevated
 # capabilities, so nothing older should be built where 6.x builds. 6.1.3 also
 # stops using FFmpeg 8 only code on FFmpeg 7, which wrote MP4s with every frame
@@ -450,8 +450,8 @@ _gsr_libavutil_major() {
 }
 
 _gsr_select_ref() {
-    if [[ -n "${VICE_GSR_REF:-}" ]]; then
-        printf '%s\n' "$VICE_GSR_REF"
+    if [[ -n "${GLOAMING_GSR_REF:-}" ]]; then
+        printf '%s\n' "$GLOAMING_GSR_REF"
         return 0
     fi
 
@@ -524,8 +524,8 @@ _gsr_fetch_source() {
     error "Could not fetch gpu-screen-recorder $ref."
     error "  git:     $GSR_REPO_URL"
     error "  tarball: $tarball"
-    error "Check that both are reachable, or point Vice elsewhere with"
-    error "VICE_GSR_REPO_URL, VICE_GSR_SNAPSHOT_URL or VICE_GSR_REF."
+    error "Check that both are reachable, or point Gloaming elsewhere with"
+    error "GLOAMING_GSR_REPO_URL, GLOAMING_GSR_SNAPSHOT_URL or GLOAMING_GSR_REF."
     return 1
 }
 
@@ -563,14 +563,14 @@ _gsr_build_from_source() {
     esac
     local gsr_ref tmpdir
     gsr_ref="$(_gsr_select_ref)"
-    if [[ -n "${VICE_GSR_REF:-}" ]]; then
-        info "Using gpu-screen-recorder source ref from VICE_GSR_REF: $gsr_ref"
+    if [[ -n "${GLOAMING_GSR_REF:-}" ]]; then
+        info "Using gpu-screen-recorder source ref from GLOAMING_GSR_REF: $gsr_ref"
     elif [[ "$gsr_ref" == "$GSR_FFMPEG4_REF" ]]; then
         info "Using gpu-screen-recorder $gsr_ref for FFmpeg 4.x compatibility"
     else
         info "Using gpu-screen-recorder source ref: $gsr_ref"
     fi
-    tmpdir=$(mktemp -d -t vice-gsr-XXXXXX)
+    tmpdir=$(mktemp -d -t gloaming-gsr-XXXXXX)
     _gsr_fetch_source "$gsr_ref" "$tmpdir" || { rm -rf "$tmpdir"; return 1; }
     # Build as the invoking user; only the install step needs root. Running
     # upstream's deprecated install.sh under sudo built everything as root,
@@ -655,7 +655,7 @@ install_gpu_screen_recorder() {
         info "gpu-screen-recorder already installed: $bin"
         return 0
     fi
-    info "Installing gpu-screen-recorder (Vice's required recording backend)..."
+    info "Installing gpu-screen-recorder (Gloaming's required recording backend)..."
     case "$PKG" in
         pacman)
             if pacman_repo_has_package gpu-screen-recorder; then
@@ -673,7 +673,7 @@ install_gpu_screen_recorder() {
         apt)    _gsr_build_from_source ;;
     esac
     if ! command -v gpu-screen-recorder &>/dev/null; then
-        error "Vice requires gpu-screen-recorder. Install failed; see error above."
+        error "Gloaming requires gpu-screen-recorder. Install failed; see error above."
         error "Manual install: https://git.dec05eba.com/gpu-screen-recorder"
         exit 1
     fi
@@ -702,7 +702,7 @@ ensure_recording_backend() {
         return 0
     fi
     error "gpu-screen-recorder is unavailable on PATH after install. Aborting."
-    error "Vice's auto backend requires it. Manual install: https://git.dec05eba.com/gpu-screen-recorder"
+    error "Gloaming's auto backend requires it. Manual install: https://git.dec05eba.com/gpu-screen-recorder"
     exit 1
 }
 
@@ -713,13 +713,13 @@ if ! groups | grep -q '\binput\b'; then
     info "Adding $USER to the 'input' group (required for global hotkeys)..."
     sudo usermod -aG input "$USER"
     warn "You must log out and back in for the group change to take effect."
-    warn "Alternatively: run Vice with 'newgrp input' in your current session."
+    warn "Alternatively: run Gloaming with 'newgrp input' in your current session."
 else
     info "User already in 'input' group."
 fi
 
 # ── cloudflared for public share URLs ────────────────────────────────────────
-# Vice uses cloudflared for public Discord/external share links by default.
+# Gloaming uses cloudflared for public Discord/external share links by default.
 # Without it, share links stay on the local network only.
 install_cloudflared() {
     if command -v cloudflared &>/dev/null; then
@@ -836,22 +836,22 @@ stop_running_service_for_reinstall() {
     if ! systemctl --user status &>/dev/null 2>&1; then
         return
     fi
-    if systemctl --user is-active --quiet vice.service; then
-        info "Stopping existing Vice user service before reinstall..."
-        systemctl --user stop vice.service || true
+    if systemctl --user is-active --quiet gloaming.service; then
+        info "Stopping existing Gloaming user service before reinstall..."
+        systemctl --user stop gloaming.service || true
     fi
 }
 
 clean_previous_local_install() {
     stop_running_service_for_reinstall
 
-    rm -f "$USER_BIN/vice" "$USER_BIN/vice-app"
+    rm -f "$USER_BIN/gloaming" "$USER_BIN/gloaming-app"
 
     shopt -s nullglob
     local stale_paths=(
-        "$HOME"/.local/lib/python*/site-packages/vice
-        "$HOME"/.local/lib/python*/site-packages/vice-*.dist-info
-        "$HOME"/.local/lib/python*/site-packages/vice.egg-info
+        "$HOME"/.local/lib/python*/site-packages/gloaming
+        "$HOME"/.local/lib/python*/site-packages/gloaming-*.dist-info
+        "$HOME"/.local/lib/python*/site-packages/gloaming.egg-info
     )
     local removed_any=false
     local path
@@ -862,11 +862,11 @@ clean_previous_local_install() {
     shopt -u nullglob
 
     if $removed_any; then
-        info "Removed previous local Vice Python install artifacts."
+        info "Removed previous local Gloaming Python install artifacts."
     fi
 }
 
-install_vice_venv() {
+install_gloaming_venv() {
     info "Creating a dedicated virtual environment at $VENV_DIR"
 
     # On Arch-family systems, pacman installs Python modules for the distro
@@ -879,12 +879,12 @@ install_vice_venv() {
     if [[ "$PKG" == "pacman" && -x /usr/bin/python3 ]]; then
         python_bin=/usr/bin/python3
     fi
-    info "Using Python for Vice venv: $python_bin ($("$python_bin" --version 2>&1))"
+    info "Using Python for Gloaming venv: $python_bin ($("$python_bin" --version 2>&1))"
 
     if [[ "$PKG" == "pacman" ]]; then
         if ! "$python_bin" -c 'import PyQt6.QtWebEngineWidgets, qtpy' >/dev/null 2>&1; then
             error "Arch Qt packages are installed but are not importable by $python_bin."
-            error "Vice will not replace them with PyPI Qt because that build cannot decode H.264."
+            error "Gloaming will not replace them with PyPI Qt because that build cannot decode H.264."
             error "Refresh the Arch/CachyOS package set, then rerun the installer:"
             error "  sudo pacman -Syu python python-pyqt6 python-pyqt6-webengine python-qtpy"
             exit 1
@@ -898,8 +898,8 @@ install_vice_venv() {
     "$VENV_DIR/bin/python" -m pip install --upgrade pip
 
     # Two-step install to avoid shadowing system Python packages:
-    #   1. Force-reinstall ONLY the vice package itself (no deps). This is the
-    #      only thing that changes between vice releases.
+    #   1. Force-reinstall ONLY the gloaming package itself (no deps). This is the
+    #      only thing that changes between gloaming releases.
     #   2. Fill in any MISSING deps individually. On Arch, `--system-site-
     #      packages` already provides them via pacman (python-pywebview etc.)
     #      so nothing is installed here; on Debian/Fedora where those packages
@@ -914,7 +914,7 @@ import importlib.util, subprocess, sys
 # CORE deps are required at runtime, if pip can't install one, abort the
 # install with a loud error rather than leaving a silently broken venv.
 # OPTIONAL deps power the QtWebEngine native-window backend; if their
-# (heavy ~100 MB) wheels fail, vice-app gracefully falls back to GTK.
+# (heavy ~100 MB) wheels fail, gloaming-app gracefully falls back to GTK.
 CORE = {
     "webview":  "pywebview>=5.0",
     "aiohttp":  "aiohttp>=3.9.0",
@@ -944,44 +944,44 @@ def _missing(deps):
 
 core_missing = _missing(CORE)
 if core_missing:
-    print(f"[vice] Installing CORE deps: {', '.join(core_missing)}")
+    print(f"[gloaming] Installing CORE deps: {', '.join(core_missing)}")
     try:
         subprocess.check_call([sys.executable, "-m", "pip", "install", *core_missing])
     except subprocess.CalledProcessError:
-        print(f"[vice] FATAL: pip failed to install required deps: {core_missing}",
+        print(f"[gloaming] FATAL: pip failed to install required deps: {core_missing}",
               file=sys.stderr)
-        print("[vice] Vice cannot run without these. Check your network/proxy "
+        print("[gloaming] Gloaming cannot run without these. Check your network/proxy "
               "and rerun ./install.sh", file=sys.stderr)
         sys.exit(1)
 
 opt_missing = _missing(OPTIONAL)
 if opt_missing:
-    print(f"[vice] Installing optional Qt deps: {', '.join(opt_missing)}")
+    print(f"[gloaming] Installing optional Qt deps: {', '.join(opt_missing)}")
     try:
         subprocess.check_call([sys.executable, "-m", "pip", "install", *opt_missing])
     except subprocess.CalledProcessError:
-        print("[vice] Warning: optional Qt deps failed to install. "
-              "vice-app will fall back to the GTK/WebKit2GTK engine.")
+        print("[gloaming] Warning: optional Qt deps failed to install. "
+              "gloaming-app will fall back to the GTK/WebKit2GTK engine.")
 
 if not core_missing and not opt_missing:
-    print("[vice] All Python dependencies already satisfied (no venv shadow).")
+    print("[gloaming] All Python dependencies already satisfied (no venv shadow).")
 PY
 
-    ln -sf "$VENV_DIR/bin/vice" "$USER_BIN/vice"
-    ln -sf "$VENV_DIR/bin/vice-app" "$USER_BIN/vice-app"
-    info "Installed vice/vice-app shims to $USER_BIN"
+    ln -sf "$VENV_DIR/bin/gloaming" "$USER_BIN/gloaming"
+    ln -sf "$VENV_DIR/bin/gloaming-app" "$USER_BIN/gloaming-app"
+    info "Installed gloaming/gloaming-app shims to $USER_BIN"
 
     # Sanity-check that every CORE module is reachable from the venv. Catches
     # the failure mode where a system package was found by find_spec but is
     # actually broken/shadowed (wrong Python ABI from --system-site-packages).
-    # Better to abort here than let vice-app crash at startup with ModuleNotFoundError.
+    # Better to abort here than let gloaming-app crash at startup with ModuleNotFoundError.
     local failed=()
     local mod
     for mod in webview aiohttp click psutil tomli_w evdev; do
         "$VENV_DIR/bin/python" -c "import $mod" >/dev/null 2>&1 || failed+=("$mod")
     done
     if [[ ${#failed[@]} -gt 0 ]]; then
-        error "Vice venv is broken, these CORE modules are not importable: ${failed[*]}"
+        error "Gloaming venv is broken, these CORE modules are not importable: ${failed[*]}"
         error "Try:  $VENV_DIR/bin/pip install ${failed[*]}"
         error "Then rerun: ./install.sh"
         exit 1
@@ -989,8 +989,8 @@ PY
     info "All core Python modules importable from venv."
 }
 
-info "Installing Vice Python package..."
-install_vice_venv
+info "Installing Gloaming Python package..."
+install_gloaming_venv
 
 # Ensure $USER_BIN is on PATH for the rest of this script.
 export PATH="$USER_BIN:$PATH"
@@ -1001,7 +1001,7 @@ info "Ensuring ~/.local/bin is on your shell PATH..."
 add_to_path_posix() {
     local rc_file="$1"
     if [[ -f "$rc_file" ]] && ! grep -q 'local/bin' "$rc_file" 2>/dev/null; then
-        printf '\n# Added by Vice installer\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$rc_file"
+        printf '\n# Added by Gloaming installer\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$rc_file"
         info "  Updated $rc_file"
     fi
 }
@@ -1017,7 +1017,7 @@ FISH_CONFIG="$HOME/.config/fish/config.fish"
 if command -v fish &>/dev/null || [[ -d "$HOME/.config/fish" ]]; then
     mkdir -p "$(dirname "$FISH_CONFIG")"
     if ! grep -q 'local/bin' "$FISH_CONFIG" 2>/dev/null; then
-        printf '\n# Added by Vice installer\nfish_add_path -g $HOME/.local/bin\n' >> "$FISH_CONFIG"
+        printf '\n# Added by Gloaming installer\nfish_add_path -g $HOME/.local/bin\n' >> "$FISH_CONFIG"
         info "  Updated $FISH_CONFIG (fish)"
     fi
 fi
@@ -1028,62 +1028,62 @@ ICON_DIR="$HOME/.local/share/icons/hicolor/scalable/apps"
 APP_DIR="$HOME/.local/share/applications"
 mkdir -p "$ICON_DIR" "$APP_DIR"
 
-cp "$SCRIPT_DIR/assets/vice.svg" "$ICON_DIR/vice.svg"
+cp "$SCRIPT_DIR/assets/gloaming.svg" "$ICON_DIR/gloaming.svg"
 
 # Write the .desktop file with the *absolute* binary path embedded directly so
 # the app launcher doesn't rely on PATH being set correctly at launch time.
-VICE_APP_BIN="$USER_BIN/vice-app"
-cat > "$APP_DIR/vice.desktop" <<DESKTOP_EOF
+GLOAMING_APP_BIN="$USER_BIN/gloaming-app"
+cat > "$APP_DIR/gloaming.desktop" <<DESKTOP_EOF
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=Vice
+Name=Gloaming
 GenericName=Game Clip Recorder
 Comment=Record and share gameplay clips on Linux
-Exec=${VICE_APP_BIN}
-Icon=vice
+Exec=${GLOAMING_APP_BIN}
+Icon=gloaming
 Terminal=false
 Categories=Game;Video;Recorder;AudioVideo;
 Keywords=clip;record;game;capture;gameplay;
 StartupNotify=true
-StartupWMClass=Vice
+StartupWMClass=Gloaming
 DESKTOP_EOF
 
 # Refresh icon/desktop caches (harmless if tools not present).
 update-desktop-database "$APP_DIR" 2>/dev/null || true
 gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" 2>/dev/null || true
 
-info "Vice now appears in your app launcher as 'Vice'."
+info "Gloaming now appears in your app launcher as 'Gloaming'."
 
 # ── Hyprland keybind hint ─────────────────────────────────────────────────────
 if [[ "$DE" == "Hyprland" ]]; then
     echo
-    info "Hyprland detected. Vice uses evdev, no compositor keybind config needed."
+    info "Hyprland detected. Gloaming uses evdev, no compositor keybind config needed."
 fi
 
 # ── systemd user service (keeps daemon running even when window is closed) ───
 if command -v systemctl &>/dev/null && systemctl --user status &>/dev/null 2>&1; then
     echo
     if [[ -f "$SERVICE_FILE" ]]; then
-        info "Refreshing existing Vice user service..."
+        info "Refreshing existing Gloaming user service..."
         ans="y"
     else
         info "A systemd user service keeps the recording daemon running at login"
-        info "so Vice is always ready even before you open the window."
-        read -r -p "Install Vice daemon as a startup service? [Y/n] " ans
+        info "so Gloaming is always ready even before you open the window."
+        read -r -p "Install Gloaming daemon as a startup service? [Y/n] " ans
         ans="${ans:-y}"
     fi
     if [[ "${ans,,}" == "y" ]]; then
         mkdir -p "$SYSTEMD_DIR"
-        VICE_BIN="$USER_BIN/vice"
-        cat >"$SYSTEMD_DIR/vice.service" <<EOF
+        GLOAMING_BIN="$USER_BIN/gloaming"
+        cat >"$SYSTEMD_DIR/gloaming.service" <<EOF
 [Unit]
-Description=Vice game clip recorder daemon
+Description=Gloaming game clip recorder daemon
 After=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=${VICE_BIN} start --no-open-ui
+ExecStart=${GLOAMING_BIN} start --no-open-ui
 Restart=on-failure
 RestartSec=3
 Environment=PATH=${USER_BIN}:/usr/local/bin:/usr/bin:/bin
@@ -1099,9 +1099,9 @@ EOF
         systemctl --user daemon-reload
         # reenable, not enable: an install that already had the unit keeps its
         # old symlinks otherwise and never picks up the new WantedBy.
-        systemctl --user reenable vice.service
-        systemctl --user restart vice.service
-        info "Vice daemon service enabled, it will start automatically on login."
+        systemctl --user reenable gloaming.service
+        systemctl --user restart gloaming.service
+        info "Gloaming daemon service enabled, it will start automatically on login."
     fi
 fi
 
@@ -1127,12 +1127,12 @@ fi
 echo
 info "Installation complete!"
 info ""
-info "  • Open Vice:      click 'Vice' in your app launcher, or run: vice-app"
-info "  • CLI:            vice --help"
+info "  • Open Gloaming:      click 'Gloaming' in your app launcher, or run: gloaming-app"
+info "  • CLI:            gloaming --help"
 info "  • Clip hotkey:    F9 (change in Settings)"
 info "  • Build AppImage: ./packaging/appimage/build.sh"
 info "  • Build Flatpak:  ./packaging/flatpak/build.sh"
-info "  • Uninstall:      vice uninstall"
+info "  • Uninstall:      gloaming uninstall"
 info ""
 warn "Restart your terminal (or run 'exec \$SHELL') for PATH changes to take effect."
 warn "On fish: run 'exec fish' or open a new terminal window."

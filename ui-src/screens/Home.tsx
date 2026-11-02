@@ -1,617 +1,100 @@
-import {useMemo, useState} from 'react';
-
+import {outputSlots, outputTracks, slotsForPrimary} from '../lib/audioOutputs';
+import {ClipShortcut} from '../components/ClipShortcut';
+import {useEffect,useState} from 'react';
 import {useStore} from '../state/store';
 import {useClipActions} from '../state/clipActions';
-import {useHomeLayout} from '../components/AppFrame';
-import {HomeImages} from '../components/HomeImages';
-import {OverlayPortal} from '../components/OverlayPortal';
-import {usePlaylistDropTarget} from '../lib/clipDrag';
 import {api} from '../lib/api';
-import {copyToClipboard} from '../lib/clipboard';
-import {formatBytes, formatDuration, relativeTime} from '../lib/format';
-import {t, tNode} from '../lib/i18n';
 import {ClipCard} from '../components/ClipCard';
-import {Tile, ActionTile} from '../components/Tile';
+import {formatBytes} from '../lib/format';
+import {LiveReplay} from '../components/LiveReplay';
+import {Toggle, Select} from '../components/settings/Fields';
+import type {AudioSource} from '../components/settings/AudioTracks';
+import {IconSettings, IconClips} from '../components/Icons';
 import {Modal} from '../components/Modal';
-import {IconClips, IconPlaylist, IconSettings} from '../components/Icons';
-
-const ROW_LIMIT = 8;
-
-/** M3 Expressive's twelve-lobed cookie, drawn once as a path in a 100 unit box. */
-const COOKIE = (() => {
-  const points: string[] = [];
-  for (let i = 0; i < 96; i++) {
-    const angle = (i / 96) * Math.PI * 2;
-    const radius = 46 + 4 * Math.cos(angle * 12);
-    points.push(`${(50 + radius * Math.cos(angle)).toFixed(2)} ${(50 + radius * Math.sin(angle)).toFixed(2)}`);
-  }
-  return `M${points.join('L')}Z`;
-})();
-
-/** The distinctive part of a quick-tunnel URL, which is all that identifies it. */
-function tunnelHost(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/\.trycloudflare\.com$/, '');
-  } catch {
-    return url;
-  }
-}
-
-function greeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return t('home.greetingMorning');
-  if (hour < 18) return t('home.greetingAfternoon');
-  return t('home.greetingEvening');
-}
+import {t} from '../lib/i18n';
 
 export function Home() {
-  const {state, dispatch, hotkey, saveConfig, notify} = useStore();
-  const {clips, playlists, config, tunnelUrl, recentNew, status} = state;
-
-  const {actions, overlays} = useClipActions();
-  const layout = useHomeLayout();
-  const [busy, setBusy] = useState<string | null>(null);
-  const [manualCopy, setManualCopy] = useState<string | null>(null);
-  const [restartNeeded, setRestartNeeded] = useState(false);
-  const [wfMicPrompt, setWfMicPrompt] = useState(false);
-
-  const clipDuration = (config?.recording?.clip_duration as number | undefined) ?? 20;
-  const captureAudio = config?.recording?.capture_audio !== false;
-  const captureMic = Boolean(config?.recording?.capture_microphone);
-  const tunnelOn = Boolean(config?.sharing?.cloudflare_tunnel);
-  const gameCapture = Boolean(config?.recording?.window_capture);
-  // Window pinning is GSR-only, and status.backend is what is actually
-  // running rather than the configured "auto".
-  const gameCaptureSupported = status.backend === 'gpu-screen-recorder';
-
-  const recent = useMemo(() => clips.slice(0, ROW_LIMIT), [clips]);
-  const mostViewed = useMemo(
-    () =>
-      clips
-        .filter(c => (c.views ?? 0) > 0)
-        .sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
-        .slice(0, ROW_LIMIT),
-    [clips],
-  );
-
-  /**
-   * wf-recorder cannot mix a microphone in without being told how, so asking
-   * first is the only way to avoid silently recording the wrong thing.
-   */
-  const micNeedsWfChoice =
-    !captureMic &&
-    captureAudio &&
-    (config?.recording?.wf_microphone_strategy ?? 'prompt') === 'prompt' &&
-    ((config?.recording?.backend as string) === 'wf-recorder' || status.backend === 'wf-recorder');
-
-  const toggle = async (
-    key: string,
-    patch: Record<string, Record<string, unknown>>,
-    onOk: (result: {restart_required?: boolean; applied?: boolean; warning?: string}) => void,
-    failure: string,
-  ) => {
-    setBusy(key);
-    try {
-      const result = await saveConfig(patch);
-      if (result.applied === false && result.warning) {
-        notify({kind: 'error', title: t('home.savedNotApplied'), detail: result.warning, tone: 'error', holdMs: 8000});
-      } else {
-        onOk(result);
-      }
-      if (result.restart_required) setRestartNeeded(true);
-    } catch (err) {
-      notify({kind: 'error', title: failure, detail: (err as Error).message, tone: 'error', holdMs: 7000});
-    } finally {
-      setBusy(null);
-    }
+  const {state,dispatch,hotkey,saveConfig,notify}=useStore();
+  const {config,status,clips,recentNew}=state;
+  const {actions,overlays}=useClipActions();
+  const [busy,setBusy]=useState(false);
+  const [previewVisible,setPreviewVisible]=useState(()=>localStorage.getItem('gloaming-home-preview')!=='hidden');
+  const showPreview=(visible:boolean)=>{setPreviewVisible(visible);localStorage.setItem('gloaming-home-preview',visible?'visible':'hidden');};
+  const [micChoice,setMicChoice]=useState(false);
+  const [sources,setSources]=useState<AudioSource[]>([]);
+  const [displays,setDisplays]=useState<Array<{id:string;label?:string}>>([]);
+  const [deviceError,setDeviceError]=useState('');
+  const r: Record<string,unknown> = config?.recording??{};
+  useEffect(()=>{let alive=true;
+    void Promise.all([api.audioSources(),api.displays(String(r.backend||'auto'))]).then(([a,d])=>{
+      if(alive){setSources(a.sources as AudioSource[]);setDisplays(d.displays as Array<{id:string;label?:string}>);}
+    }).catch(()=>{if(alive)setDeviceError('Some devices could not be loaded. Your saved selections are still available.');});
+    return()=>{alive=false;};
+  },[r.backend]);
+  const settings=()=>dispatch({type:'setView',view:'settings'});
+  const apply=async(patch:Record<string,unknown>)=>{setBusy(true);try{
+    const result=await saveConfig({recording:{...patch, audio_tracks_mix_first:true}});
+    if(result.applied===false)throw new Error(result.warning||'Settings will apply after the current session.');
+  }catch(e){notify({kind:'error',title:'Could not apply recording settings',detail:String(e),tone:'error',holdMs:6000});}finally{setBusy(false);}};
+  const audio=r.capture_audio!==false, mic=Boolean(r.capture_microphone);
+  const micToggle=(enabled:boolean)=>{
+    if(enabled&&audio&&(r.wf_microphone_strategy??'prompt')==='prompt'&&(r.backend==='wf-recorder'||status.backend==='wf-recorder'))setMicChoice(true);
+    else void apply({capture_microphone:enabled});
   };
-
-  const setMic = (enabled: boolean, strategy?: string) =>
-    toggle(
-      'mic',
-      {recording: {capture_microphone: enabled, ...(strategy ? {wf_microphone_strategy: strategy} : {})}},
-      () =>
-        notify({
-          kind: 'info',
-          title: enabled ? t('home.micOn') : t('home.micOff'),
-          detail: enabled ? t('home.micOnDetail') : t('home.micOffDetail'),
-          tone: 'accent',
-          holdMs: 3000,
-        }),
-      t('home.errMic'),
-    );
-
-  // Follow-the-pointer picks a monitor and Game Capture picks a window, so
-  // Settings never lets both be on. The tile keeps the same rule.
-  const setGameCapture = (enabled: boolean) =>
-    toggle(
-      'gameCapture',
-      {recording: {window_capture: enabled, ...(enabled ? {follow_mouse_display: false} : {})}},
-      () =>
-        notify({
-          kind: 'info',
-          title: enabled ? t('home.gameCaptureOn') : t('home.gameCaptureOff'),
-          detail: enabled ? t('home.gameCaptureOnDetail') : undefined,
-          tone: 'accent',
-          holdMs: 3000,
-        }),
-      t('home.errGameCapture'),
-    );
-
-  const copyTunnel = async () => {
-    if (!tunnelUrl) {
-      notify({kind: 'error', title: t('home.enablePublicLinkFirst'), tone: 'error', holdMs: 4000});
-      return;
-    }
-    if (await copyToClipboard(tunnelUrl)) {
-      notify({kind: 'info', title: t('home.publicLinkCopied'), tone: 'accent', holdMs: 3000});
-    } else {
-      setManualCopy(tunnelUrl);
-    }
+  const deviceSelect=(input:boolean)=>{
+    const key=input?'microphone_source':'gsr_audio_source';
+    const fallback=input?'default_input':'default_output';
+    const selected=String(r[key]||fallback);
+    const list=sources.filter(s=>input?(s.kind==='input'||s.id==='default_input'||(s.id.startsWith('device:')&&!s.id.endsWith('.monitor'))):s.kind!=='input'&&s.id!=='default_input');
+    const options=[{id:fallback,label:input?'System default microphone':'System default output'},...list.filter(s=>s.id!==fallback)];
+    if(!options.some(s=>s.id===selected))options.push({id:selected,label:selected});
+    return <Select className="studio-device" label={input?'Microphone device':'Desktop audio device'} disabled={busy} value={selected} onChange={value=>void apply(input ? {[key]:value} : {[key]:value, audio_output_slots:slotsForPrimary(value,outputSlots(r)), audio_tracks:outputTracks(value,slotsForPrimary(value,outputSlots(r)))})} options={options.map<[string,string]>(s=>[s.id,s.label||s.id])}/>;
   };
-
-  const saveClip = () => {
-    void api.triggerClip().catch((err: Error) =>
-      notify({kind: 'error', title: t('home.errSaveClip'), detail: err.message, tone: 'error', holdMs: 7000}),
-    );
-  };
-
-  // Built once and placed either in the column or in the rail, so the two
-  // arrangements can never drift apart.
-  const micTile = (
-    <Tile
-      label={t('home.microphone')}
-      detail={captureMic ? t('home.on') : t('home.off')}
-      on={captureMic}
-      busy={busy === 'mic'}
-      icon={<MicIcon />}
-      onToggle={() => {
-        if (micNeedsWfChoice) setWfMicPrompt(true);
-        else void setMic(!captureMic);
-      }}
-    />
-  );
-  const audioTile = (
-    <Tile
-      label={t('home.desktopAudio')}
-      detail={captureAudio ? t('home.on') : t('home.off')}
-      on={captureAudio}
-      busy={busy === 'audio'}
-      icon={<SpeakerIcon />}
-      onToggle={() =>
-        void toggle(
-          'audio',
-          {recording: {capture_audio: !captureAudio}},
-          () =>
-            notify({
-              kind: 'info',
-              title: !captureAudio ? t('home.desktopAudioOn') : t('home.desktopAudioOff'),
-              tone: 'accent',
-              holdMs: 3000,
-            }),
-          t('home.errDesktopAudio'),
-        )
-      }
-    />
-  );
-  const gameCaptureTile = (
-    <Tile
-      label={t('home.gameCapture')}
-      detail={
-        !gameCaptureSupported
-          ? t('home.gameCaptureUnsupported')
-          : gameCapture
-            ? t('home.gameCaptureGame')
-            : t('home.gameCaptureDesktop')
-      }
-      on={gameCaptureSupported && gameCapture}
-      busy={busy === 'gameCapture'}
-      disabled={!gameCaptureSupported}
-      icon={<GamepadIcon />}
-      onToggle={() => void setGameCapture(!gameCapture)}
-    />
-  );
-  const linkTile = (
-    <Tile
-      label={t('home.publicLink')}
-      detail={tunnelOn ? (tunnelUrl ? t('home.active') : t('home.starting')) : t('home.off')}
-      on={tunnelOn}
-      busy={busy === 'tunnel'}
-      icon={<GlobeIcon />}
-      onToggle={() =>
-        void toggle(
-          'tunnel',
-          {sharing: {cloudflare_tunnel: !tunnelOn}},
-          () =>
-            notify({
-              kind: 'info',
-              title: !tunnelOn ? t('home.publicLinkStarting') : t('home.publicLinkStopped'),
-              tone: 'accent',
-              holdMs: 3500,
-            }),
-          t('home.errPublicLink'),
-        )
-      }
-    />
-  );
-  // The address, not a second copy of the switch beside it.
-  const readoutTile = (
-    <button
-      type="button"
-      className="tile tile-readout"
-      onClick={copyTunnel}
-      disabled={!tunnelUrl}
-      aria-label={tunnelUrl ? t('home.copyPublicLink') : t('home.noPublicLinkYet')}>
-      <span className="tile-badge" aria-hidden="true">
-        <LinkIcon />
-      </span>
-      <span className="tile-text">
-        <b>
-          {tunnelUrl
-            ? tunnelHost(tunnelUrl)
-            : tunnelOn
-              ? t('home.connecting')
-              : t('home.localOnly')}
-        </b>
-        <span className="tile-mono">
-          {tunnelUrl
-            ? t('home.tapToCopy')
-            : tunnelOn
-              ? t('home.cloudflaredStarting')
-              : t('home.linksWorkOnNetwork')}
-        </span>
-      </span>
-    </button>
-  );
-  const allClipsTile = (
-    <ActionTile
-      label={t('home.allClips')}
-      icon={<IconClips size={19} />}
-      onClick={() => dispatch({type: 'setView', view: 'clips', playlistId: null})}
-    />
-  );
-  const settingsTile = (
-    <ActionTile
-      label={t('home.settings')}
-      icon={<IconSettings size={19} />}
-      onClick={() => dispatch({type: 'setView', view: 'settings'})}
-    />
-  );
-
-  return (
-    <div className="home-layout">
-      <div className="home-columns">
-    <div className="home">
-      <header className="home-hero">
-        <h1>{greeting()}</h1>
-        <p>
-          {tNode('home.lede', {
-            duration: <b key="d">{formatDuration(clipDuration, true)}</b>,
-            hotkey: <kbd key="k">{hotkey}</kbd>,
-          })}
-        </p>
-      </header>
-
-      {layout === 'rail' ? null : (
-        <section className="tiles" aria-label={t('home.quickSettings')}>
-          <div className="tile-row tile-row-2">
-            {micTile}
-            {audioTile}
-          </div>
-          <div className="tile-row tile-row-2">
-            {linkTile}
-            {readoutTile}
-          </div>
-          <div className="tile-row tile-row-3">
-            {gameCaptureTile}
-            {allClipsTile}
-            {settingsTile}
-          </div>
+  const target=String(r.display||'');
+  const options=[{id:'',label:'Auto (primary display)'},...displays];
+  if(target&&!options.some(d=>d.id===target))options.push({id:target,label:target});
+  const bufferDuration=Number(r.buffer_duration??120);
+  const liveEnabled=Boolean(r.live_replay);
+  const preview=liveEnabled&&previewVisible;
+  const disk=status.disk;
+  const durationLabel=(n:number)=>n<60?`${n} sec`:`${n/60} min`;
+  return <div className="capture-studio capture-home" data-preview={preview}>
+    <header className="capture-topbar">
+      <span className="capture-wordmark">GLOAMING<span>.</span></span>
+      <div className="capture-heading"><h1>Capture studio</h1><p>Your moments, ready to keep.</p></div>
+      <span className="studio-status"><i data-running={status.running}/>{status.running?'Buffer running':'Buffer stopped'}</span>
+      {liveEnabled?<div className="capture-preview-toggle"><span id="home-preview-label">Live preview</span><Toggle label="Live preview" checked={preview} onChange={showPreview}/></div>:<button className="capture-button" onClick={settings}><IconClips size={16}/>Set up Live Replay</button>}
+    </header>
+    <div className="capture-dashboard">
+      <div className="capture-main">
+        {preview&&<div className="capture-live"><LiveReplay studio bufferSeconds={bufferDuration}/></div>}
+        <section aria-label="Recent captures"><div className="studio-section-title"><h2>Recent moments <span>{clips.length}</span></h2><button onClick={()=>dispatch({type:'setView',view:'clips',playlistId:null})}>Open library ↗</button></div>
+          {clips.length?<div className="studio-recent">{clips.slice(0,3).map(clip=><ClipCard key={clip.slug} clip={clip} actions={actions} isNew={recentNew.includes(clip.slug)}/>)}</div>:<div className="studio-empty">Your saved moments will appear here. Press <kbd>{hotkey}</kbd> to keep one.</div>}
+          <p className="capture-library-note">Saved on your device. Yours to keep.</p>
         </section>
-      )}
-
-      <ClipRow
-        title={t('home.recentClips')}
-        action={{label: t('home.seeAll'), onClick: () => dispatch({type: 'setView', view: 'clips', playlistId: null})}}
-        clips={recent}
-        recentNew={recentNew}
-        actions={actions}
-        empty={t('home.emptyReel', {hotkey})}
-      />
-
-      {playlists.length > 0 ? (
-        <section className="home-section">
-          <div className="home-section-head">
-            <h2>{t('home.playlists')}</h2>
-          </div>
-          <div className="playlist-row">
-            {playlists.map(playlist => (
-              <PlaylistChip
-                key={playlist.id}
-                playlist={playlist}
-                onOpen={() => dispatch({type: 'setView', view: 'clips', playlistId: playlist.id})}
-                onDone={(message, tone) =>
-                  notify({
-                    kind: tone === 'error' ? 'error' : 'info',
-                    title: message,
-                    tone,
-                    holdMs: tone === 'error' ? 7000 : 3000,
-                  })
-                }
-              />
-            ))}
-          </div>
+      </div>
+      <aside className="capture-controls" aria-label="Recording setup">
+        <div className="capture-settings-head"><h2>Recording setup</h2><IconSettings size={17}/></div>
+        <section><div className="capture-eyebrow">Capture source</div>
+          <Select label="Capture display" value={target} disabled={busy||Boolean(r.follow_mouse_display)||Boolean(r.window_capture)} onChange={value=>void apply({display:value||null})} options={options.map<[string,string]>(d=>[d.id,d.label||d.id])}/>
+          <p className="capture-source-note">{r.window_capture?'Following the active game window':r.follow_mouse_display?'Following the display under your pointer':'Your screen, captured in the background'}</p>
         </section>
-      ) : null}
-
-      {mostViewed.length > 0 ? (
-        <ClipRow title={t('home.mostViewed')} clips={mostViewed} recentNew={recentNew} actions={actions} />
-      ) : null}
-
-      <OverlayPortal>
-        {overlays}
-
-        <Modal
-          open={wfMicPrompt}
-          title={t('home.wfMicTitle')}
-          onClose={() => setWfMicPrompt(false)}>
-          <p>{t('home.wfMicBody')}</p>
-          <div className="choice-list">
-            <button
-              type="button"
-              className="choice"
-              onClick={() => {
-                setWfMicPrompt(false);
-                void setMic(true, 'backend_fallback');
-              }}>
-              <b>{t('home.wfMicBothLabel')}</b>
-              <span>{t('home.wfMicBothHelp')}</span>
-            </button>
-            <button
-              type="button"
-              className="choice"
-              onClick={() => {
-                setWfMicPrompt(false);
-                void setMic(true, 'mic_only');
-              }}>
-              <b>{t('home.wfMicOnlyLabel')}</b>
-              <span>{t('home.wfMicOnlyHelp')}</span>
-            </button>
-          </div>
-        </Modal>
-
-        <Modal
-          open={manualCopy !== null}
-          title={t('home.copyLinkTitle')}
-          onClose={() => setManualCopy(null)}>
-          <p>{t('home.copyLinkBody')}</p>
-          <textarea className="manual-copy" readOnly value={manualCopy ?? ''} rows={3} />
-        </Modal>
-
-        <Modal
-          open={restartNeeded}
-          title={t('home.restartTitle')}
-          onClose={() => setRestartNeeded(false)}
-          footer={
-            <button type="button" className="btn" onClick={() => setRestartNeeded(false)}>
-              {t('home.gotIt')}
-            </button>
-          }>
-          <p>{t('home.restartBody')}</p>
-        </Modal>
-      </OverlayPortal>
+        <section className="capture-settings-section"><div className="capture-eyebrow">Audio sources</div>
+          <div className="studio-audio-row"><span>Desktop audio</span><Toggle label="Desktop audio" checked={audio} disabled={busy} onChange={capture_audio=>void apply({capture_audio})}/></div>{deviceSelect(false)}
+          <div className="studio-audio-row"><span>Microphone</span><Toggle label="Microphone" checked={mic} disabled={busy} onChange={micToggle}/></div>{deviceSelect(true)}
+          {deviceError&&<p role="status" className="studio-description">{deviceError}</p>}
+        </section>
+        <section className="capture-settings-section"><div className="capture-eyebrow">Recording quality</div><div className="capture-quality"><span>{String(r.resolution||'Native resolution')}</span><span>{Number(r.fps??60)} FPS</span><span>{String(r.live_replay?'H.264':r.encoder||'Auto')}</span></div></section>
+        <section className="capture-settings-section"><ClipShortcut/></section>
+        <section className="capture-settings-section"><div className="capture-storage-heading"><strong>Room for more</strong><span>{disk?`${formatBytes(disk.free)} free`:'Storage unavailable'}</span></div>
+          {disk&&disk.total>0&&<meter className="capture-storage-meter" min={0} max={disk.total} value={Math.max(0,disk.total-disk.free)} aria-label="Used storage"/>}
+          <p className="capture-source-note">Your replay buffer keeps the last {durationLabel(bufferDuration)}.</p>
+        </section>
+        <button className="capture-button capture-all-settings" onClick={settings}><IconSettings size={16}/>All capture settings</button>
+      </aside>
     </div>
-        <HomeImages />
-        {layout === 'rail' ? (
-          <aside className="home-rail" aria-label={t('home.quickSettings')}>
-            <h2>{t('home.quickSettings')}</h2>
-            <div className="rail-pair">
-              <button type="button" className="rail-save" onClick={saveClip}>
-                <span className="rail-save-burst" aria-hidden="true">
-                  <svg viewBox="0 0 100 100"><path d={COOKIE} /></svg>
-                  <ClipIcon size={28} weight={1.6} />
-                </span>
-                <span className="rail-save-label">{t('home.saveClipNow')}</span>
-                <kbd>{hotkey}</kbd>
-              </button>
-              {gameCaptureTile}
-            </div>
-            <div className="rail-pair">
-              {micTile}
-              {audioTile}
-            </div>
-            <div className="rail-group">
-              {linkTile}
-              {readoutTile}
-            </div>
-            <div className="rail-group rail-nav">
-              {allClipsTile}
-              {settingsTile}
-            </div>
-            <RailStorage />
-          </aside>
-        ) : null}
-      </div>
-    </div>
-  );
+    <footer className="studio-footer"><span>Saved locally. Ready when you need it.</span><span>{clips.length} saved captures · {status.backend||'Recorder offline'}</span></footer>
+    {overlays}
+    <Modal open={micChoice} onClose={()=>setMicChoice(false)} title={t('home.wfMicTitle')}><p>{t('home.wfMicBody')}</p><div className="choice-list">{['backend_fallback','mic_only'].map(strategy=><button key={strategy} className="choice" onClick={()=>{setMicChoice(false);void apply({capture_microphone:true,wf_microphone_strategy:strategy});}}>{strategy==='backend_fallback'?t('home.wfMicBothLabel'):t('home.wfMicOnlyLabel')}</button>)}</div></Modal>
+  </div>;
 }
-
-/**
- * What the sidebar counts and the About screen cannot tell you: whether there
- * is room left on the drive the clips land on, how much of it is Vice's, and
- * when the buffer last turned into a file.
- */
-function RailStorage() {
-  const {state} = useStore();
-  const disk = state.status.disk;
-  const library = useMemo(
-    () =>
-      state.clips.reduce((sum, clip) => sum + (clip.size ?? 0), 0) +
-      state.images.reduce((sum, image) => sum + (image.size ?? 0), 0),
-    [state.clips, state.images],
-  );
-  const total = disk?.total ?? 0;
-  const free = disk?.free ?? 0;
-  const used = Math.max(0, total - free);
-  const lastClip = state.clips[0]?.created_at;
-
-  return (
-    <section className="rail-storage" aria-label={t('home.storage')}>
-      {total > 0 ? (
-        <div
-          className="rail-meter"
-          role="img"
-          aria-label={t('home.diskBar', {
-            used: formatBytes(used),
-            total: formatBytes(total),
-            library: formatBytes(library),
-          })}>
-          <span className="rail-meter-fill" style={{width: `${(used / total) * 100}%`}} />
-          <span className="rail-meter-vice" style={{width: `${Math.min(library, total) / total * 100}%`}} />
-        </div>
-      ) : null}
-      <dl className="rail-stats">
-        <div>
-          <dt>{t('home.diskFree')}</dt>
-          <dd>{total > 0 ? formatBytes(free) : t('home.diskUnknown')}</dd>
-        </div>
-        <div>
-          <dt>{t('home.diskLibrary')}</dt>
-          <dd>{formatBytes(library)}</dd>
-        </div>
-        <div>
-          <dt>{t('home.lastClip')}</dt>
-          <dd>{lastClip ? relativeTime(lastClip) : t('home.lastClipNever')}</dd>
-        </div>
-      </dl>
-    </section>
-  );
-}
-
-/** A playlist tile that also accepts a clip dropped onto it. */
-function PlaylistChip({
-  playlist,
-  onOpen,
-  onDone,
-}: {
-  playlist: import('../lib/types').Playlist;
-  onOpen: () => void;
-  onDone: (message: string, tone: 'accent' | 'error') => void;
-}) {
-  const drop = usePlaylistDropTarget(playlist, onDone);
-  const count = playlist.clip_slugs.length;
-  return (
-    <button
-      type="button"
-      className="playlist-chip"
-      data-drop-over={drop.over || undefined}
-      data-received={drop.caught || undefined}
-      style={playlist.color1 ? ({'--chip': playlist.color1} as React.CSSProperties) : undefined}
-      onClick={onOpen}
-      {...drop.props}>
-      <span className="playlist-chip-mark" aria-hidden="true">
-        {playlist.emoji || <IconPlaylist size={15} />}
-      </span>
-      <span className="playlist-chip-text">
-        <b>{playlist.name}</b>
-        <span>{t('clips.countClips', {count})}</span>
-      </span>
-    </button>
-  );
-}
-
-function ClipRow({
-  title,
-  clips,
-  recentNew,
-  actions,
-  action,
-  empty,
-}: {
-  title: string;
-  clips: import('../lib/types').Clip[];
-  recentNew: string[];
-  actions: import('../components/ClipCard').ClipActions;
-  action?: {label: string; onClick: () => void};
-  empty?: string;
-}) {
-  return (
-    <section className="home-section">
-      <div className="home-section-head">
-        <h2>{title}</h2>
-        {action ? (
-          <button type="button" className="section-link" onClick={action.onClick}>
-            {action.label}
-          </button>
-        ) : null}
-      </div>
-      {clips.length === 0 && empty ? (
-        <p className="home-empty">{empty}</p>
-      ) : (
-        <div className="clip-row">
-          {clips.map(clip => (
-            <ClipCard
-              key={clip.slug}
-              clip={clip}
-              draggable
-              isNew={recentNew.includes(clip.slug)}
-              actions={actions}
-            />
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-const LinkIcon = () => (
-  <svg {...stroke} width={19} height={19} viewBox="0 0 24 24">
-    <path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" />
-    <path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" />
-  </svg>
-);
-
-const stroke = {
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 2,
-  strokeLinecap: 'round' as const,
-  strokeLinejoin: 'round' as const,
-};
-
-const MicIcon = () => (
-  <svg width="19" height="19" viewBox="0 0 24 24" {...stroke} aria-hidden="true">
-    <rect x="9" y="2" width="6" height="12" rx="3" />
-    <path d="M5 11a7 7 0 0 0 14 0M12 18v4" />
-  </svg>
-);
-
-const SpeakerIcon = () => (
-  <svg width="19" height="19" viewBox="0 0 24 24" {...stroke} aria-hidden="true">
-    <path d="M4 9v6h4l5 4V5L8 9H4z" />
-    <path d="M17 8.5a5 5 0 0 1 0 7" />
-  </svg>
-);
-
-const GamepadIcon = () => (
-  <svg width="19" height="19" viewBox="0 0 24 24" {...stroke} aria-hidden="true">
-    <path d="M7 7h10a5 5 0 0 1 4.9 6l-.8 3.9a2.5 2.5 0 0 1-4.3 1.2L14.5 16h-5l-2.3 2.1a2.5 2.5 0 0 1-4.3-1.2L2.1 13A5 5 0 0 1 7 7z" />
-    <path d="M7.5 10.5v3M6 12h3M15.5 11h.01M17.5 13h.01" />
-  </svg>
-);
-
-const GlobeIcon = () => (
-  <svg width="19" height="19" viewBox="0 0 24 24" {...stroke} aria-hidden="true">
-    <circle cx="12" cy="12" r="9" />
-    <path d="M3 12h18M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18" />
-  </svg>
-);
-
-/* Weight drops as the icon grows, the way Material Symbols' optical size axis
-   does: a 19px icon's stroke blown up to 40px reads as a blob. */
-const ClipIcon = ({size = 19, weight = 2}: {size?: number; weight?: number} = {}) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" {...stroke} strokeWidth={weight} aria-hidden="true">
-    <path d="M5 3h11l3 3v15H5z" />
-    <path d="M9 3v6h6" />
-  </svg>
-);

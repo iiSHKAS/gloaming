@@ -1,0 +1,222 @@
+/* Shared control styling. Screen styles own layout; these own appearance. */
+.btn {
+  padding: 10px 18px;
+  border: none;
+  border-radius: var(--radius-element);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.btn:hover {
+  background: var(--gloaming-accent-hover);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* A quiet button sits on the page background on some screens and on a raised
+   card on others. The soft ladder puts it one step above a card, so the same
+   flat fill reads against both without needing a translucent wash. */
+.btn-quiet {
+  background: var(--control);
+  color: var(--on-control);
+}
+
+.btn-quiet:hover:not(:disabled) {
+  background: var(--control-hover);
+  color: var(--color-text-accent);
+}
+
+.btn-quiet:disabled {
+  /* Sits on a tonal container, so it dims its own on-colour rather than
+     switching to a surface text token. */
+  color: var(--on-control);
+  opacity: 0.38;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+
+.switch {
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--recessed);
+  cursor: pointer;
+  transition: background-color var(--duration-medium) var(--ease-standard);
+}
+
+.switch[aria-checked='true'] {
+  background: var(--color-accent);
+}
+
+.switch:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.switch:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: var(--color-text-secondary);
+  /* Width as well as position, so the thumb stretches into the move the way
+     Material's expressive switch does. */
+  transition:
+    left var(--duration-medium) var(--gloaming-ease-spring),
+    width var(--duration-medium) var(--gloaming-ease-spring),
+    background-color var(--duration-medium) var(--ease-standard);
+}
+
+.switch[aria-checked='true'] .switch-thumb {
+  left: 24px;
+  background: var(--color-on-accent);
+}
+
+.switch:active:not(:disabled) .switch-thumb {
+  width: 26px;
+}
+
+.switch[aria-checked='true']:active:not(:disabled) .switch-thumb {
+  left: 18px;
+}
+
+
+:is(.gloaming-app,.trim-modal) .btn {border-radius:8px;background:var(--studio-accent);color:var(--studio-on-accent);font-weight:600;box-shadow:none}
+:is(.gloaming-app,.trim-modal) .btn-quiet {background:#222428;border:1px solid #2c2e32;color:#f0f1f3}
+:is(.gloaming-app,.trim-modal) .btn-danger-solid {background:#ef807b;color:#28100f}
+:is(.gloaming-app,.trim-modal) button:disabled {cursor:default;opacity:.45}
+:is(.gloaming-app,.trim-modal) :is(button,input,select,summary):focus-visible {outline:2px solid var(--studio-accent);outline-offset:3px}
+.gloaming-app .switch {width:33px;height:19px;background:#45484f}.gloaming-app .switch-thumb {top:3px;left:3px;width:13px;height:13px;background:#b6bac2}
+.gloaming-app .switch[aria-checked=true] {background:var(--studio-accent)}.gloaming-app .switch[aria-checked=true] .switch-thumb {left:17px;background:var(--studio-on-accent)}
+.gloaming-app .switch:active:not(:disabled) .switch-thumb {width:13px}.gloaming-app .switch[aria-checked=true]:active:not(:disabled) .switch-thumb {left:17px}
+
+.btn-danger:hover {
+  background: var(--color-error-muted);
+  color: var(--color-error);
+}
+
+.btn-danger-solid {
+  background: var(--color-error);
+  color: var(--color-on-error);
+}
+
+.btn-danger-solid:hover {
+  background: var(--color-error);
+  filter: brightness(1.1);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+/* Select fields and their portalled menus share one geometry across screens. */
+.ui-select {
+  display:inline-flex;align-items:center;justify-content:space-between;gap:14px;
+  min-width:0;max-width:100%;min-height:38px;padding:9px 12px;
+  border:1px solid #34373d;border-radius:8px;background:#222428;color:#f0f1f3;
+  font:inherit;font-size:12px;line-height:18px;text-align:start;cursor:pointer;
+  transition:background 140ms ease,border-color 140ms ease,box-shadow 140ms ease;
+}
+.ui-select>span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ui-select>svg {flex:none;color:#9399a3;transition:transform 160ms ease}
+.ui-select:hover:not(:disabled) {background:#292c30;border-color:#52565e}
+.ui-select[aria-expanded=true] {border-color:var(--studio-accent);box-shadow:0 0 0 2px color-mix(in srgb, var(--studio-accent) 4.31%, transparent)}
+.ui-select[aria-expanded=true]>svg {transform:rotate(180deg);color:var(--studio-accent)}
+.ui-select:disabled {opacity:.45;cursor:default}
+.srow-control>.ui-select,.tracks-add>.ui-select {width:100%}
+.tracks-add>.ui-select {flex:1}
+.capture-controls .ui-select {width:100%}
+.studio-quick-row .ui-select {flex:1}
+.studio-library-tools>.ui-select {min-width:150px;max-width:260px}
+.library-controls>.ui-select {min-width:150px}
+.ui-select-menu {
+  position:fixed;z-index:10000;box-sizing:border-box;padding:4px;
+  border:1px solid #3a3e44;border-radius:10px;background:#202226;color:#f0f1f3;
+  box-shadow:0 14px 36px #0006,0 3px 8px #0004;overflow-y:auto;overflow-x:hidden;
+  overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#50555e transparent;
+  font:inherit;font-size:12px;transform-origin:top center;
+  animation:select-enter 160ms cubic-bezier(.2,.8,.2,1) both;
+}
+.ui-select-menu[data-open=false] {animation:select-exit 130ms ease both;pointer-events:none}
+.ui-select-menu::-webkit-scrollbar {width:6px}
+.ui-select-menu::-webkit-scrollbar-thumb {border-radius:8px;background:#50555e}
+.ui-select-option {
+  box-sizing:border-box;height:36px;min-height:36px;padding:0 10px;display:flex;align-items:center;
+  justify-content:space-between;gap:12px;border-radius:6px;cursor:pointer;user-select:none;
+  transition:background 100ms ease,color 100ms ease;
+}
+.ui-select-option>span:first-child {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ui-select-option>span:last-child {flex:none;width:14px;color:var(--studio-accent)}
+.ui-select-option[aria-selected=true] {color:var(--studio-accent)}
+.ui-select-option[data-active=true] {background:#34383e}
+.ui-select-group {padding:9px 10px 5px;color:#9399a3;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+@keyframes select-enter {from {opacity:0;transform:translateY(-4px) scaleY(.97)} to {opacity:1;transform:translateY(0) scaleY(1)}}
+@keyframes select-exit {from {opacity:1;transform:translateY(0) scaleY(1)} to {opacity:0;transform:translateY(-3px) scaleY(.98)}}
+@media(prefers-reduced-motion:reduce) {.ui-select,.ui-select>svg,.ui-select-option {transition:none}.ui-select-menu,.ui-select-menu[data-open=false] {animation-duration:1ms}}
+
+/* Editable shortcuts get their own flexible space, even for long combinations. */
+.clip-shortcut {display:flex;flex-direction:column;gap:5px;min-width:0;max-width:100%}
+.clip-shortcut-label {display:flex;align-items:center;gap:6px;color:#91969f;font-size:10px}
+.clip-shortcut-label>span {font-size:12px}
+.clip-shortcut .key-capture {width:100%;min-width:0;max-width:100%;padding:8px 10px;border:1px solid #34373d;border-radius:7px;background:#222428;color:#f0f1f3;white-space:normal;overflow-wrap:anywhere;line-height:1.6;text-align:start;font-size:11px}
+.clip-shortcut .key-capture:hover {border-color:var(--studio-accent)}
+.clip-shortcut .key-capture[data-listening] {background:var(--studio-accent);color:var(--studio-on-accent);border-color:transparent;animation:none}
+.clip-shortcut .key-capture[data-listening]::after {content:' · Esc to cancel';font-size:10px}
+.capture-controls>.clip-shortcut {margin:0 0 12px}
+.clips-tools>.clip-shortcut {width:220px;flex:0 1 220px}
+
+/* Keycaps wrap as individual keys without losing the combination separator. */
+.shortcut-keycaps {display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-width:0;max-width:100%;padding:2px 0 4px}
+.shortcut-key-part {display:inline-flex;align-items:center;gap:7px;min-width:0;max-width:100%}
+.shortcut-plus {font:500 12px/1 sans-serif;color:#7f8994;flex:none}
+.key-capture .shortcut-key {display:inline-flex;align-items:center;justify-content:center;min-width:30px;min-height:29px;max-width:100%;padding:4px 9px;box-sizing:border-box;border:1px solid #50565f;border-bottom-color:#626b77;border-radius:6px;background:linear-gradient(#353a41,#272c32);box-shadow:0 3px 0 #101216,0 4px 0 #444b55,inset 0 1px #ffffff0d;color:#f0f3f6;font:500 11px/1.4 var(--font-family-code,monospace);overflow-wrap:anywhere;white-space:normal}
+.key-capture:hover .shortcut-key {border-color:var(--studio-accent-border);color:var(--studio-accent)}
+.key-capture:active .shortcut-key {transform:translateY(1px);box-shadow:0 2px 0 #101216,0 3px 0 #444b55}
+
+.controller-binding{min-width:0;max-width:100%}
+.controller-binding .key-pair{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.settings-studio .key-pair .key-capture.controller-capture{flex:0 1 auto;width:fit-content;min-width:0;max-width:100%}
+.controller-capture{min-height:44px;height:auto;display:inline-flex;align-items:center}
+.controller-capture .pad-glyph{width:auto;height:30px;display:block}
+.controller-capture .pad-glyph:not([style]){width:30px}
+.controller-capture[aria-pressed=true]:not([data-listening]){box-shadow:inset 0 0 0 1px var(--studio-accent)}
+.controller-binding small{display:block;margin-top:8px;color:var(--gloaming-text-muted,#91969f);line-height:1.5;overflow-wrap:anywhere}
+
+.controller-status{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid #2c2e32;border-radius:9px;margin-bottom:6px;background:#151719}
+.controller-status strong{font-size:13px;font-weight:550}
+.controller-status small{display:block;color:#91969f;font-size:12px;margin-top:4px}
+.controller-connection-dot{width:8px;height:8px;border-radius:50%;background:#91969f;flex-shrink:0}
+.controller-status[data-connected=true] .controller-connection-dot{background:var(--studio-accent);box-shadow:0 0 0 4px var(--studio-accent-soft)}
+
+.ui-select-menu[data-placement=top] {transform-origin:bottom center}

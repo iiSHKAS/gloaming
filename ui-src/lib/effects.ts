@@ -7,7 +7,7 @@ import {t} from './i18n';
  * Chromium can fall back to software compositing without reporting it: no
  * error, no black window, every frame simply drawn on the CPU. The one signal
  * that survives every fallback path is how fast frames actually arrive, so
- * 'auto' measures it. `?sw=1` (vice-app relaunched itself into software mode)
+ * 'auto' measures it. `?sw=1` (gloaming-app relaunched itself into software mode)
  * is the same verdict reached before the first paint.
  *
  * The constants below are load-bearing and were tuned against real hardware.

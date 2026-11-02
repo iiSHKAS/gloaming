@@ -8,7 +8,7 @@ import {LOCALES, type LocaleName} from '../locales';
  * No i18n library. The runtime need here is a dictionary lookup, a fallback
  * chain and plural selection; react-i18next is 40KB to provide that in a bundle
  * that already carries the whole editor. Plurals go through Intl.PluralRules,
- * which every engine Vice runs on already has, and which is the only way to be
+ * which every engine Gloaming runs on already has, and which is the only way to be
  * right in languages that do not work like English.
  *
  * English is the source of truth. Anything missing from a locale falls back to
@@ -18,7 +18,7 @@ import {LOCALES, type LocaleName} from '../locales';
  */
 
 const FALLBACK: LocaleName = 'en';
-const STORAGE_KEY = 'vice-locale';
+const STORAGE_KEY = 'gloaming-locale';
 
 /** A leaf is either a plain string or a set of CLDR plural categories. */
 type Leaf = string | Partial<Record<Intl.LDMLPluralRule, string>>;

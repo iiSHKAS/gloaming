@@ -1,5 +1,5 @@
 /**
- * The keyboard overlay's layout, the same one vice/keys.py draws on screen.
+ * The keyboard overlay's layout, the same one gloaming/keys.py draws on screen.
  * Rows of [key id, label, width in key units]; a null id is a gap.
  */
 export const KEY_LAYOUT: Array<Array<[string | null, string, number]>> = [

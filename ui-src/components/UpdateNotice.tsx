@@ -7,7 +7,7 @@ import {useStore} from '../state/store';
 import {Modal} from './Modal';
 import {t} from '../lib/i18n';
 
-const DISMISSED_KEY = 'vice_update_dismissed';
+const DISMISSED_KEY = 'gloaming_update_dismissed';
 
 /**
  * The "a new version is out" notice.

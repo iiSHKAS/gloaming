@@ -15,6 +15,7 @@ export interface Clip {
   views: number;
   /** Keys were kept beside this clip for the viewer's keyboard overlay. */
   keys?: boolean;
+  pad_inputs?: boolean;
   duration: number | null;
   width: number | null;
   height: number | null;
@@ -88,7 +89,7 @@ export interface Status {
   ready: boolean;
   recorder_error: string | null;
   cpu_fallback: boolean;
-  /** Why the GPU encoder would not open, when Vice can tell (#247). */
+  /** Why the GPU encoder would not open, when Gloaming can tell (#247). */
   cpu_fallback_reason?: {
     kind: 'nvenc_api';
     driver: string;
@@ -103,6 +104,8 @@ export interface Status {
   disk?: {free: number; total: number} | null;
   update?: UpdateInfo | null;
   key_overlay?: KeyOverlayState | null;
+  pad_overlay?: KeyOverlayState | null;
+  recording_overlays?: {keys: 'live' | 'after-save' | 'off'; pad: 'live' | 'after-save' | 'off'};
 }
 
 /** The on-screen keyboard overlay's process, as the daemon sees it. */
@@ -165,6 +168,7 @@ export type WsMessage =
   | {type: 'daemon_upgrading'; version?: string}
   | ({type: 'update_available'} & UpdateInfo)
   | ({type: 'key_overlay'} & KeyOverlayState)
+  | ({type: 'pad_overlay'} & KeyOverlayState)
   | {type: 'config_changed'};
 
 export type ViewName = 'home' | 'clips' | 'images' | 'editor' | 'settings' | 'about';

@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {stripTypeScriptTypes} from 'node:module';
+const code=stripTypeScriptTypes(readFileSync(new URL('../../ui-src/lib/settingsAutosave.ts',import.meta.url),'utf8'),{mode:'transform'});
+const {SettingsAutosave}=await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+const writes=[];
+const save=new SettingsAutosave({overlay:{keys:false,pad:false}},async patch=>writes.push(patch));
+assert.deepEqual(save.acceptExternal({overlay:{pad:true}}),{overlay:{pad:true}});
+save.submit({overlay:{keys:false,pad:true},recording:{fps:60}});
+await save.flush();
+assert.deepEqual(writes,[{recording:{fps:60}}]);
+save.submit({overlay:{keys:true,pad:true},recording:{fps:60}});
+const accepted=save.acceptExternal({overlay:{keys:false,pad:false}});
+assert.deepEqual(accepted,{overlay:{pad:false}});
+await save.flush();
+assert.deepEqual(writes[1],{overlay:{keys:true}});
+console.log('External overlay hotkeys stay synchronized; pending local changes are preserved.');

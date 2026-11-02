@@ -1,79 +1,57 @@
-import {createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode} from 'react';
+import {createContext, useContext, useEffect, useRef, useState, type ReactNode} from 'react';
 
 import {api} from '../lib/api';
-import {IS_NATIVE, keepRunning, quitVice} from '../lib/env';
+import {needsWindowControls, keepRunning, quitGloaming, IS_CUSTOM_CHROME} from '../lib/env';
+import {WindowTitlebar} from './WindowTitlebar';
 import {Tutorial} from './Tutorial';
 import {WhatsNew} from './WhatsNew';
 import {latestNotedVersion, notesFor} from '../lib/whatsNew';
 import {UpdateNotice} from './UpdateNotice';
 import {IconMinimize, IconPower} from './Icons';
 import {useStore} from '../state/store';
-import {SideNav} from './SideNav';
+import {StudioNav} from './StudioNav';
 import {StatusIsland} from './StatusIsland';
 import {Banners} from './Banners';
 import {t} from '../lib/i18n';
 
-/** Matches --melt in shell.css. The arcs are drawn at this size. */
-const MELT = 32;
 
-/**
- * The window frame: navigation on the left, content on the right, and one
- * divider between them that curves outward at each end.
- *
- * Responsive contract: the full frame above 900px. At 900px and below the
- * navigation collapses to a rail and the melt is dropped, because there is no
- * longer a wide side for the curve to melt into.
- */
-/*
- * Home's three arrangements, by the content width left after the frame's own
- * padding. Wide adds the Images panel beside the fixed 1180 column. Rail comes
- * once there is room for three thumbnail columns and a quick-settings rail as
- * well (1180 + 760 + 380, plus two gaps), and moves the quick settings out to it.
- */
-const WIDE_HOME = 1580;
-const RAIL_HOME = 2368;
-
+/** Top navigation and shared desktop chrome for the capture studio. */
 export type HomeLayout = 'narrow' | 'wide' | 'rail';
 const HomeLayoutContext = createContext<HomeLayout>('narrow');
 export const useHomeLayout = () => useContext(HomeLayoutContext);
 
 export function AppFrame({children}: {children: ReactNode}) {
-  const {state} = useStore();
+  const {state, dispatch} = useStore();
+  const settingsOrigin = useRef({view: state.view, playlistId: state.currentPlaylistId});
+  useEffect(() => {
+    if (state.view !== 'settings') settingsOrigin.current = {view: state.view, playlistId: state.currentPlaylistId};
+  }, [state.view, state.currentPlaylistId]);
+  const [windowControls, setWindowControls] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    const refresh = () => { void needsWindowControls().then(value => { if(alive) setWindowControls(value); }).catch(()=>{}); };
+    refresh();
+    const timer = setInterval(refresh, 1500);
+    window.addEventListener('pywebviewready', refresh);
+    return () => {alive=false;clearInterval(timer);window.removeEventListener('pywebviewready',refresh);};
+  }, []);
   // Both of these screens have their own controls in the bottom right.
   const quitHidden = state.view === 'editor' || state.view === 'settings';
   const [tutorial, setTutorial] = useState(false);
   const [updateOpen, setUpdateOpen] = useState(false);
   const [whatsNew, setWhatsNew] = useState<string | null>(null);
   const version = state.status.version;
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [homeLayout, setHomeLayout] = useState<HomeLayout>('narrow');
-
-  useLayoutEffect(() => {
-    const content = contentRef.current;
-    if (!content || state.view !== 'home') return;
-    const measure = () => {
-      const style = getComputedStyle(content);
-      // Exclude padding, but not the scrollbar: hiding it must not move the breakpoint.
-      const width = content.offsetWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
-      setHomeLayout(width >= RAIL_HOME ? 'rail' : width >= WIDE_HOME ? 'wide' : 'narrow');
-    };
-    const observer = new ResizeObserver(measure);
-    observer.observe(content);
-    measure();
-    return () => observer.disconnect();
-  }, [state.view]);
-
   // First run only. The flag is kept on the daemon as well as locally,
   // because the native window's localStorage does not survive a restart on
   // every QtWebEngine build, which made the tutorial reappear every launch.
   useEffect(() => {
-    if (localStorage.getItem('vice_tutorial_shown')) return;
+    if (localStorage.getItem('gloaming_tutorial_shown')) return;
     let cancelled = false;
     void api
       .getAppState()
       .then(s => {
         if (cancelled) return;
-        if (s.tutorial_seen) localStorage.setItem('vice_tutorial_shown', '1');
+        if (s.tutorial_seen) localStorage.setItem('gloaming_tutorial_shown', '1');
         else setTutorial(true);
       })
       .catch(() => !cancelled && setTutorial(true));
@@ -88,17 +66,17 @@ export function AppFrame({children}: {children: ReactNode}) {
   // the same reason as the tutorial flag.
   useEffect(() => {
     if (!version || !notesFor(version)) return;
-    if (localStorage.getItem('vice_whats_new_seen') === version) return;
+    if (localStorage.getItem('gloaming_whats_new_seen') === version) return;
     let cancelled = false;
     void api
       .getAppState()
       .then(s => {
         if (cancelled) return;
         if (s.whats_new_seen === version) {
-          localStorage.setItem('vice_whats_new_seen', version);
+          localStorage.setItem('gloaming_whats_new_seen', version);
           return;
         }
-        const returning = Boolean(s.tutorial_seen) || Boolean(localStorage.getItem('vice_tutorial_shown'));
+        const returning = Boolean(s.tutorial_seen) || Boolean(localStorage.getItem('gloaming_tutorial_shown'));
         if (returning) setWhatsNew(version);
       })
       .catch(err => console.debug('Could not read whether these notes were seen', err));
@@ -109,7 +87,7 @@ export function AppFrame({children}: {children: ReactNode}) {
 
   const closeWhatsNew = () => {
     if (whatsNew === version && version) {
-      localStorage.setItem('vice_whats_new_seen', version);
+      localStorage.setItem('gloaming_whats_new_seen', version);
       void api.setAppState({whats_new_seen: version}).catch(err => {
         console.debug('Recording that the notes were seen failed', err);
       });
@@ -119,77 +97,35 @@ export function AppFrame({children}: {children: ReactNode}) {
 
   const notedVersion = notesFor(version) ? version : latestNotedVersion();
 
-  return (
-    <div className="frame">
-      <SideNav
+  // The page draws its own window controls when the system title bar is off, so the bottom-right row is not needed.
+  const bottomRow = windowControls && !IS_CUSTOM_CHROME;
+  const frame = (
+    <div className="frame studio-frame" data-capture-home={state.view==='home' || undefined} data-sidebar={state.view!=='settings' || undefined}>
+      {state.view==='settings' ? <header className="settings-return-bar"><button type="button" onClick={()=>dispatch({type:'setView', ...settingsOrigin.current})} aria-label="Back to previous section"><span className="settings-return-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m10 6-6 6 6 6M4 12h16"/></svg></span><span>Back</span></button></header> : (
+      <StudioNav
         onShowTutorial={() => setTutorial(true)}
         onShowUpdate={() => setUpdateOpen(true)}
         onShowWhatsNew={notedVersion ? () => setWhatsNew(notedVersion) : undefined}
-      />
-      <Melt />
-      <div className="frame-content" ref={contentRef}
-        data-home-wide={state.view === 'home' && homeLayout !== 'narrow' || undefined}
-        data-home-rail={state.view === 'home' && homeLayout === 'rail' || undefined}
-        data-native={IS_NATIVE || undefined}>
+      />)}
+
+      <div className="frame-content" data-view={state.view}
+        data-native={bottomRow || undefined}>
         <Banners />
-        <HomeLayoutContext.Provider value={homeLayout}>{children}</HomeLayoutContext.Provider>
+        <HomeLayoutContext.Provider value="narrow">{children}</HomeLayoutContext.Provider>
       </div>
-      <StatusIsland />
-      {IS_NATIVE ? <QuitRow hidden={quitHidden} /> : null}
+      {state.event ? <StatusIsland /> : null}
+      {bottomRow ? <QuitRow hidden={quitHidden} /> : null}
       <Tutorial open={tutorial} onClose={() => setTutorial(false)} />
       <UpdateNotice forceOpen={updateOpen} onClose={() => setUpdateOpen(false)} />
       <WhatsNew version={whatsNew} open={whatsNew !== null} onClose={closeWhatsNew} />
     </div>
   );
-}
-
-/**
- * The divider. Two quarter arcs and a straight run between them.
- *
- * Each arc leaves the frame edge horizontally and arrives at the divider
- * vertically, so the tangents match at both ends and neither joint reads as a
- * corner. The stroke fades out as it approaches the edge, which is what makes
- * it melt rather than simply stop; the tint underneath does not fade, so there
- * is no seam where the navigation surface meets the straight run.
- */
-function Melt() {
+  if (!IS_CUSTOM_CHROME) return frame;
   return (
-    <div className="melt-group" aria-hidden="true">
-      <svg width="0" height="0" className="melt-defs">
-        <defs>
-          <linearGradient id="vice-melt-fade" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#fff" stopOpacity="0" />
-            <stop offset=".55" stopColor="#fff" stopOpacity=".05" />
-            <stop offset="1" stopColor="#fff" stopOpacity=".10" />
-          </linearGradient>
-        </defs>
-      </svg>
-
-      <div className="melt melt-top">
-        <MeltArc />
-      </div>
-      <div className="melt-line" />
-      <div className="melt melt-bottom">
-        <MeltArc />
-      </div>
+    <div className="window-chrome">
+      <WindowTitlebar />
+      {frame}
     </div>
-  );
-}
-
-function MeltArc() {
-  return (
-    <svg width={MELT} height={MELT} viewBox={`0 0 ${MELT} ${MELT}`}>
-      <path
-        d={`M${MELT} 0 A${MELT} ${MELT} 0 0 0 0 ${MELT} L0 0 Z`}
-        fill="var(--vice-nav-tint)"
-      />
-      <path
-        d={`M${MELT} 0 A${MELT} ${MELT} 0 0 0 0 ${MELT}`}
-        fill="none"
-        stroke="url(#vice-melt-fade)"
-        strokeWidth="1"
-      />
-    </svg>
   );
 }
 
@@ -209,7 +145,7 @@ function QuitRow({hidden}: {hidden: boolean}) {
         className="quit-btn quit-btn-danger"
         onClick={() => {
           if (window.confirm(t('frame.quitConfirm'))) {
-            quitVice();
+            quitGloaming();
           }
         }}>
         <IconPower size={14} />

@@ -65,7 +65,7 @@ export function SideNav({
   return (
     <nav className="sidenav" aria-label={t('nav.main')}>
       <div className="sidenav-brand">
-        <IconMark size={19} className="sidenav-mark" />
+        <IconMark size={28} className="sidenav-mark" />
         <Wordmark height={15} />
       </div>
 
@@ -154,7 +154,7 @@ export function SideNav({
             type="button"
             className="update-chip"
             onClick={onShowUpdate}
-            title={`Vice ${state.update.version} is available`}>
+            title={`Gloaming ${state.update.version} is available`}>
             <IconDownload size={12} />
             <span>{t('nav.update')}</span>
           </button>

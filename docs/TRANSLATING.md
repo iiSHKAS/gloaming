@@ -1,11 +1,11 @@
-# Translating Vice
+# Translating Gloaming
 
-Vice's interface lives in one JSON file per language. Adding a language means
+Gloaming's interface lives in one JSON file per language. Adding a language means
 filling in a copy of the English one and opening a pull request. You do not
 need to finish it, and you do not need to know any TypeScript.
 
 Everything on this page needs Node installed, which you already have if you can
-run `npm`. Nobody installing Vice needs Node: the built interface is committed
+run `npm`. Nobody installing Gloaming needs Node: the built interface is committed
 to the repository.
 
 ## Four steps
@@ -36,7 +36,7 @@ English text still in place as the values, and adds it to
 Three things to keep:
 
 - **`{name}` placeholders.** `"Added to {playlist}"` becomes
-  `"Ajouté à {playlist}"`. The word inside the braces is a slot Vice fills in,
+  `"Ajouté à {playlist}"`. The word inside the braces is a slot Gloaming fills in,
   so it has to survive untouched. You can move it anywhere in the sentence.
 - **Plural forms.** A value that is an object rather than a string is a plural:
 
@@ -63,20 +63,20 @@ It prints how much of each language is done and what is still English. It also
 catches a key you renamed by accident, which is the one mistake that breaks
 something.
 
-To see it running, build the interface and restart Vice:
+To see it running, build the interface and restart Gloaming:
 
 ```bash
 npm run build
-systemctl --user restart vice.service
+systemctl --user restart gloaming.service
 ```
 
-Vice picks your system language automatically. To look at another one, use the
+Gloaming picks your system language automatically. To look at another one, use the
 Language picker in Settings under Appearance.
 
 **4. Open a pull request.**
 
 Commit `ui-src/locales/<your-locale>.json`, `ui-src/locales/index.ts` and the
-rebuilt `vice/ui/scripts/app.js`. The pull request keeps your name on the work,
+rebuilt `gloaming/ui/scripts/app.js`. The pull request keeps your name on the work,
 and you get credited by handle in the release notes and in the README.
 
 ## Things worth knowing
@@ -85,7 +85,7 @@ and you get credited by handle in the release notes and in the README.
 back to English, key by key. Send 50 strings now and the rest later, or never.
 Nothing breaks either way.
 
-**Only the interface is translated.** Log lines, `vice doctor` output and error
+**Only the interface is translated.** Log lines, `gloaming doctor` output and error
 messages from the daemon stay in English, because those get pasted into bug
 reports and have to be readable by whoever is answering.
 

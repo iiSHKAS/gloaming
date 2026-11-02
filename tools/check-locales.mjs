@@ -4,7 +4,7 @@
 // Run with: npm run i18n:check
 //
 // Two jobs. For a translator it answers "what is left for my language", which
-// is the question that otherwise means diffing JSON by hand. For Vice it
+// is the question that otherwise means diffing JSON by hand. For Gloaming it
 // answers "did somebody add a hardcoded string again", which is the way this
 // rots: the plumbing lands, and six months later half the new copy is English
 // only and nobody noticed.

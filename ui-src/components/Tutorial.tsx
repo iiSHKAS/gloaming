@@ -9,7 +9,7 @@ import {t} from '../lib/i18n';
 import {IconCheck, IconPlus} from './Icons';
 import {AccentPicker} from './AccentPicker';
 import {useAccentChoice} from '../lib/accentChoice';
-import {customAccent as deriveCustom} from '../theme/viceTheme';
+import {customAccent as deriveCustom} from '../theme/gloamingTheme';
 import {KeyCapture} from './settings/KeyCapture';
 import {Slider, Toggle} from './settings/Fields';
 import {ACCENTS, ACCENT_NAMES} from '../theme/accents';
@@ -136,7 +136,7 @@ export function Tutorial({open, onClose}: {open: boolean; onClose: () => void}) 
   const clipKey = (state.config?.hotkeys?.clip as string | undefined) ?? '';
   const shotKey = (state.config?.hotkeys?.screenshot as string | undefined) ?? '';
   const accent = state.accent;
-  // Both default off, which is how Vice behaved before either existed. Asking
+  // Both default off, which is how Gloaming behaved before either existed. Asking
   // here is the only place a new user meets them before they matter.
   const gameCapture = Boolean(state.config?.recording?.window_capture);
   const gameCaptureSupported = state.status.backend === 'gpu-screen-recorder';
@@ -158,11 +158,11 @@ export function Tutorial({open, onClose}: {open: boolean; onClose: () => void}) 
     // Stored on the daemon as well as locally: the native window's
     // localStorage does not survive a restart on every QtWebEngine build,
     // which made the tutorial reappear on every launch.
-    localStorage.setItem('vice_tutorial_shown', '1');
+    localStorage.setItem('gloaming_tutorial_shown', '1');
     // A new install has nothing to catch up on, so this version's notes count
     // as read.
     const version = state.status.version;
-    if (version) localStorage.setItem('vice_whats_new_seen', version);
+    if (version) localStorage.setItem('gloaming_whats_new_seen', version);
     void api.setAppState({tutorial_seen: true, ...(version ? {whats_new_seen: version} : {})}).catch(err => {
       console.debug('Recording that the tutorial was seen failed', err);
     });

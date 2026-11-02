@@ -53,6 +53,12 @@ export const api = {
       restart_required?: boolean;
     }>('/api/config', partial),
 
+  /** Whether this desktop can show a native folder chooser. */
+  folderPickerAvailable: () => request<{available: boolean}>('/api/pick-folder'),
+  /** Opens the desktop's folder chooser; `path` is null when it was cancelled. */
+  pickFolder: (title: string, current: string) =>
+    post<{ok: boolean; path: string | null; error?: string}>('/api/pick-folder', {title, current}),
+
   /** Small cross-session UI flags. Server-side because native localStorage is unreliable. */
   getAppState: () => request<Record<string, unknown>>('/api/app-state'),
   setAppState: (partial: Record<string, unknown>) =>
@@ -124,6 +130,7 @@ export const api = {
   clipKeys: async (slug: string) =>
     (await request<{keys: [number, number, string][] | null}>(`/api/clips/${enc(slug)}/keys`)).keys,
   moveKeyOverlay: (on: boolean) => post<{ok: boolean}>('/api/overlay/move', {on}),
+  movePadOverlay: (on: boolean) => post<{ok: boolean}>('/api/overlay/move', {on, target: 'pad'}),
   highlights: async (slug: string) =>
     (await request<{highlights: Highlight[]}>(`/api/clips/${enc(slug)}/highlights`)).highlights ?? [],
   addHighlight: (slug: string, body: Omit<Highlight, 'id'>) =>

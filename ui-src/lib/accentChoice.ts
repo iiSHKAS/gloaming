@@ -3,7 +3,7 @@ import {useCallback} from 'react';
 import {api} from './api';
 import {CUSTOM_ACCENT_KEY, useStore} from '../state/store';
 import {ACCENTS, type AccentName} from '../theme/accents';
-import {customAccent as deriveCustomTheme, type AccentChoice} from '../theme/viceTheme';
+import {customAccent as deriveCustomTheme, type AccentChoice} from '../theme/gloamingTheme';
 
 /**
  * Choosing an accent, in one place.
@@ -42,7 +42,7 @@ export function useAccentChoice(): {
   const choose = useCallback(
     (name: AccentName) => {
       dispatch({type: 'setAccent', accent: name});
-      remember('vice-theme', name);
+      remember('gloaming-theme', name);
       pushEmbedColour(ACCENTS[name].base);
     },
     [dispatch, remember, pushEmbedColour],
@@ -52,13 +52,13 @@ export function useAccentChoice(): {
     (seed: string) => {
       const {ramp} = deriveCustomTheme(seed);
       dispatch({type: 'setAccent', accent: 'custom', custom: seed});
-      remember('vice-theme', 'custom');
+      remember('gloaming-theme', 'custom');
       remember(CUSTOM_ACCENT_KEY, seed);
       // The boot cover paints before the bundle parses, so it cannot derive
       // anything. These two are the whole of what it needs, cached here at the
       // one moment the scheme is known.
-      remember('vice-custom-bg', ramp.bg);
-      remember('vice-custom-base', ramp.base);
+      remember('gloaming-custom-bg', ramp.bg);
+      remember('gloaming-custom-base', ramp.base);
       // The derived primary, not the seed. The seed is what the user pointed
       // at; the accent is what Material 3 made of it, and that is the colour
       // the app is actually wearing.

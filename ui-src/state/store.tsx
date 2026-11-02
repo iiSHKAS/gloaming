@@ -14,7 +14,7 @@ import {connectWs} from '../lib/ws';
 import {formatDuration, hotkeyLabel} from '../lib/format';
 import {H264_SUPPORTED} from '../lib/env';
 import {ACCENT_NAMES, DEFAULT_ACCENT} from '../theme/accents';
-import type {AccentChoice} from '../theme/viceTheme';
+import type {AccentChoice} from '../theme/gloamingTheme';
 import {clipTitle, imageSlug, imageTitle, type KeyOverlayState} from '../lib/types';
 import type {
   Clip,
@@ -46,7 +46,7 @@ export interface IslandEvent {
   holdMs: number;
 }
 
-export const CUSTOM_ACCENT_KEY = 'vice-custom-accent';
+export const CUSTOM_ACCENT_KEY = 'gloaming-custom-accent';
 
 export type BannerId = 'recorder' | 'cpu' | 'codec-gpu' | 'codec-h264';
 
@@ -73,6 +73,8 @@ interface State {
   dismissed: BannerId[];
   /** Bumped whenever the editor should reload its project from the daemon. */
   editorProjectRevision: number;
+  /** Keep the quality editor open across settings categories and app navigation. */
+  qualityCustomOpen: boolean;
 }
 
 const INITIAL_STATUS: Status = {
@@ -113,6 +115,7 @@ const initialState: State = {
   sessionStartedAt: null,
   dismissed: [],
   editorProjectRevision: 0,
+  qualityCustomOpen: false,
 };
 
 type Action =
@@ -128,6 +131,7 @@ type Action =
   | {type: 'ws'; msg: WsMessage}
   | {type: 'setView'; view: ViewName; playlistId?: string | null}
   | {type: 'setSearch'; query: string}
+  | {type: 'setQualityCustomOpen'; open: boolean}
   | {type: 'setAccent'; accent: AccentChoice; custom?: string | null}
   | {type: 'setConfig'; config: Config}
   | {type: 'mergeConfig'; patch: Record<string, Record<string, unknown>>}
@@ -174,6 +178,9 @@ function reduce(state: State, action: Action): State {
         currentPlaylistId:
           action.playlistId !== undefined ? action.playlistId : action.view === 'clips' ? state.currentPlaylistId : null,
       };
+
+    case 'setQualityCustomOpen':
+      return {...state, qualityCustomOpen: action.open};
 
     case 'setSearch':
       return {...state, searchQuery: action.query};
@@ -345,6 +352,11 @@ function reduceWs(state: State, msg: WsMessage): State {
       return {...state, status: {...state.status, key_overlay: overlay as KeyOverlayState}};
     }
 
+    case 'pad_overlay': {
+      const {type: _ignored, ...overlay} = msg;
+      return {...state, status: {...state.status, pad_overlay: overlay as KeyOverlayState}};
+    }
+
     case 'tunnel_url':
       return withEvent(
         {...state, tunnelUrl: msg.url},
@@ -479,24 +491,24 @@ export function StoreProvider({children}: {children: ReactNode}) {
     };
   }, []);
 
-  // The accent is a per-install preference, not a synced setting.
+  // Keep windows on this install (including the replay overlay) on one accent.
   useEffect(() => {
-    let custom: string | null = null;
-    try {
-      const raw = localStorage.getItem(CUSTOM_ACCENT_KEY);
-      custom = raw && /^#[0-9a-f]{6}$/i.test(raw) ? raw.toLowerCase() : null;
-    } catch (err) {
-      console.debug('Reading the custom accent failed', err);
-    }
-    const saved = localStorage.getItem('vice-theme');
-    const named = saved && (ACCENT_NAMES as string[]).includes(saved);
-    // A saved 'custom' with no seed behind it is not a usable accent, so it
-    // falls back rather than opening the window in a half-applied theme.
-    if (named || (saved === 'custom' && custom)) {
-      dispatch({type: 'setAccent', accent: saved as AccentChoice, custom});
-    } else if (custom) {
-      dispatch({type: 'setAccent', accent: DEFAULT_ACCENT, custom});
-    }
+    const restore = () => {
+      try {
+        const raw = localStorage.getItem(CUSTOM_ACCENT_KEY);
+        const custom = raw && /^#[0-9a-f]{6}$/i.test(raw) ? raw.toLowerCase() : null;
+        const saved = localStorage.getItem('gloaming-theme');
+        const named = saved && (ACCENT_NAMES as string[]).includes(saved);
+        dispatch({type: 'setAccent', accent: named || (saved === 'custom' && custom)
+          ? saved as AccentChoice : DEFAULT_ACCENT, custom});
+      } catch (err) { console.debug('Reading the accent failed', err); }
+    };
+    const sync = (event: StorageEvent) => {
+      if (event.key === null || event.key === 'gloaming-theme' || event.key === CUSTOM_ACCENT_KEY) restore();
+    };
+    restore();
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
   }, []);
 
   // Bumped by every picture event, so a list fetched before one can tell it is

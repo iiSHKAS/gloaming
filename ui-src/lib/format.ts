@@ -43,18 +43,19 @@ export function formatBytes(bytes: number): string {
   return `${value >= 10 || i === 0 ? Math.round(value) : value.toFixed(1)} ${units[i]}`;
 }
 
-/**
- * Turn an evdev key name into something a person recognises: KEY_F9 is F9,
- * KEY_LEFTCTRL is Left Ctrl.
- */
+/** Format every key in an evdev combination, including modifier names. */
 export function hotkeyLabel(key: string | undefined | null): string {
   if (!key) return 'the clip key';
-  return key
-    .replace(/^KEY_/, '')
-    .toLowerCase()
-    .replace(/^left/, 'left ')
-    .replace(/^right/, 'right ')
-    .replace(/\b\w/g, c => c.toUpperCase());
+  const labels: Record<string, string> = {
+    LEFTCTRL: 'Ctrl', RIGHTCTRL: 'Ctrl', LEFTALT: 'Alt', RIGHTALT: 'Alt',
+    LEFTSHIFT: 'Shift', RIGHTSHIFT: 'Shift', LEFTMETA: 'Super', RIGHTMETA: 'Super',
+    PAGEUP: 'Page Up', PAGEDOWN: 'Page Down', SYSRQ: 'Print Screen',
+  };
+  return key.split('+').map(part => {
+    const name = part.trim().replace(/^KEY_/, '');
+    return labels[name] ?? name.toLowerCase().replace(/^left/, 'left ')
+      .replace(/^right/, 'right ').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }).join(' + ');
 }
 
 /** Takes the daemon's ISO timestamps, which carry no timezone suffix. */

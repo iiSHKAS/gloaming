@@ -1,3 +1,5 @@
+import {outputSlots, outputTracks, type OutputSlot} from './audioOutputs';
+import {constrainRecordingDurations} from './recordingLimits';
 import {formatLengthLong} from './format';
 import {t} from './i18n';
 import type {Config} from './types';
@@ -12,9 +14,12 @@ import type {Config} from './types';
  * also reachable from Home and have to agree with it immediately.
  */
 export interface Draft {
+  liveReplay: boolean;
   bufferDuration: number;
   clipDuration: number;
   fps: string;
+  videoQuality: string;
+  videoBitrate: number;
   resolution: string;
   customResolution: string;
   container: string;
@@ -27,6 +32,10 @@ export interface Draft {
   followMouse: boolean;
   windowCapture: boolean;
   hardwareDecode: boolean;
+  closeToTray: boolean;
+  minimizeToTray: boolean;
+  startWithSystem: boolean;
+  startMinimized: boolean;
 
   captureAudio: boolean;
   captureMic: boolean;
@@ -40,17 +49,33 @@ export interface Draft {
   notifyVolume: number;
   sounds: Record<SoundKey, string>;
   audioTracks: string[];
+  audioOutputSlots: OutputSlot[];
   mixFirstTrack: boolean;
   wfMicStrategy: string;
 
   clipKey: string;
   screenshotKey: string;
+  controllerClip: string;
+  controllerScreenshot: string;
+  controllerReplayOverlay: string;
+  controllerSmart: string;
+  controllerMenu: string;
+  menuKey: string;
   keyOverlayKey: string;
+  padOverlayKey: string;
+  replayOverlayKey: string;
   keyOverlay: boolean;
   keyOverlayPosition: string;
   /** Percent. */
   keyOverlayScale: number;
   keyOverlayInClips: boolean;
+  keyRecordingOnly: boolean;
+  padOverlay: boolean;
+  padOverlayInClips: boolean;
+  padRecordingOnly: boolean;
+  padPosition: string;
+  padScale: number;
+  padStyle: string;
   clipPresets: ClipPreset[];
   hotkeyBlocklist: string;
 
@@ -119,9 +144,12 @@ export function draftFromConfig(config: Config): Draft {
   const isPreset = RESOLUTION_PRESETS.some(([value]) => value === resolution);
 
   return {
+    liveReplay: Boolean(r.live_replay),
     bufferDuration: num(r.buffer_duration, 120),
     clipDuration: num(r.clip_duration, 20),
     fps: String(num(r.fps, 60)),
+    videoQuality: str(r.video_quality, 'very_high'),
+    videoBitrate: num(r.video_bitrate_kbps, 30000),
     resolution: isPreset ? resolution : 'custom',
     customResolution: isPreset ? '' : resolution,
     container: str(r.container, 'mp4'),
@@ -134,6 +162,10 @@ export function draftFromConfig(config: Config): Draft {
     followMouse: Boolean(r.follow_mouse_display),
     windowCapture: Boolean(r.window_capture),
     hardwareDecode: Boolean(ui.hardware_video_decode),
+    closeToTray: Boolean(ui.close_to_tray),
+    minimizeToTray: Boolean(ui.minimize_to_tray),
+    startWithSystem: Boolean(ui.start_with_system),
+    startMinimized: Boolean(ui.start_minimized),
 
     captureAudio: r.capture_audio !== false,
     captureMic: Boolean(r.capture_microphone),
@@ -147,6 +179,7 @@ export function draftFromConfig(config: Config): Draft {
       SOUND_FIELDS.map(([key]) => [key, str(n[key], '')]),
     ) as Record<SoundKey, string>,
     audioTracks: Array.isArray(r.audio_tracks) ? r.audio_tracks.map(String) : [],
+    audioOutputSlots: outputSlots(r),
     audioTrackVolumes: Object.fromEntries(
       Object.entries(
         r.audio_track_volumes && typeof r.audio_track_volumes === 'object'
@@ -161,11 +194,26 @@ export function draftFromConfig(config: Config): Draft {
     // No default. An unset screenshot key means no screenshot key, and
     // inventing one here would bind a hotkey nobody asked for.
     screenshotKey: str(h.screenshot, ''),
+    controllerClip: str(h.controller_clip, ''),
+    controllerScreenshot: str(h.controller_screenshot, ''),
+    controllerReplayOverlay: str(h.controller_replay_overlay, ''),
+    controllerSmart: str(h.controller_smart, ''),
+    controllerMenu: str(h.controller_menu, ''),
+    menuKey: str(h.menu, ''),
     keyOverlayKey: str(h.key_overlay, ''),
+    padOverlayKey: str(h.pad_overlay, ''),
+    replayOverlayKey: h.replay_overlay === undefined ? 'KEY_LEFTCTRL+KEY_LEFTSHIFT+KEY_R' : str(h.replay_overlay, ''),
     keyOverlay: Boolean(ov.keys),
     keyOverlayPosition: str(ov.keys_position, 'bottom-left'),
     keyOverlayScale: Math.round(num(ov.keys_scale, 1) * 100),
     keyOverlayInClips: Boolean(ov.keys_in_clips),
+    keyRecordingOnly: Boolean(ov.keys_recording_only),
+    padOverlay: Boolean(ov.pad),
+    padOverlayInClips: Boolean(ov.pad_in_clips),
+    padRecordingOnly: Boolean(ov.pad_recording_only),
+    padPosition: str(ov.pad_position, 'bottom-right'),
+    padScale: Math.round(num(ov.pad_scale, 1) * 100),
+    padStyle: str(ov.pad_style, 'auto'),
     clipPresets: (Array.isArray(h.clip_presets) ? h.clip_presets : []).map(raw => {
       const preset = (raw ?? {}) as Record<string, unknown>;
       return {uid: nextUid(), key: str(preset.key, ''), duration: num(preset.duration, 60)};
@@ -207,27 +255,18 @@ export function resolvedResolution(draft: Draft): string | null | false {
   return /^\d{2,5}x\d{2,5}$/.test(raw) ? raw : false;
 }
 
-/**
- * The buffer has to be at least as long as the longest clip any key can save,
- * otherwise that key produces a clip shorter than it asks for. The old form
- * corrected the slider silently on save; this returns the correction so the
- * screen can show it happening.
- */
-export function requiredBuffer(draft: Draft): number {
-  const longestClip = Math.max(
-    draft.clipDuration,
-    ...draft.clipPresets.map(p => Number(p.duration) || 0),
-  );
-  return Math.max(draft.bufferDuration, longestClip);
-}
-
-export function patchFromDraft(draft: Draft): Record<string, Record<string, unknown>> {
+/** Serialize durations defensively, including callers outside the settings screen. */
+export function patchFromDraft(input: Draft): Record<string, Record<string, unknown>> {
+  const draft = constrainRecordingDurations(input);
   const resolution = resolvedResolution(draft);
   return {
     recording: {
-      buffer_duration: requiredBuffer(draft),
+      live_replay: draft.liveReplay,
+      buffer_duration: draft.bufferDuration,
       clip_duration: draft.clipDuration,
       fps: Number(draft.fps),
+      video_quality: draft.videoQuality,
+      video_bitrate_kbps: draft.videoBitrate,
       display: draft.display || null,
       follow_mouse_display: draft.followMouse,
       window_capture: draft.windowCapture,
@@ -246,20 +285,29 @@ export function patchFromDraft(draft: Draft): Record<string, Record<string, unkn
       microphone_volume: draft.micVolume / 100,
       wf_microphone_strategy: draft.wfMicStrategy,
       gsr_audio_source: draft.desktopSource || 'default_output',
-      audio_tracks: [...draft.audioTracks],
+      audio_output_slots: draft.audioOutputSlots,
+      audio_tracks: outputTracks(draft.desktopSource, draft.audioOutputSlots),
       audio_track_volumes: Object.fromEntries(
-        draft.audioTracks.map(id => [id, (draft.audioTrackVolumes[id] ?? 100) / 100]),
+        outputTracks(draft.desktopSource, draft.audioOutputSlots).map(id => [id, (id === draft.desktopSource ? draft.desktopVolume : draft.audioTrackVolumes[id] ?? 100) / 100]),
       ),
-      audio_tracks_mix_first: draft.mixFirstTrack,
+      audio_tracks_mix_first: true,
       gsr_args: draft.gsrArgs.trim(),
     },
     hotkeys: {
       clip: draft.clipKey,
       screenshot: draft.screenshotKey.trim(),
+      controller_clip: draft.controllerClip,
+      controller_screenshot: draft.controllerScreenshot,
+      controller_replay_overlay: draft.controllerReplayOverlay,
+      controller_smart: draft.controllerSmart,
+      controller_menu: draft.controllerMenu,
+      menu: draft.menuKey.trim(),
       key_overlay: draft.keyOverlayKey.trim(),
+      pad_overlay: draft.padOverlayKey.trim(),
+      replay_overlay: draft.replayOverlayKey.trim(),
       clip_presets: draft.clipPresets
         .map(p => ({key: p.key.trim(), duration: Number(p.duration) || 60}))
-        .filter(p => p.key || p.duration),
+        .filter(p => p.key),
       disable_while_focused: splitLines(draft.hotkeyBlocklist),
     },
     output: {
@@ -281,6 +329,13 @@ export function patchFromDraft(draft: Draft): Record<string, Record<string, unkn
       keys_position: draft.keyOverlayPosition,
       keys_scale: draft.keyOverlayScale / 100,
       keys_in_clips: draft.keyOverlayInClips,
+      keys_recording_only: draft.keyRecordingOnly,
+      pad: draft.padOverlay,
+      pad_in_clips: draft.padOverlayInClips,
+      pad_recording_only: draft.padRecordingOnly,
+      pad_position: draft.padPosition,
+      pad_scale: draft.padScale / 100,
+      pad_style: draft.padStyle,
     },
     updates: {check_on_start: draft.checkForUpdates},
     notifications: {
@@ -289,7 +344,13 @@ export function patchFromDraft(draft: Draft): Record<string, Record<string, unkn
         SOUND_FIELDS.map(([key]) => [key, draft.sounds[key]?.trim() || null]),
       ),
     },
-    ui: {hardware_video_decode: draft.hardwareDecode},
+    ui: {
+      hardware_video_decode: draft.hardwareDecode,
+      close_to_tray: draft.closeToTray,
+      minimize_to_tray: draft.minimizeToTray,
+      start_with_system: draft.startWithSystem,
+      start_minimized: draft.startMinimized,
+    },
     discord: {
       enabled: draft.discordEnabled,
       game_icons: draft.discordGameIcons,
@@ -343,7 +404,7 @@ export function renderClipName(template: string, n: number, game: string, now: D
  */
 export function bufferNote(draft: Draft): {text: string; tone: 'plain' | 'warning'} {
   const inRam =
-    draft.replayStorage === 'ram' || (draft.replayStorage === 'auto' && draft.bufferDuration <= 600);
+    !draft.liveReplay && (draft.replayStorage === 'ram' || (draft.replayStorage === 'auto' && draft.bufferDuration <= 600));
   if (inRam && draft.bufferDuration > 600) {
     const gb = ((draft.bufferDuration * 1.5) / 1024).toFixed(1);
     return {

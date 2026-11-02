@@ -6,6 +6,7 @@ import {imageTitle, type Image} from '../lib/types';
 import {t} from '../lib/i18n';
 import {InlineRename} from './InlineRename';
 import {IconImages} from './Icons';
+import {SelectCheck, selectionClick, type CardSelect} from './ClipCard';
 
 export interface ImageActionSet {
   onOpen?: (image: Image) => void;
@@ -28,11 +29,13 @@ export function ImageCard({
   isNew,
   actions = {},
   draggable,
+  select,
 }: {
   image: Image;
   isNew?: boolean;
   actions?: ImageActionSet;
   draggable?: boolean;
+  select?: CardSelect;
 }) {
   const [renamingHere, setRenamingHere] = useState(false);
   const [failedThumb, setFailedThumb] = useState<string | null>(null);
@@ -62,7 +65,8 @@ export function ImageCard({
     <article
       className="clip-card image-card"
       data-renaming={renaming || undefined}
-      draggable={draggable && !renaming}
+      data-selected={select?.checked || undefined}
+      draggable={draggable && !renaming && !select?.active}
       onDragStart={e => startImageDrag(e, image)}
       onDragEnd={endClipDrag}
       onContextMenu={e => {
@@ -72,6 +76,7 @@ export function ImageCard({
       }}
       onClick={e => {
         if (renaming) return;
+        if (selectionClick(select, e)) return;
         const target = e.target as HTMLElement;
         if (target.closest('button, a, input, textarea, .clip-name')) return;
         actions.onOpen?.(image);
@@ -79,7 +84,10 @@ export function ImageCard({
       <button
         type="button"
         className="clip-thumb"
-        onClick={() => actions.onOpen?.(image)}
+        onClick={e => {
+          if (selectionClick(select, e)) return;
+          actions.onOpen?.(image);
+        }}
         aria-label={t('images.openTitle', {name: imageTitle(image)})}>
         {image.thumb_url && failedThumb !== image.thumb_url ? (
           <img src={image.thumb_url} loading="lazy" alt="" draggable={false}
@@ -87,6 +95,7 @@ export function ImageCard({
         ) : (
           <span className="clip-thumb-empty" aria-hidden="true"><IconImages size={32} /></span>
         )}
+        {select?.active ? <SelectCheck checked={select.checked} /> : null}
         <span className="clip-badges">
           {isNew ? <span className="clip-badge clip-badge-new">{t('common.new')}</span> : null}
         </span>

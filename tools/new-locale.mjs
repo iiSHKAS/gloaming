@@ -17,7 +17,7 @@ if (!name) {
   console.error('Usage: npm run i18n:new -- <locale>   for example pt-BR, pl, fr');
   process.exit(1);
 }
-// BCP 47 as far as Vice needs it: a language, optionally a region.
+// BCP 47 as far as Gloaming needs it: a language, optionally a region.
 if (!/^[a-z]{2,3}(-[A-Za-z]{2,4})?$/.test(name)) {
   console.error(`"${name}" is not a locale name. Use a form like fr, pt-BR or pl-PL.`);
   process.exit(1);

@@ -4,6 +4,7 @@ export interface EdTrack {
   id: string;
   type: 'video' | 'audio' | 'text';
   label: string;
+  muted?: boolean;
 }
 
 export interface EdTransition {
@@ -22,6 +23,8 @@ export interface EdItem {
   muted?: boolean;
   audioStream?: number;
   volume?: number;
+  groupId?: string;
+  audioUnlinked?: boolean;
   trans?: EdTransition;
   text?: string;
   font?: string;
@@ -36,6 +39,8 @@ export interface EdProject {
   version: number;
   tracks: EdTrack[];
   items: EdItem[];
+  keyboard?: boolean;
+  controller?: {enabled: boolean; position: [number, number]};
 }
 
 export type EdTab = 'library' | 'effects' | 'text';
@@ -52,6 +57,7 @@ export interface EdSnapshot {
   selected: EdItem | null;
   canSplit: boolean;
   canDetach: boolean;
+  canRelink: boolean;
   canDuplicate: boolean;
   canDelete: boolean;
   canUndo: boolean;

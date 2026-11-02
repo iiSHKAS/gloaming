@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "vice"
+name = "gloaming"
 dynamic = ["version"]
 description = "Linux game clip recorder, like Medal.tv, for Wayland and X11"
 requires-python = ">=3.10"
@@ -23,15 +23,15 @@ dependencies = [
 no-webview = []
 
 [project.scripts]
-vice     = "vice.main:cli"
-vice-app = "vice.app:main"
+gloaming     = "gloaming.main:cli"
+gloaming-app = "gloaming.app:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["vice*"]
+include = ["gloaming*"]
 
 [tool.setuptools.dynamic]
-version = {attr = "vice.__version__"}
+version = {attr = "gloaming.__version__"}
 
 [tool.setuptools.package-data]
-vice = ["ui/*", "ui/fonts/*", "ui/styles/*", "ui/scripts/*", "data/*.json", "fonts/*"]
+gloaming = ["ui/*", "ui/fonts/*", "ui/styles/*", "ui/scripts/*", "data/*.json", "fonts/*", "native/*.c", "native/*.h", "native/GSR-LICENSE"]

@@ -1,3 +1,4 @@
+import {expandAudio, migrateAudio, linkedItems, splitLinked, relinkCandidates} from './editorAudio';
 import {formatBytes} from '../lib/format';
 // Aliased: this file uses `t` as a local for times and tracks throughout.
 import {t as translate} from '../lib/i18n';
@@ -38,7 +39,7 @@ import type {EdItem, EdProject, EdSnapshot, EdTab, EdTrack, EditorDeps} from './
 const ED_PPS_MIN = 4;
 const ED_PPS_MAX = 48;
 const ED_UNDO_CAP = 50;
-const ED_RAIL = 54;
+const ED_RAIL = 180;
 const ED_DRIFT = 0.15;
 /** Seconds before an item to start warming its video. */
 const ED_PRELOAD = 2.0;
@@ -108,6 +109,15 @@ export interface EditorEngine {
   setPlaying: (playing: boolean) => void;
   split: () => void;
   detachAudio: () => void;
+  unlinkAudio: () => void;
+  relinkAudio: () => void;
+  setEasy: (easy: boolean) => void;
+  muteTrack: (id: string) => void;
+  setKeyboard: (enabled:boolean) => void;
+  undo: () => void;
+  redo: () => void;
+  setController: (value: {enabled: boolean; position: [number,number]}) => void;
+  controllerFrame: () => {clipId: string; time: number} | null;
   duplicate: () => void;
   remove: () => void;
   addTrack: (type: 'video' | 'audio') => void;
@@ -124,9 +134,10 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
   let playhead = 0;
   let playing = false;
   let pps = 12;
-  let clipboard: EdItem | null = null;
+  let clipboard: EdItem[] | null = null;
   let missing = new Set<string>();
   let loaded = false;
+  let easy = true;
   let dirty = false;
   let saveTimer: number | undefined;
   let undoStack: string[] = [];
@@ -134,9 +145,17 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
   let tab: EdTab = 'library';
   let query = '';
   let mounted = false;
+  let closeJunction: (() => void) | null = null;
   let box: EditorContainers | null = null;
   let preparingNow = false;
   let audioWaiting = false;
+  let activeAudio: HTMLAudioElement[] = [];
+  const pendingPlays = new WeakSet<HTMLMediaElement>();
+  function playReady(media: HTMLMediaElement) {
+    if (!media.paused || pendingPlays.has(media)) return;
+    pendingPlays.add(media);
+    void media.play().catch(() => {}).finally(() => pendingPlays.delete(media));
+  }
   let stageEmpty = true;
 
   let raf: number | null = null;
@@ -177,6 +196,7 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
     project!.items.filter(i => i.trackId === trackId).sort((a, b) => a.start - b.start);
   const item = (id: string | null) => (id ? project!.items.find(i => i.id === id) ?? null : null);
   const selItem = () => item(sel);
+  const cutTarget = () => selItem() || (easy && project ? project.items.find(i=>i.kind==='clip' && i.trackId===videoTracks()[videoTracks().length-1]?.id && playhead>=i.start && playhead<i.start+i.dur) ?? null : null);
   const videoTracks = () => project!.tracks.filter(t => t.type === 'video');
   const totalSec = () => Math.max(end() + 30, 90);
 
@@ -202,8 +222,9 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
   // ── notification ────────────────────────────────────────────────
   function snapshot(): EdSnapshot {
     const it = selItem();
+    const target=cutTarget();
     const canSplit = Boolean(
-      it && playhead > it.start + 0.2 && playhead < it.start + it.dur - 0.2,
+      target && playhead > target.start + 0.2 && playhead < target.start + target.dur - 0.2,
     );
     return {
       ready: Boolean(project),
@@ -216,6 +237,7 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
       selected: it,
       canSplit,
       canDetach: Boolean(it && it.kind === 'clip' && !it.muted && clipOf(it)?.audio_tracks?.length),
+      canRelink: Boolean(project && it && relinkCandidates(project,it).length),
       canDuplicate: Boolean(it),
       canDelete: Boolean(it),
       canUndo: undoStack.length > 0,
@@ -244,6 +266,7 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
       console.debug('Loading the editor project failed', err);
       project = project || defaultProject();
     }
+    if(project && migrateAudio(project,clips(),uid)) scheduleSave();
     loaded = true;
     emit();
   }
@@ -258,11 +281,12 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
     if (!dirty || !project) return;
     dirty = false;
     try {
-      await fetch('/api/editor/project', {
+      const response=await fetch('/api/editor/project', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(project),
       });
+      if(!response.ok)throw new Error(`Project save failed: ${response.status}`);
     } catch (err) {
       console.debug('Autosaving the editor project failed', err);
       dirty = true;
@@ -393,6 +417,7 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
       dur: round(c.duration),
       offset: 0,
     });
+    if(!asAudio) expandAudio(project,it,c,uid);
     sel = it.id;
     commit();
   }
@@ -440,20 +465,10 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
   }
 
   function split() {
-    const it = selItem();
+    const it = cutTarget();
     if (!it || playhead <= it.start + 0.2 || playhead >= it.start + it.dur - 0.2) return;
     begin();
-    const t = playhead;
-    const right: EdItem = {
-      ...it,
-      id: uid(),
-      start: round(t),
-      dur: round(it.start + it.dur - t),
-      offset: round((it.offset || 0) + (t - it.start)),
-    };
-    delete right.trans;
-    it.dur = round(t - it.start);
-    project!.items.push(right);
+    splitLinked(project!,it,round(playhead),uid);
     commit();
   }
 
@@ -463,56 +478,82 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
     const streams = clipOf(it)?.audio_tracks;
     if (!streams?.length) return;
     begin();
-    it.muted = true;
-    let first: EdItem | null = null;
-    for (const stream of streams) {
-      // Keep detached streams aligned even when an existing lane is occupied.
-      let lane = project!.tracks.find(t => t.type === 'audio' && !project!.items.some(
-        other => other.trackId === t.id && other.start < it.start + it.dur &&
-          other.start + other.dur > it.start));
-      if (!lane) {
-        lane = {id: uid(), type: 'audio', label: `A${project!.tracks.filter(t => t.type === 'audio').length + 1}`};
-        project!.tracks.push(lane);
-      }
-      const audio = insert({id: uid(), kind: 'audio', trackId: lane.id,
-        clipId: it.clipId, start: it.start, dur: it.dur, offset: it.offset || 0,
-        audioStream: stream.index, volume: 1, muted: stream.index !== 0});
-      first ??= audio;
-    }
-    sel = first!.id;
+    expandAudio(project!,it,clipOf(it),uid);
     commit();
   }
 
+  function unlinkAudio() {
+    const it=selItem();if(!it?.groupId)return;
+    begin();for(const part of linkedItems(project!,it)){delete part.groupId;part.audioUnlinked=true;}commit();
+  }
+
+  function relinkAudio(){
+    const it=selItem();if(!it)return;
+    const parts=relinkCandidates(project!,it);if(!parts.length)return;
+    begin();const group=parts[0].groupId || uid();
+    for(const part of parts){part.groupId=group;delete part.audioUnlinked;}
+    commit();
+  }
+
+  function muteTrack(id:string){
+    const track=project?.tracks.find(t=>t.id===id);if(!track)return;
+    begin();track.muted=!track.muted;commit();
+  }
+
   function duplicate() {
-    const it = selItem();
-    if (!it) return;
+    const it=selItem();if(!it)return;
     begin();
-    const copy: EdItem = {...it, id: uid(), start: round(it.start + it.dur + 0.25)};
-    delete copy.trans;
-    insert(copy);
-    sel = copy.id;
+    const group=linkedItems(project!,it),newGroup=it.groupId ? uid() : undefined;
+    let delta=it.dur+.25;
+    // Find a gap shared by all linked lanes; never resolve each source separately.
+    for(let pass=0;pass<=project!.items.length;pass++){
+      let shift=delta;
+      for(const part of group)for(const other of project!.items){
+        if(other.trackId===part.trackId && part.start+delta<other.start+other.dur && part.start+delta+part.dur>other.start)
+          shift=Math.max(shift,other.start+other.dur-part.start);
+      }
+      if(shift===delta)break;delta=shift;
+    }
+    for(const part of group){const copy={...part,id:uid(),groupId:newGroup,start:round(part.start+delta)};delete copy.trans;project!.items.push(copy);if(part.id===it.id)sel=copy.id;}
     commit();
   }
 
   function copySel() {
     const it = selItem();
-    if (it) clipboard = JSON.parse(JSON.stringify(it));
+    if (it) clipboard = JSON.parse(JSON.stringify(linkedItems(project!,it)));
   }
 
   function paste() {
-    if (!clipboard || !project!.tracks.find(t => t.id === clipboard!.trackId)) return;
-    begin();
-    const copy: EdItem = {...clipboard, id: uid(), start: round(playhead)};
-    delete copy.trans;
-    insert(copy);
-    sel = copy.id;
-    commit();
+    if(!clipboard?.length || clipboard.some(i=>!project!.tracks.find(t=>t.id===i.trackId)))return;
+    begin();const group=clipboard[0].groupId ? uid() : undefined;
+    const copies=clipboard.map(i=>({...i,id:uid(),groupId:group}));
+    copies.forEach(i=>{delete i.trans;project!.items.push(i);});
+    moveLinked(copies[0],playhead,copies[0].trackId);sel=copies[0].id;commit();
+  }
+
+  function moveLinked(it:EdItem,start:number,trackId:string){
+    const group=linkedItems(project!,it),ids=new Set(group.map(i=>i.id));
+    if(group.some(part=>part!==it && part.trackId===trackId))trackId=it.trackId;
+    let delta=Math.max(start-it.start,-Math.min(...group.map(i=>i.start)));
+    for(let pass=0;pass<=project!.items.length;pass++){
+      let next=delta;
+      for(const part of group)for(const other of project!.items){
+        const lane=part===it ? trackId : part.trackId;
+        if(!ids.has(other.id) && other.trackId===lane && part.start+delta<other.start+other.dur && part.start+delta+part.dur>other.start)
+          next=Math.max(next,other.start+other.dur-part.start);
+      }
+      if(next===delta)break;delta=next;
+    }
+    for(const part of group)part.start=round(part.start+delta);
+    it.trackId=trackId;
   }
 
   function remove() {
     if (!sel) return;
     begin();
-    project!.items = project!.items.filter(i => i.id !== sel);
+    const target=selItem();
+    const removed=new Set(target?.kind==='clip' ? linkedItems(project!,target).map(i=>i.id) : [sel]);
+    project!.items = project!.items.filter(i => !removed.has(i.id));
     sel = null;
     commit();
   }
@@ -536,7 +577,8 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
     if (tr.type === 'video' && videoTracks().length <= 1) return;
     begin();
     project!.tracks = project!.tracks.filter(t => t.id !== id);
-    project!.items = project!.items.filter(i => i.trackId !== id);
+    const removed=new Set(project!.items.filter(i=>i.trackId===id).flatMap(i=>i.kind==='clip' ? linkedItems(project!,i).map(p=>p.id) : [i.id]));
+    project!.items = project!.items.filter(i => !removed.has(i.id));
     sel = null;
     commit();
   }
@@ -639,6 +681,11 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
           v.className = 'ed-vhide';
           v._key = null;
           v._need = 0;
+          for (const event of ['loadedmetadata', 'loadeddata', 'seeked']) {
+            v.addEventListener(event, () => {
+              if (mounted && !playing) renderPreviewFrame(false);
+            });
+          }
           box!.stage.insertBefore(v, box!.stage.firstChild);
           return v;
         };
@@ -836,7 +883,7 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
     if (playing && !audioWaiting) {
       cur._warmUntil = 0;
       cur.muted = Boolean(it.muted);
-      if (cur.paused) void cur.play().catch(() => {});
+      // Playback starts below, after every active audio/video decoder is ready.
       // The clock reads its time from the master element, so correcting that
       // element is chasing its own tail. Only a fresh cut, or a track playing
       // underneath the master, needs a correction.
@@ -928,7 +975,7 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
     const active = new Set<string>();
     const audible: HTMLAudioElement[] = [];
     project!.items.forEach(it => {
-      if (it.kind !== 'audio' || it.muted || (it.volume ?? 1) === 0) return;
+      if (it.kind !== 'audio' || it.muted || project!.tracks.find(t=>t.id===it.trackId)?.muted || (it.volume ?? 1) === 0) return;
       if (t < it.start || t >= it.start + it.dur || missing.has(it.clipId!)) return;
       const clip = clipOf(it);
       if (!clip) return;
@@ -937,9 +984,11 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
       if (!a) {
         a = new Audio();
         a.preload = 'auto';
-        a.addEventListener('loadeddata', () => {
-          if (mounted && !playing) renderPreviewFrame(false);
-        });
+        for (const event of ['loadedmetadata', 'loadeddata', 'seeked']) {
+          a.addEventListener(event, () => {
+            if (mounted && !playing) renderPreviewFrame(false);
+          });
+        }
         a.addEventListener('error', () => {
           if (!a.getAttribute('src') || !mounted) return;
           setPlaying(false);
@@ -951,14 +1000,19 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
       const url = `/api/clips/${encodeURIComponent(clip.slug)}/audio/${it.audioStream ?? 0}${revision}`;
       if (a.getAttribute('src') !== url) a.src = url;
       a.volume = Math.max(0, Math.min(1, it.volume ?? 1));
-      seekVideo(a, (it.offset || 0) + (t - it.start), playTol());
+      const desired = (it.offset || 0) + (t - it.start);
+      const drift = desired - a.currentTime;
+      // Small drift is corrected smoothly; seeking every few frames causes
+      // repeated decoder stalls. Large jumps still seek, with a common gate.
+      if (!playing || audioWaiting || Math.abs(drift) > 0.2) {
+        a.playbackRate = 1;
+        seekVideo(a, desired, 0.035);
+      } else {
+        a.playbackRate = Math.abs(drift) > 0.025 ? Math.max(0.97, Math.min(1.03, 1 + drift * 0.2)) : 1;
+      }
       audible.push(a);
     });
-    audioWaiting = audible.some(a => a.readyState < 2 && !a.error);
-    audible.forEach(a => {
-      if (playing && !audioWaiting && a.paused) void a.play().catch(() => {});
-      else if ((!playing || audioWaiting) && !a.paused) a.pause();
-    });
+    activeAudio = audible;
     Object.keys(audioPool).forEach(id => {
       if (!active.has(id)) {
         audioPool[id].pause();
@@ -1093,6 +1147,11 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
       commit();
       return;
     }
+    if(it.kind==='clip' && (field==='transitionLen' || field==='removeTransition')){
+      begin();if(field==='removeTransition')delete it.trans;
+      else if(it.trans)it.trans.len=Math.max(.2,Math.min(3,it.dur*.8,Number(value)));
+      commit();return;
+    }
     if (it.kind !== 'text') return;
     begin();
     (it as unknown as Record<string, unknown>)[field] =
@@ -1159,7 +1218,12 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
     const total = end();
     const dt = Math.min(0.25, (now - lastTick) / 1000);
     lastTick = now;
-    playhead = Math.min(total, playhead + dt);
+    const clock = master;
+    if (clock && !clock.cur.paused && !clock.cur.seeking && clock.cur.readyState >= 2) {
+      playhead = Math.min(total, clock.it.start + clock.cur.currentTime - (clock.it.offset || 0));
+    } else {
+      playhead = Math.min(total, playhead + dt);
+    }
     renderPreviewFrame(false);
 
     // The video, not the wall clock, is the timebase while a clip is on
@@ -1203,6 +1267,15 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
       return st;
     });
     master = m;
+    const media: HTMLMediaElement[] = [...activeAudio, ...states.flatMap(st => st ? [st.cur] : [])];
+    // HAVE_CURRENT_DATA is enough to start. WebKit can stay at that state
+    // after a paused seek until play() is called; demanding future data here
+    // while withholding play creates a permanent preparation deadlock.
+    audioWaiting = media.some(el => !el.error && !el.ended && (el.seeking || el.readyState < 2));
+    for (const el of media) {
+      if (playing && !audioWaiting) playReady(el);
+      else if (!el.paused) el.pause();
+    }
     states.forEach(st => syncOutgoing(st, t));
     applyTransitionStyles(states, t);
     renderTexts(t);
@@ -1237,6 +1310,16 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
 
   function seek(t: number) {
     playhead = Math.max(0, Math.min(totalSec(), t));
+    // A user jump must reposition the master too. Normal playback follows
+    // its clock and intentionally avoids seeking it on every animation frame.
+    audioWaiting = true;
+    for (const entry of Object.values(pool)) {
+      for (const video of entry.els as PoolVideo[]) {
+        video._warmUntil = 0;
+        video.pause();
+      }
+    }
+    for (const audio of Object.values(audioPool)) audio.pause();
     updatePlayheadDom();
     renderPreviewFrame(true);
     emit();
@@ -1269,7 +1352,8 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
   function itemHTML(it: EdItem) {
     const w = Math.max(8, it.dur * pps);
     const left = it.start * pps;
-    const selCls = sel === it.id ? ' selected' : '';
+    const selected=selItem();
+    const selCls = sel === it.id ? ' selected' : selected?.groupId && selected.groupId===it.groupId ? ' linked-selected' : '';
     const miss = it.clipId && missing.has(it.clipId) ? ' missing' : '';
     const base = `data-item="${escAttr(it.id)}" style="left:${left}px;width:${w}px"`;
     const c = it.clipId ? clipOf(it) : null;
@@ -1285,7 +1369,7 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
             `<rect x="${i * 3}" y="${(10 - b * 8).toFixed(2)}" width="2" height="${(b * 16).toFixed(2)}" rx="1" fill="currentColor"/>`,
         )
         .join('');
-      return `<div class="ed-item ed-item-audio${selCls}${miss}" data-muted="${Boolean(it.muted)}" ${base}>
+      return `<div class="ed-item ed-item-audio${selCls}${miss}" data-muted="${Boolean(it.muted || project!.tracks.find(t=>t.id===it.trackId)?.muted)}" ${base}>
       <svg class="ed-wave" viewBox="0 0 ${bars.length * 3} 20" preserveAspectRatio="none">${rects}</svg>
       <span class="ed-item-name">${escHtml(name)} · ${escHtml(title)}</span>
       <div class="ed-handle l" data-handle="l"><div class="ed-handle-bar"></div></div>
@@ -1319,14 +1403,12 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
   }
 
   /**
-   * Both the marker and its editing pill are rendered up front and toggled by
-   * a class. Swapping innerHTML on hover made the element resize under the
-   * pointer, which retriggered hover and left the buttons unclickable.
+   * Render stable controls once; wireJunction portals the pill when opened.
    */
   function junctionHTML(it: EdItem) {
     const fx = edFx(it.trans!.fx)!;
     return `<div class="ed-junction" data-junction="${escAttr(it.id)}" style="left:${it.start * pps}px">
-    <div class="ed-junction-mark" title="${escAttr(translate('editor.junctionTitle', {name: fxName(fx.id), len: it.trans!.len.toFixed(1)}))}">
+    <div class="ed-junction-mark" role="button" tabindex="0" aria-expanded="false" title="${escAttr(translate('editor.junctionTitle', {name: fxName(fx.id), len: it.trans!.len.toFixed(1)}))}">
       <div class="ed-junction-stem"></div>
       <div class="ed-junction-dot">${edGlyph(fx.glyph, 8)}</div>
       <div class="ed-junction-stem"></div>
@@ -1343,6 +1425,7 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
   }
 
   function renderTimeline() {
+    closeJunction?.();
     if (!project || !mounted || !box) return;
     const total = totalSec();
     const totalW = total * pps;
@@ -1358,7 +1441,7 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
     </div>`;
     }
 
-    const rows = project.tracks
+    const rows = project.tracks.filter(t=>!easy || (t.type==='video' && (t.id===videoTracks()[videoTracks().length-1]?.id || project!.items.some(i=>i.trackId===t.id))))
       .map(tr => {
         const laneItems = items(tr.id);
         const rendered = laneItems.map(itemHTML).join('');
@@ -1366,7 +1449,8 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
           tr.type === 'video' ? laneItems.filter(i => i.trans).map(junctionHTML).join('') : '';
         return `<div class="ed-track-row">
       <div class="ed-rail ${tr.type}" data-rail="${escAttr(tr.id)}" title="${escAttr(translate('editor.trackOptionsHint'))}">
-        <span class="ed-rail-label">${escHtml(tr.label)}</span>
+        <span class="ed-rail-heading"><span class="ed-rail-label" title="${escAttr(tr.label)}">${escHtml(tr.type==='audio' ? tr.label.replace(/^device:/,'').replace(/\.monitor$/,'').replace(/^sink[_-]/,'').replace(/[_-]/g,' ') : tr.label)}</span>
+        ${tr.type==='audio' ? `<button type="button" class="ed-track-mute" data-track-mute="${escAttr(tr.id)}" aria-pressed="${Boolean(tr.muted)}" title="${escAttr(translate(tr.muted?'editor.unmuteTrack':'editor.muteTrack'))}" aria-label="${escAttr(translate(tr.muted?'editor.unmuteTrack':'editor.muteTrack')+': '+tr.label)}">${edGlyph(ED_ICONS.volumeX,14)}</button>` : ''}</span>
         <span class="ed-rail-type">${tr.type.slice(0, 3).toUpperCase()}</span>
       </div>
       <div class="ed-lane ${tr.type}" data-lane="${escAttr(tr.id)}" style="width:${totalW}px">
@@ -1397,6 +1481,8 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
     if (!box) return;
     box.timelineCanvas.querySelectorAll<HTMLElement>('.ed-item').forEach(el => {
       el.classList.toggle('selected', el.dataset.item === sel);
+      const selected=selItem(),other=item(el.dataset.item!);
+      el.classList.toggle('linked-selected', Boolean(selected?.groupId && other?.groupId===selected.groupId && other.id!==sel));
     });
   }
 
@@ -1419,6 +1505,9 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
       });
     }
 
+    box.timelineCanvas.querySelectorAll<HTMLButtonElement>('[data-track-mute]').forEach(button=>{
+      button.addEventListener('click',e=>{e.stopPropagation();muteTrack(button.dataset.trackMute!);});
+    });
     box.timelineCanvas.querySelectorAll<HTMLElement>('.ed-rail').forEach(rail => {
       rail.addEventListener('contextmenu', e => openTrackMenu(e, rail.dataset.rail!));
     });
@@ -1528,9 +1617,7 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
       el.removeEventListener('pointerup', up);
       if (!moved) return;
       begin();
-      it.start = targetStart;
-      it.trackId = targetTrack;
-      resolve(it);
+      moveLinked(it,targetStart,targetTrack);
       commit();
     };
     el.addEventListener('pointermove', mv);
@@ -1542,16 +1629,18 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
     const os = it.start;
     const od = it.dur;
     const oo = it.offset || 0;
-    const {prevEnd, nextStart} = limits(it);
-    const srcDur = it.clipId ? sourceDur(it) : Infinity;
-    const maxD = Math.min(srcDur - oo, nextStart - os);
+    const group=linkedItems(project!,it);
+    const prevEnd=Math.max(...group.map(i=>limits(i).prevEnd));
+    const nextStart=Math.min(...group.map(i=>limits(i).nextStart));
+    const availableBefore=Math.min(...group.map(i=>i.offset || 0));
+    const maxD=Math.min(nextStart-os,...group.map(i=>i.clipId ? sourceDur(i)-(i.offset||0) : Infinity));
     let final: Partial<EdItem> | null = null;
 
     const mv = (ev: PointerEvent) => {
       const dt = (ev.clientX - sx) / pps;
       if (side === 'l') {
         let d = snapTime(os + dt, it.id) - os;
-        d = Math.max(Math.max(-oo, prevEnd - os), Math.min(od - 0.5, d));
+        d = Math.max(Math.max(-availableBefore, prevEnd - os), Math.min(od - 0.5, d));
         final = {start: round(os + d), dur: round(od - d), offset: round(oo + d)};
         el.style.left = `${final.start! * pps}px`;
         el.style.width = `${Math.max(8, final.dur! * pps)}px`;
@@ -1567,7 +1656,10 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
       el.removeEventListener('pointerup', up);
       if (!final) return;
       begin();
-      Object.assign(it, final);
+      for(const part of group){
+        if(final.start!==undefined){const delta=final.start-os;part.start=round(part.start+delta);part.offset=round((part.offset||0)+delta);}
+        part.dur=final.dur!;
+      }
       commit();
     };
     el.addEventListener('pointermove', mv);
@@ -1675,39 +1767,78 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
     document.querySelectorAll('.ed-item.fx-target').forEach(el => el.classList.remove('fx-target'));
   }
 
-  /**
-   * The pill is a child of the marker, so moving the pointer onto it keeps the
-   * marker hovered and nothing is re-rendered mid-click.
-   */
+  // Portal the controls outside the scrolling lanes. Keep them open across the
+  // gap above the marker; outside click, Escape or scrolling dismisses them.
   function wireJunction(el: HTMLElement, itemId: string) {
-    const close = () => el.classList.remove('open');
+    const pill = el.querySelector<HTMLElement>('.ed-junction-pill')!;
+    const marker = el.querySelector<HTMLElement>('.ed-junction-mark')!;
+    const close = () => {
+      if (closeJunction !== close) return;
+      pill.classList.remove('floating');
+      el.appendChild(pill);
+      marker.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('pointerdown', outside, true);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+      closeJunction = null;
+    };
+    const outside = (e: Event) => {
+      if (!pill.contains(e.target as Node) && !el.contains(e.target as Node)) close();
+    };
+    const open = () => {
+      if (closeJunction === close) return;
+      closeJunction?.();
+      closeJunction = close;
+      document.body.appendChild(pill);
+      pill.classList.add('floating');
+      marker.setAttribute('aria-expanded', 'true');
+      const anchor = el.getBoundingClientRect();
+      const bounds = pill.getBoundingClientRect();
+      const laneLeft = box!.timelineScroll.getBoundingClientRect().left + ED_RAIL;
+      pill.style.left = `${Math.max(8, Math.min(Math.max(laneLeft + 8, anchor.left - bounds.width / 2), window.innerWidth - bounds.width - 8))}px`;
+      pill.style.top = `${Math.max(8, Math.min(anchor.top - bounds.height - 6, window.innerHeight - bounds.height - 8))}px`;
+      document.addEventListener('pointerdown', outside, true);
+      window.addEventListener('scroll', close, true);
+      window.addEventListener('resize', close);
+    };
     el.addEventListener('pointerdown', e => {
       e.stopPropagation();
-      el.classList.add('open');
+      open();
     });
     el.addEventListener('contextmenu', e => {
       e.preventDefault();
       e.stopPropagation();
     });
-    el.addEventListener('mouseenter', () => el.classList.add('open'));
-    el.addEventListener('mouseleave', close);
+    el.addEventListener('mouseenter', open);
+    marker.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        open();
+        pill.querySelector<HTMLButtonElement>('button')?.focus();
+      }
+    });
+    pill.addEventListener('pointerdown', e => e.stopPropagation());
 
-    el.querySelectorAll<HTMLElement>('[data-bump]').forEach(btn => {
+    pill.querySelectorAll<HTMLElement>('[data-bump]').forEach(btn => {
       btn.onclick = ev => {
         ev.preventDefault();
         ev.stopPropagation();
         const it = item(itemId);
         if (!it || !it.trans) return;
         const cap = Math.min(3, round(it.dur * 0.8));
-        it.trans.len = round(
+        const length = round(
           Math.max(0.2, Math.min(cap, it.trans.len + parseFloat(btn.dataset.bump!))),
         );
-        el.querySelector('.fx-len')!.textContent = `${it.trans.len.toFixed(1)}s`;
+        if (length === it.trans.len) return;
+        begin();
+        it.trans.len = length;
+        pill.querySelector('.fx-len')!.textContent = `${it.trans.len.toFixed(1)}s`;
         scheduleSave();
         renderPreviewFrame(true);
+        emit();
       };
     });
-    const rm = el.querySelector<HTMLElement>('[data-rm]');
+    const rm = pill.querySelector<HTMLElement>('[data-rm]');
     if (rm) {
       rm.onclick = ev => {
         ev.preventDefault();
@@ -1852,7 +1983,7 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
     ED_FX
       .map(
         fx => `
-      <div class="ed-fx-row" draggable="true" data-fx="${fx.id}">
+      <div class="ed-fx-row" role="button" tabindex="0" draggable="true" data-fx="${fx.id}">
         <span class="ed-fx-icon">${edGlyph(fx.glyph, 16)}</span>
         <div class="ed-fx-copy">
           <div class="ed-fx-name">${escHtml(fxName(fx.id))}</div>
@@ -1884,6 +2015,9 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
       el.addEventListener('dblclick', () => quickAdd(slug));
     });
     box.libraryScroll.querySelectorAll<HTMLElement>('.ed-fx-row').forEach(el => {
+      const apply=()=>{const selected=selItem();const target=selected && linkedItems(project!,selected).find(i=>i.kind==='clip');if(target)applyFx(target.id,el.dataset.fx!);else deps.notify(translate('editor.selectClipForEffect'));};
+      el.addEventListener('click',apply);
+      el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();apply();}});
       el.addEventListener('dragstart', e => dragStart(e, 'fx', el.dataset.fx!));
       el.addEventListener('dragend', dragEnd);
     });
@@ -1896,7 +2030,7 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
   function dragStart(ev: DragEvent, kind: string, id: string) {
     drag = {kind, id};
     ev.dataTransfer!.effectAllowed = 'copy';
-    ev.dataTransfer!.setData('text/plain', `vice-ed:${kind}:${id}`);
+    ev.dataTransfer!.setData('text/plain', `gloaming-ed:${kind}:${id}`);
 
     const ghost = document.createElement('div');
     ghost.className = 'clip-drag-ghost';
@@ -1954,37 +2088,46 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
   // ── keyboard ────────────────────────────────────────────────────
   function onKeyDown(e: KeyboardEvent) {
     if (!mounted || !project) return;
+    if (e.key === 'Escape' && closeJunction) {
+      e.preventDefault();
+      closeJunction();
+      return;
+    }
     const tg = e.target as HTMLElement;
     if (
-      tg.tagName === 'INPUT' ||
+      (tg.tagName === 'INPUT' && !['range','checkbox','button'].includes((tg as HTMLInputElement).type)) ||
       tg.tagName === 'TEXTAREA' ||
       tg.tagName === 'SELECT' ||
       tg.isContentEditable
     ) {
       return;
     }
-    if (document.querySelector('.scrim')) return;
+    if (document.querySelector('.scrim:not([data-closing])')) return;
     const mod = e.metaKey || e.ctrlKey;
+    // Let focused controls consume their own navigation/activation keys.
+    // In particular, dragging the pad with arrows must not also seek the movie.
+    if(!mod && ['Space','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code)
+        && tg.closest('button,input,select,[role="button"],[role="switch"]'))return;
     if (e.code === 'Space') {
       e.preventDefault();
       setPlaying(!playing);
     } else if (e.key === 'Delete' || e.key === 'Backspace') remove();
-    else if (mod && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+    else if (mod && !e.shiftKey && (e.code === 'KeyZ' || e.key.toLowerCase() === 'z')) {
       e.preventDefault();
       undo();
-    } else if (mod && e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+    } else if (mod && ((e.shiftKey && (e.code === 'KeyZ' || e.key.toLowerCase() === 'z')) || e.code === 'KeyY')) {
       e.preventDefault();
       redo();
-    } else if (mod && (e.key === 'c' || e.key === 'C')) {
+    } else if (mod && (e.code === 'KeyC' || e.key.toLowerCase() === 'c')) {
       e.preventDefault();
       copySel();
-    } else if (mod && (e.key === 'v' || e.key === 'V')) {
+    } else if (mod && (e.code === 'KeyV' || e.key.toLowerCase() === 'v')) {
       e.preventDefault();
       paste();
-    } else if (mod && (e.key === 'd' || e.key === 'D')) {
+    } else if (mod && (e.code === 'KeyD' || e.key.toLowerCase() === 'd')) {
       e.preventDefault();
       duplicate();
-    } else if (!mod && (e.key === 's' || e.key === 'S')) split();
+    } else if (!mod && (e.code === 'KeyS' || e.key.toLowerCase() === 's')) split();
     else if (e.key === 'ArrowLeft') seek(Math.max(0, playhead - (e.shiftKey ? 0.1 : 1)));
     else if (e.key === 'ArrowRight') seek(Math.min(end(), playhead + (e.shiftKey ? 0.1 : 1)));
     else if (e.key === 'Escape') select(null);
@@ -1996,7 +2139,7 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
   function mount(containers: EditorContainers) {
     box = containers;
     mounted = true;
-    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keydown', onKeyDown, true);
     wireStage();
     refreshMissing();
     renderLibrary();
@@ -2005,8 +2148,9 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
   }
 
   function destroy() {
+    closeJunction?.();
     mounted = false;
-    document.removeEventListener('keydown', onKeyDown);
+    document.removeEventListener('keydown', onKeyDown, true);
     setPlaying(false);
     if (raf) cancelAnimationFrame(raf);
     raf = null;
@@ -2029,6 +2173,7 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
     load,
     setClips() {
       if (!loaded) return;
+      if(project && migrateAudio(project,clips(),uid)) scheduleSave();
       refreshMissing();
       renderLibrary();
       renderTimeline();
@@ -2071,6 +2216,20 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
     setPlaying,
     split,
     detachAudio,
+    unlinkAudio,
+    relinkAudio,
+    muteTrack,
+    setEasy(value){easy=value;if(easy && selItem()?.kind!=='clip')sel=null;renderTimeline();},
+    setKeyboard(value){if(!project)return;begin();project.keyboard=value;commit();},
+    undo,
+    redo,
+    setController(value){if(!project)return;begin();project.controller=value;commit();},
+    controllerFrame(){
+      if(!project)return null;
+      const tracks=videoTracks();const track=tracks[tracks.length-1];
+      const current=project.items.find(i=>i.kind==='clip' && i.trackId===track?.id && playhead>=i.start && playhead<i.start+i.dur);
+      return current?.clipId ? {clipId:current.clipId,time:(current.offset||0)+playhead-current.start} : null;
+    },
     duplicate,
     remove,
     addTrack,

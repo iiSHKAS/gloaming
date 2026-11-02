@@ -38,7 +38,7 @@ body,
 
 body {
   margin: 0;
-  background: var(--vice-bg, var(--color-background-body));
+  background: var(--gloaming-bg, var(--color-background-body));
   color: var(--color-text-primary);
   font-family: var(--font-family-body);
   overflow: hidden;
@@ -54,7 +54,7 @@ body {
   place-content: center;
   justify-items: center;
   gap: var(--spacing-3);
-  background: var(--vice-bg, var(--color-background-body));
+  background: var(--gloaming-bg, var(--color-background-body));
   color: var(--color-text-primary);
   transition: opacity var(--duration-medium) var(--ease-standard);
 }
@@ -64,15 +64,13 @@ body {
   pointer-events: none;
 }
 
-/* The wordmark. The face is declared in index.html as an inlined data URI so
-   it is available to the first paint; this only sets how it is used. */
+/* The wordmark, in the heading face. (It used to be a four-letter Syne subset for the old name; the new name needs
+   letters that subset does not have.) */
 .wordmark {
-  font-family: 'Syne VICE', var(--font-family-heading);
+  font-family: var(--font-family-heading);
   font-weight: 800;
   letter-spacing: 0.01em;
   line-height: 1;
-  /* The subset has no lowercase, so a stray lowercase string would render as
-     tofu rather than quietly falling back. */
   text-transform: uppercase;
 }
 
@@ -150,18 +148,18 @@ body {
 /* The ambient wash. What is left of the old drifting glow orbs: one static,
    accent-derived radial that sits behind everything and never animates, so
    there is nothing here for the effects probe to measure. */
-.vice-ambient {
+.gloaming-ambient {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(120% 90% at 50% 0%, var(--vice-ambient) 0%, transparent 62%),
-    var(--vice-bg);
+    radial-gradient(120% 90% at 50% 0%, var(--gloaming-ambient) 0%, transparent 62%),
+    var(--gloaming-bg);
   opacity: 0.72;
 }
 
-.vice-app {
+.gloaming-app {
   position: relative;
   z-index: 1;
   height: 100%;
@@ -171,43 +169,43 @@ body {
    Containers separate by tone and a hairline. No drop shadow: an app window is
    not a stack of floating cards.
 
-   The names are Vice's, the values are M3 roles. A control at rest wears
+   The names are Gloaming's, the values are M3 roles. A control at rest wears
    secondary-container, a genuinely coloured tonal rung, rather than a surface
    role: that was the bug behind buttons looking unfinished, and it is why
    --control and --raised no longer resolve to the same family.
 
    Filled elements carry no outline. M3 gives a filled card "surface-container
    fill, no border" and reserves outline-variant for the outlined variant: you
-   pick fill or outline, not both. Vice used to do both because near-neutral
+   pick fill or outline, not both. Gloaming used to do both because near-neutral
    grays could not separate on tone alone, and the leftover hairline is what
    made the buttons look grubby once they had real tone. Outlines survive only
    where M3 uses them, on text fields and dividers.
 
    Scoped to the scrim as well as the app, because the viewer, the trim window
-   and every modal render as siblings of .vice-app rather than inside it. A
+   and every modal render as siblings of .gloaming-app rather than inside it. A
    custom property that does not reach an element is not a wrong colour, it
    takes the whole declaration with it: the volume track lost its entire
    background and rendered as a bare thumb with no line behind it. */
-.vice-app,
+.gloaming-app,
 .scrim {
   /* content: clip cards, settings cards, panels */
-  --raised: var(--vice-surface-low);
-  --raised-hover: var(--vice-surface-high);
+  --raised: var(--gloaming-surface-low);
+  --raised-hover: var(--gloaming-surface-high);
 
   /* controls at rest, and the text that goes on them */
-  --control: var(--vice-secondary-container);
-  --on-control: var(--vice-on-secondary-container);
-  --control-hover: var(--vice-surface-highest);
+  --control: var(--gloaming-secondary-container);
+  --on-control: var(--gloaming-on-secondary-container);
+  --control-hover: var(--gloaming-surface-highest);
 
   /* the second tonal rung, so a chip and a tile are not the same paint.
      primary-container rather than tertiary: tertiary sits at accent+60, which
      put purple chips on the blue theme and read as a different theme leaking
      in rather than as variety. */
-  --tertiary: var(--vice-primary-container);
-  --on-tertiary: var(--vice-on-primary-container);
+  --tertiary: var(--gloaming-primary-container);
+  --on-tertiary: var(--gloaming-on-primary-container);
 
   /* recessed into a container: a select at rest, a switch that is off */
-  --recessed: var(--vice-surface-lowest);
+  --recessed: var(--gloaming-surface-lowest);
 
   /* The two M3 corner stops above --radius-container. Defined here rather than
      in the theme because DesignTokenTests reads the built stylesheet, and
@@ -257,7 +255,7 @@ body {
 /* The target visibly catches the clip. Without this the only feedback is a
    count quietly incrementing somewhere off to the side. */
 [data-received] {
-  animation: playlist-catch 600ms var(--vice-ease-spring);
+  animation: playlist-catch 600ms var(--gloaming-ease-spring);
 }
 
 @keyframes playlist-catch {
@@ -323,7 +321,7 @@ body {
 
 /* Reduced effects: the ambient wash goes and motion is cut to what is needed
    to show a state change, on the machines the probe found cannot afford it. */
-.perf-low .vice-ambient {
+.perf-low .gloaming-ambient {
   display: none;
 }
 
@@ -333,6 +331,15 @@ body {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 90ms !important;
+}
+
+/* The 90ms above applies to every property, positions included. Popups are placed by script after they mount, so
+   a position transition made them glide in from the corner of the window. They place instantly. */
+.perf-low .ui-select-menu,
+.perf-low .ctx-menu,
+.perf-low .controller-hover,
+.perf-low .controller-tick {
+  transition: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -410,6 +417,39 @@ body {
 .clip-row > :nth-child(n + 8) {
   animation-delay: 175ms;
 }
+
+/* Library cards float up and settle one after another: a soft rise with a
+   touch of scale on a long ease-out, so the grid feels like it is being laid
+   out rather than switched on. Twelve steps cover what fits on screen; the
+   rest arrive with the last one. Opacity and transform only, so it stays on
+   the compositor even with a page of video thumbnails. */
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.clip-grid > * {
+  animation: card-in 560ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: 660ms;
+}
+.clip-grid > :nth-child(1) { animation-delay: 0ms; }
+.clip-grid > :nth-child(2) { animation-delay: 55ms; }
+.clip-grid > :nth-child(3) { animation-delay: 110ms; }
+.clip-grid > :nth-child(4) { animation-delay: 165ms; }
+.clip-grid > :nth-child(5) { animation-delay: 220ms; }
+.clip-grid > :nth-child(6) { animation-delay: 275ms; }
+.clip-grid > :nth-child(7) { animation-delay: 330ms; }
+.clip-grid > :nth-child(8) { animation-delay: 385ms; }
+.clip-grid > :nth-child(9) { animation-delay: 440ms; }
+.clip-grid > :nth-child(10) { animation-delay: 495ms; }
+.clip-grid > :nth-child(11) { animation-delay: 550ms; }
+.clip-grid > :nth-child(12) { animation-delay: 605ms; }
 
 /* The settings cards come in as a column, which reads as the page settling
    rather than eight separate arrivals. */

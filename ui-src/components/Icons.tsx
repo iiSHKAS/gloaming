@@ -45,10 +45,8 @@ export const IconEditor = ({size = 18, className}: IconProps) => (
 
 export const IconSettings = ({size = 18, className}: IconProps) => (
   <svg {...base(size)} className={className} aria-hidden="true">
-    <path d="M4 7h8M16 7h4M4 12h4M12 12h8M4 17h10M18 17h2" />
-    <circle cx="14" cy="7" r="2" />
-    <circle cx="8" cy="12" r="2" />
-    <circle cx="16" cy="17" r="2" />
+    <path d="M9.5 3h5l.5 2.5 1.5.9 2.4-.8 2.5 4.3-1.9 1.7v1.8l1.9 1.7-2.5 4.3-2.4-.8-1.5.9-.5 2.5h-5L9 19.5l-1.5-.9-2.4.8-2.5-4.3 1.9-1.7v-1.8L2.6 9.9l2.5-4.3 2.4.8L9 5.5Z" />
+    <circle cx="12" cy="12.5" r="3" />
   </svg>
 );
 
@@ -79,6 +77,24 @@ export const IconClose = ({size = 15, className}: IconProps) => (
   </svg>
 );
 
+export const IconFolder = ({size = 15, className}: IconProps) => (
+  <svg {...base(size)} className={className} aria-hidden="true">
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+  </svg>
+);
+
+export const IconFolderOpen = ({size = 15, className}: IconProps) => (
+  <svg {...base(size)} className={className} aria-hidden="true">
+    <path d="M5 19h12.5a1.5 1.5 0 0 0 1.45-1.1l1.8-6.4A1 1 0 0 0 19.8 10H8.2a1.5 1.5 0 0 0-1.45 1.1zm0 0a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v2" />
+  </svg>
+);
+
+export const IconTrash = ({size = 15, className}: IconProps) => (
+  <svg {...base(size)} className={className} aria-hidden="true">
+    <path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
+  </svg>
+);
+
 export const IconMinimize = ({size = 15, className}: IconProps) => (
   <svg {...base(size)} className={className} aria-hidden="true">
     <path d="M5 12h14" />
@@ -100,19 +116,13 @@ export const IconPlaylist = ({size = 16, className}: IconProps) => (
   </svg>
 );
 
-/** The brand mark: the recording ring Vice has always used. */
+/** The brand mark: a rewind arrow around a setting sun. It takes the colour of its surroundings (the accent). */
 export const IconMark = ({size = 20, className}: IconProps) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2.25}
-    className={className}
-    aria-hidden="true">
-    <circle cx="12" cy="12" r="9.5" />
-    <circle cx="12" cy="12" r="3" fill="currentColor" />
+  <svg width={size} height={size} viewBox="58 38 184 204" fill="none" className={className} aria-hidden="true">
+    <path d="M150 74A76 76 0 1 1 75.7 165.8" stroke="currentColor" strokeWidth="24" strokeLinecap="round" />
+    <path d="M112 74 153 47V101Z" fill="currentColor" stroke="currentColor" strokeWidth="8" strokeLinejoin="round" />
+    <path d="M104 178a46 46 0 0 1 92 0Z" fill="currentColor" />
+    <path d="M92 182H208" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
   </svg>
 );
 

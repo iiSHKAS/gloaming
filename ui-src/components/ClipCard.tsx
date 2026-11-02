@@ -3,7 +3,7 @@ import {useEffect, useRef, useState} from 'react';
 import {endClipDrag, startClipDrag} from '../lib/clipDrag';
 import {formatBytes, formatDuration} from '../lib/format';
 import {clipTitle, type Clip} from '../lib/types';
-import {H264_SUPPORTED} from '../lib/env';
+import {H264_SUPPORTED, IS_NATIVE_WEBKIT} from '../lib/env';
 import {playbackUrl} from '../lib/playback';
 import {t} from '../lib/i18n';
 import {InlineRename} from './InlineRename';
@@ -36,16 +36,42 @@ export interface ClipActions {
   onRenameDone?: () => void;
 }
 
+/** Bulk selection in the library: while `active`, a click picks the card instead of opening it. */
+export interface CardSelect {
+  active: boolean;
+  checked: boolean;
+  toggle: (event: React.MouseEvent) => void;
+}
+
+/** True when the click was a selection click, which the card then must not also act on. */
+export function selectionClick(select: CardSelect | undefined, event: React.MouseEvent): boolean {
+  if (!select || !(select.active || event.ctrlKey || event.metaKey)) return false;
+  event.preventDefault();
+  event.stopPropagation();
+  select.toggle(event);
+  return true;
+}
+
+export function SelectCheck({checked}: {checked: boolean}) {
+  return (
+    <span className="clip-check" data-checked={checked || undefined} aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12.5 4.5 4.5L19 7" /></svg>
+    </span>
+  );
+}
+
 export function ClipCard({
   clip,
   isNew,
   actions = {},
   draggable,
+  select,
 }: {
   clip: Clip;
   isNew?: boolean;
   actions?: ClipActions;
   draggable?: boolean;
+  select?: CardSelect;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const releaseTimer = useRef<number | undefined>(undefined);
@@ -59,7 +85,7 @@ export function ClipCard({
   };
 
   const broken = clip.unreadable;
-  const canPreview = H264_SUPPORTED && !broken && !previewFailed && Boolean(clip.thumb_url);
+  const canPreview = !IS_NATIVE_WEBKIT && H264_SUPPORTED && !broken && !previewFailed && Boolean(clip.thumb_url);
 
   useEffect(() => () => window.clearTimeout(releaseTimer.current), []);
 
@@ -91,6 +117,13 @@ export function ClipCard({
     }, PREVIEW_RELEASE_MS);
   };
 
+  const openClip = () => {
+    // Pause the hover decoder before starting the full-size player. The
+    // pointer may stay on the thumbnail when a modal opens above it.
+    releasePreview();
+    actions.onOpen?.(clip);
+  };
+
   const meta = [
     clip.created_at
       ? new Date(clip.created_at).toLocaleDateString(undefined, {
@@ -111,7 +144,8 @@ export function ClipCard({
     <article
       className="clip-card"
       data-broken={broken || undefined}
-      draggable={draggable && !renaming}
+      data-selected={select?.checked || undefined}
+      draggable={draggable && !renaming && !select?.active}
       onDragStart={e => startClipDrag(e, clip)}
       onDragEnd={endClipDrag}
       onContextMenu={e => {
@@ -125,14 +159,18 @@ export function ClipCard({
         // rename field, and the title, which takes a double-click to rename and
         // would never get its second click if the first one opened the viewer.
         if (renaming) return;
+        if (selectionClick(select, e)) return;
         const target = e.target as HTMLElement;
         if (target.closest('button, a, input, textarea, .clip-name')) return;
-        actions.onOpen?.(clip);
+        openClip();
       }}>
       <button
         type="button"
         className="clip-thumb"
-        onClick={() => actions.onOpen?.(clip)}
+        onClick={e => {
+          if (selectionClick(select, e)) return;
+          openClip();
+        }}
         onPointerEnter={attachPreview}
         onPointerLeave={releasePreview}
         aria-label={t('card.openTitle', {name: clipTitle(clip)})}>
@@ -153,6 +191,7 @@ export function ClipCard({
           />
         ) : null}
 
+        {select?.active ? <SelectCheck checked={select.checked} /> : null}
         <span className="clip-badges">
           {broken ? (
             <span className="clip-badge clip-badge-broken" title={clip.unreadable_reason}>

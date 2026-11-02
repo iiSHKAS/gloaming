@@ -1,5 +1,5 @@
 {
-  description = "Vice - instant-replay game clipping for Linux";
+  description = "Gloaming - instant-replay game clipping for Linux";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
@@ -10,12 +10,12 @@
     in
     {
       overlays.default = final: prev: {
-        vice-clipper = final.callPackage ./nix/package.nix { xprop = final.xprop or final.xorg.xprop; };
+        gloaming-clipper = final.callPackage ./nix/package.nix { xprop = final.xprop or final.xorg.xprop; };
       };
 
       packages = forAllSystems (pkgs: rec {
-        vice-clipper = pkgs.callPackage ./nix/package.nix { xprop = pkgs.xprop or pkgs.xorg.xprop; };
-        default = vice-clipper;
+        gloaming-clipper = pkgs.callPackage ./nix/package.nix { xprop = pkgs.xprop or pkgs.xorg.xprop; };
+        default = gloaming-clipper;
       });
 
       nixosModules.default = { ... }: {
@@ -25,8 +25,8 @@
 
       devShells = forAllSystems (pkgs: {
         default = pkgs.mkShell {
-          inputsFrom = [ self.packages.${pkgs.system}.vice-clipper ];
-          packages = [ pkgs.nodejs pkgs.python3Packages.pytest ];
+          inputsFrom = [ self.packages.${pkgs.system}.gloaming-clipper ];
+          packages = [ pkgs.nodejs ];
         };
       });
     };

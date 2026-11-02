@@ -9,7 +9,7 @@ import {ImageCard} from '../components/ImageCard';
  * moving between the two sections changes only what is on the tiles.
  */
 export function Images() {
-  const {state, visibleImages} = useStore();
+  const {state, visibleImages, dispatch} = useStore();
   const {searchQuery, config} = state;
 
   const {actions, overlays} = useImageActions();
@@ -31,6 +31,7 @@ export function Images() {
         </div>
       </header>
 
+      <div className="studio-library-tools"><input type="search" aria-label="Search images" placeholder="Search images…" value={searchQuery} onChange={e=>dispatch({type:'setSearch',query:e.target.value})}/><button className="btn btn-quiet" onClick={()=>dispatch({type:'setSearch',query:''})}>Clear</button><button className="btn btn-quiet" onClick={()=>dispatch({type:'setView',view:'clips',playlistId:null})}>Videos</button></div>
       {count === 0 ? (
         <p className="home-empty">
           {query

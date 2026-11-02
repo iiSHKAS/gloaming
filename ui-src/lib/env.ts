@@ -6,9 +6,9 @@
  */
 
 /**
- * The pywebview native window. vice-app passes ?native=1 in the URL because
+ * The pywebview native window. gloaming-app passes ?native=1 in the URL because
  * window.pywebview is only injected after DOMContentLoaded, which is too late
- * to get the quit row right on the first paint.
+ * to identify the native host on the first paint.
  */
 export const IS_NATIVE: boolean = (() => {
   try {
@@ -19,9 +19,44 @@ export const IS_NATIVE: boolean = (() => {
   return typeof (window as {pywebview?: unknown}).pywebview !== 'undefined';
 })();
 
+/** The native window turned its system title bar off, so the page draws one. */
+export const IS_CUSTOM_CHROME: boolean = (() => {
+  try {
+    return IS_NATIVE && new URLSearchParams(location.search).get('chrome') === '1';
+  } catch {
+    return false;
+  }
+})();
+if (IS_CUSTOM_CHROME) document.documentElement.classList.add('native-chrome');
+
+type WindowAction = 'drag' | 'minimize' | 'toggle_maximize' | 'close';
+/** Ask the native window to do something to itself. Calls made before the bridge is ready are dropped. */
+export function windowAction(action: WindowAction): void {
+  const api = (window as unknown as {pywebview?: PyWebView}).pywebview?.api;
+  const call = {
+    drag: api?.window_drag, minimize: api?.window_minimize,
+    toggle_maximize: api?.window_toggle_maximize, close: api?.window_close,
+  }[action];
+  try { call?.(); } catch (err) { console.debug('Window action failed', action, err); }
+}
+
+export function windowResize(edge: string): void {
+  try { (window as unknown as {pywebview?: PyWebView}).pywebview?.api.window_resize?.(edge); } catch (err) { console.debug('Resize failed', err); }
+}
+
+export async function windowMaximized(): Promise<boolean> {
+  try { return Boolean(await (window as unknown as {pywebview?: PyWebView}).pywebview?.api.window_is_maximized?.()); } catch { return false; }
+}
+
+/** WebKitGTK can stall its UI process while starting thumbnail video players.
+ * Native GTK windows use still thumbnails; explicit playback stays available.
+ */
+export const IS_NATIVE_WEBKIT = IS_NATIVE && /AppleWebKit/i.test(navigator.userAgent)
+  && !/Chrome|Chromium|Edg\//i.test(navigator.userAgent);
+
 /**
- * vice-app appends sw=1 when GPU compositing failed and the window relaunched
- * in software mode. This only covers the failure vice-app can see; the frame
+ * gloaming-app appends sw=1 when GPU compositing failed and the window relaunched
+ * in software mode. This only covers the failure gloaming-app can see; the frame
  * probe catches the silent one.
  */
 export const IS_SOFTWARE_RENDER: boolean = (() => {
@@ -33,7 +68,7 @@ export const IS_SOFTWARE_RENDER: boolean = (() => {
 })();
 
 /**
- * Whether this engine can decode H.264 at all. Every Vice clip is H.264, but
+ * Whether this engine can decode H.264 at all. Every Gloaming clip is H.264, but
  * QtWebEngine builds without proprietary codecs (the PyPI PyQt6-WebEngine
  * wheels) silently render video as a blank rectangle, so the UI has to say
  * what is wrong instead of showing grey (#79).
@@ -64,7 +99,15 @@ export const HEVC_SUPPORTED: boolean = (() => {
 
 interface PyWebView {
   api: {
+    get_window_chrome?: () => Promise<{has_titlebar: boolean | null}>;
     keep_running: () => void;
+    tray_available?: () => Promise<boolean>;
+    window_drag?: () => void;
+    window_resize?: (edge: string) => void;
+    window_minimize?: () => void;
+    window_toggle_maximize?: () => void;
+    window_is_maximized?: () => Promise<boolean>;
+    window_close?: () => void;
     quit_app: () => void;
     set_tray_labels?: (openLabel: string, quitLabel: string) => void;
     open_url?: (url: string) => void;
@@ -74,12 +117,12 @@ interface PyWebView {
 
 /**
  * Forward a diagnostic to the browser console and, in the native window, to
- * vice.log, so a reporter's log holds the whole timeline rather than half of
+ * gloaming.log, so a reporter's log holds the whole timeline rather than half of
  * it. Playback failures are the case that needs this: they leave no trace on
  * the daemon side at all.
  */
 export function nativeLog(msg: string): void {
-  console.debug('[vice]', msg);
+  console.debug('[gloaming]', msg);
   try {
     const bridge = (window as unknown as {pywebview?: PyWebView}).pywebview;
     if (IS_NATIVE && bridge?.api?.log_debug) bridge.api.log_debug(String(msg));
@@ -131,11 +174,29 @@ export function keepRunning(): void {
   if (IS_NATIVE) (window as unknown as {pywebview: PyWebView}).pywebview.api.keep_running();
 }
 
+/** Whether the desktop has a system tray to hide to. Unknown (browser, older build) reads as true. */
+export async function trayAvailable(): Promise<boolean> {
+  const bridge = (window as unknown as {pywebview?: PyWebView}).pywebview;
+  if (!IS_NATIVE || !bridge?.api?.tray_available) return true;
+  try {
+    return Boolean(await bridge.api.tray_available());
+  } catch {
+    return true;
+  }
+}
+
 /** Stop the daemon and close. Falls back to HTTP outside the native window. */
-export function quitVice(): void {
+export function quitGloaming(): void {
   if (IS_NATIVE) {
     (window as unknown as {pywebview: PyWebView}).pywebview.api.quit_app();
   } else {
     void fetch('/api/quit', {method: 'POST'}).catch(() => {});
   }
+}
+
+/** Unknown decoration state keeps the duplicate controls hidden. */
+export async function needsWindowControls(): Promise<boolean> {
+  const bridge = (window as unknown as {pywebview?: PyWebView}).pywebview;
+  if (!IS_NATIVE || !bridge?.api?.get_window_chrome) return false;
+  return (await bridge.api.get_window_chrome()).has_titlebar === false;
 }

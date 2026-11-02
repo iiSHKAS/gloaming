@@ -21,8 +21,8 @@ AppDir/
 # Node tooling for the UI design system
 node_modules/
 
-# Vice runtime
-/tmp/vice/
+# Gloaming runtime
+/tmp/gloaming/
 
 # Local maintenance notes, not for the public repo
 /CLAUDE.md
@@ -38,4 +38,3 @@ node_modules/
 *.pid
 
 # Build output from tools/verify-custom-accent.mjs.
-tools/accent-parity/out/

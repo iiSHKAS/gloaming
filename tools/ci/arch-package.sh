@@ -19,7 +19,7 @@ chown builder: "$work"
 git config --global --add safe.directory "$repo"
 
 echo "==> .SRCINFO matches PKGBUILD"
-cp "$repo/PKGBUILD" "$repo/vice-clipper.install" "$work/"
+cp "$repo/PKGBUILD" "$repo/gloaming-clipper.install" "$work/"
 if ! diff -u "$repo/.SRCINFO" <(cd "$work" && runuser -u builder -- makepkg --printsrcinfo); then
     echo "::error::.SRCINFO is out of date. Run: makepkg --printsrcinfo > .SRCINFO"
     exit 1
@@ -37,29 +37,29 @@ done
 
 echo "==> build from the committed tree"
 pkgver="$(srcinfo_field pkgver)"
-tarball="$work/vice-clipper-$pkgver.tar.gz"
-git -C "$repo" archive --format=tar.gz --prefix="Vice-$pkgver/" -o "$tarball" HEAD
+tarball="$work/gloaming-clipper-$pkgver.tar.gz"
+git -C "$repo" archive --format=tar.gz --prefix="Gloaming-$pkgver/" -o "$tarball" HEAD
 sha="$(sha256sum "$tarball" | cut -d' ' -f1)"
 # The real source is the release tag, which does not exist yet for a pull
 # request, so point the recipe at the tree being tested instead.
-sed -i "s|^source=.*|source=(\"vice-clipper-$pkgver.tar.gz\")|;s|^sha256sums=.*|sha256sums=('$sha')|" "$work/PKGBUILD"
+sed -i "s|^source=.*|source=(\"gloaming-clipper-$pkgver.tar.gz\")|;s|^sha256sums=.*|sha256sums=('$sha')|" "$work/PKGBUILD"
 chown builder: "$work"/*
 (cd "$work" && runuser -u builder -- makepkg --nodeps --noconfirm)
 
 echo "==> package contents"
-pkg="$(ls "$work"/vice-clipper-"$pkgver"-*.pkg.tar.zst)"
+pkg="$(ls "$work"/gloaming-clipper-"$pkgver"-*.pkg.tar.zst)"
 listing="$(tar -tf "$pkg")"
-for path in usr/bin/vice usr/bin/vice-app \
-            usr/lib/systemd/user/vice.service \
-            usr/lib/udev/rules.d/70-vice-input.rules \
-            usr/share/applications/vice.desktop \
-            usr/share/icons/hicolor/scalable/apps/vice.svg; do
+for path in usr/bin/gloaming usr/bin/gloaming-app \
+            usr/lib/systemd/user/gloaming.service \
+            usr/lib/udev/rules.d/70-gloaming-input.rules \
+            usr/share/applications/gloaming.desktop \
+            usr/share/icons/hicolor/scalable/apps/gloaming.svg; do
     if ! grep -qx "$path" <<<"$listing"; then
         echo "::error::the package is missing $path"
         exit 1
     fi
 done
-built="$(tar -xOf "$pkg" --wildcards '*/site-packages/vice/__init__.py' | sed -n 's/^__version__ = "\(.*\)"/\1/p')"
+built="$(tar -xOf "$pkg" --wildcards '*/site-packages/gloaming/__init__.py' | sed -n 's/^__version__ = "\(.*\)"/\1/p')"
 if [ "$built" != "$pkgver" ]; then
     echo "::error::PKGBUILD says $pkgver but the package reports $built"
     exit 1

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>Gloaming</title>
+<style>
+/* Syne ExtraBold, SIL Open Font License 1.1, subset to the four glyphs of
+   the wordmark: 624 bytes. Inlined rather than linked because the boot
+   cover paints before any font request could finish, and a fallback flash
+   on the loading screen defeats the loading screen. */
+@font-face{font-family:'Syne GLOAMING';font-weight:800;font-style:normal;font-display:block;src:url(data:font/woff2;base64,d09GMk9UVE8AAAJwAAwAAAAAA+wAAAInAAIzMwAAAAAAAAAAAAAAAAAAAAAAAAAADYJwGhYbIBwqBmAATAE2AiQDFAQGBQYHIBsVAyiOw7jh27yJxV0rwfOk1/+5M0melN0PsyPQwaxcSR07mJPdWTTAv69aeB5vgQ50/E0mPrG3VTruEogu+qgT7fCBJxRQggFJus23R1iHGAgSCdLp7SvuCI5CRHJ6zJs8qkZpibIVh49UCYoRFM8kKKGCktpWzdT3Mx17zj4snjoi2sI1PXLWBpJvBubhiHhDJ0+vW7Nu7drWJLDuXcCFOreqoogafzgZM27mxGHDYxyHT5ncbTXVmMTakaNGrzi0j9f4DyEGs8YnUhlAeSpSlUa4Ijl9ZizYE/v8LqgVspfNnqdkm8XFnQ9mH/38dq/39FZD7KRidnOZU7+N8++02Wwm3R7c4XAps90zPefbDv9jOcViYbugqd1td5sFLYNwkGPafzE9tpbKvmXumoOhCD/iPImsNN0Ti+N+dKnpHl/tZcfLv4z4obhv1kb8lOwXQfWw+ekFfsR37RHPHovttseC3a494WVHr4cQIBMAUAiCgyBAOsUpibRs3bEnqTgAyQBQSUUqo/KyJw6bOZnCWnDs6Ee6NC6olaov0IHlyGA6SEXgCvRqvuQqLeit9yS+gb4gP5RWPqv529JoQAETH42859AYSCcVhaIFrWhH72QID/Uudb4TxMU9ql69nE2LDg/Jaf4vVeuPAE/ars0CeN6qZYfEk8TF1BH6JOChABDwmVKvaUxsPaRR5Mpz+rvlae7MpLUcppezHB+6ggsED40vOR0A) format('woff2')}
+</style>
+<link rel="stylesheet" href="/styles/app.css?v=__GLOAMING_VERSION__">
+<script>
+// The accent is a per-install choice held in localStorage, and the boot cover
+// paints long before the bundle can read it. Without this the window opens
+// near-black and snaps to the themed background the moment React mounts.
+// Kept in step with ui-src/theme/accents.ts by a test.
+(function () {
+  var BG = {blue:'#11131a',purple:'#161219',green:'#0c1513',red:'#1c110d',orange:'#1b120a'};
+  var AC = {blue:'#8ab9f3',purple:'#d0bcff',green:'#85d7ae',red:'#ffb3ad',orange:'#ffb690'};
+  var name = null, bg = null, ac = null;
+  try {
+    name = localStorage.getItem('gloaming-theme');
+    if (name === 'custom') {
+      // A custom accent's scheme is derived by Material 3 in the bundle, which
+      // has not parsed yet and is far too large to run here. The two colours
+      // the cover needs are cached beside the seed when the user confirms it.
+      var hex = /^#[0-9a-f]{6}$/i;
+      var b = localStorage.getItem('gloaming-custom-bg');
+      var a = localStorage.getItem('gloaming-custom-base');
+      if (hex.test(b || '') && hex.test(a || '')) { bg = b; ac = a; }
+    }
+  } catch (e) { name = null; }
+  if (!bg) {
+    if (!BG[name]) name = 'blue';
+    bg = BG[name];
+    ac = AC[name];
+  }
+  var root = document.documentElement.style;
+  root.setProperty('--gloaming-bg', bg);
+  root.setProperty('--boot-accent', ac);
+})();
+</script>
+</head>
+<body>
+
+<!-- Covers the first paint until React has mounted and the clips and config
+     have landed, so the UI is never watched assembling itself. Removed by the
+     app once the first screen is ready. -->
+<div id="boot">
+  <div class="boot-mark">
+    <svg viewBox="58 38 184 204" width="48" height="48" fill="none">
+      <path d="M150 74A76 76 0 1 1 75.7 165.8" stroke="currentColor" stroke-width="24" stroke-linecap="round"/>
+      <path d="M112 74 153 47V101Z" fill="currentColor" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M104 178a46 46 0 0 1 92 0Z" fill="currentColor"/>
+      <path d="M92 182H208" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
+    </svg>
+    <span class="boot-orbit"></span>
+  </div>
+  <div class="boot-word wordmark">GLOAMING</div>
+  <div class="boot-bar"><span></span></div>
+</div>
+
+<div id="root"></div>
+
+<script type="module" src="/scripts/app.js?v=__GLOAMING_VERSION__"></script>
+</body>
+</html>
