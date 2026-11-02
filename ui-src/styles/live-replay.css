@@ -9,5 +9,3 @@
 
 .replay-clip-builder{padding:18px}.replay-clip-builder>p{margin-bottom:14px}.replay-presets{margin-bottom:14px}.replay-builder-icon{margin-bottom:6px}.replay-boundary input,.replay-volume{appearance:none;background:var(--control);border-radius:3px;height:4px}.replay-boundary input{margin-top:10px;margin-bottom:5px}.replay-boundary input::-webkit-slider-thumb,.replay-volume::-webkit-slider-thumb{appearance:none;width:11px;height:11px;border-radius:50%;background:var(--color-accent)}.replay-boundary input::-moz-range-thumb,.replay-volume::-moz-range-thumb{width:11px;height:11px;border:0;border-radius:50%;background:var(--color-accent)}
 
-/* The 10 sits inside the arrow's circle: centred on it, not pinned to the top. */
-.replay-transport button small{top:55%;left:50%;transform:translate(-50%,-50%);font-size:7.5px;font-weight:700;line-height:1;letter-spacing:-.2px;pointer-events:none}
