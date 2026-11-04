@@ -88,7 +88,7 @@ def main():
         os.environ.pop('GDK_DPI_SCALE', None)
     elif 'gnome' in desktop and os.environ.get('DISPLAY'):
         log.warning('Native replay bridge is inactive; XWayland fallback may blur at fractional scale. '
-                    'Enable gloaming-overlay@iishkas.github.io and sign out/in once after installation.')
+                    'Gloaming installs gloaming-overlay@iishkas.github.io on first start; sign out and in once to activate it.')
         os.environ['GDK_BACKEND'] = 'x11'
     plugins = Path.home() / '.local/share/gloaming-dev/gstreamer-1.0'
     if plugins.is_dir():

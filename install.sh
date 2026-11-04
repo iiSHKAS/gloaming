@@ -1133,5 +1133,8 @@ info "  • Build AppImage: ./packaging/appimage/build.sh"
 info "  • Build Flatpak:  ./packaging/flatpak/build.sh"
 info "  • Uninstall:      gloaming uninstall"
 info ""
+case "${XDG_CURRENT_DESKTOP:-}" in
+    *[Gg][Nn][Oo][Mm][Ee]*) info "  • GNOME: Gloaming sets up its overlay helper on first start. Sign out and back in once to activate it." ;;
+esac
 warn "Restart your terminal (or run 'exec \$SHELL') for PATH changes to take effect."
 warn "On fish: run 'exec fish' or open a new terminal window."

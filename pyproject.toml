@@ -33,4 +33,4 @@ include = ["gloaming*"]
 version = {attr = "gloaming.__version__"}
 
 [tool.setuptools.package-data]
-gloaming = ["ui/*", "ui/fonts/*", "ui/styles/*", "ui/scripts/*", "data/*.json", "fonts/*", "native/*.c", "native/*.h", "native/GSR-LICENSE"]
+gloaming = ["ui/*", "ui/fonts/*", "ui/styles/*", "ui/scripts/*", "data/*.json", "fonts/*", "native/*.c", "native/*.h", "native/GSR-LICENSE", "gnome-extension/*/*"]

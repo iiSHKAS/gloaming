@@ -13,8 +13,8 @@ for legacy in vice-overlay@basilforge.local gloaming-overlay@basilforge.local; d
     rm -rf "${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/$legacy"
 done
 mkdir -p "$extension_dir"
-cp "$here/gnome-extension/$uuid/metadata.json" "$extension_dir/metadata.json"
-cp "$here/gnome-extension/$uuid/extension.js" "$extension_dir/extension.js"
+cp "$here/gloaming/gnome-extension/$uuid/metadata.json" "$extension_dir/metadata.json"
+cp "$here/gloaming/gnome-extension/$uuid/extension.js" "$extension_dir/extension.js"
 # Preserve all other extension preferences. New UUIDs are discovered on login.
 /usr/bin/python3 - <<'PY'
 from gi.repository import Gio

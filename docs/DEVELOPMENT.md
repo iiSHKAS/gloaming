@@ -12,7 +12,7 @@ TypeScript. Node is only used to build that UI. The built files are committed un
 | `gloaming/ui/` | Built web UI (`scripts/app.js`, `styles/app.css`) plus fonts and `index.html` |
 | `ui-src/` | UI source: screens, components, editor engine, locales (`locales/*.json`) |
 | `src/themes/` | Design-system theme used by the UI build |
-| `gnome-extension/` | GNOME Shell extension that places the native Wayland replay overlay |
+| `gloaming/gnome-extension/` | GNOME Shell extension that places the native Wayland replay overlay (installed by `gloaming/gnome_extension.py`) |
 | `packaging/` | systemd user unit and udev rule |
 | `nix/`, `flake.nix` | Nix package and NixOS module |
 | `PKGBUILD`, `.SRCINFO` | Arch package |
@@ -48,8 +48,10 @@ See the comment in `vite.config.mts`.
 The replay overlay is a separate GTK + WebKit process (`gloaming/replay_overlay.py`) with three
 paths, chosen at start:
 
-1. **GNOME on Wayland with the bridge extension.** Install it with `tools/install-gnome-overlay.sh`
-   and sign out and in once. The extension finds the window by app id and gives it focus.
+1. **GNOME on Wayland with the bridge extension.** `gloaming/gnome_extension.py` installs and enables it
+   automatically at daemon start (once per extension version, and it respects a user who turns it off).
+   GNOME loads it at the next login. `tools/install-gnome-overlay.sh` does the same by hand. The
+   extension finds the window by app id and gives it focus.
 2. **Wayland compositors with layer-shell** (Hyprland, Sway, KDE, Niri). The overlay is a
    layer-shell surface with exclusive keyboard mode.
 3. **XWayland fallback.** The overlay is an ordinary managed X11 window. Do not make it

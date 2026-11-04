@@ -86,8 +86,7 @@ The live replay also opens as a floating player **over your game**, so you can r
 - **Mouse, keyboard or controller.** The on-screen hints switch to whichever you used last.
 - **Fullscreen** when you want a closer look. The overlay is always dark, so it does not wash out the game.
 
-> [!TIP]
-> On GNOME, install the bridge extension (`tools/install-gnome-overlay.sh`, then sign out and in once) for the sharpest overlay. Without it Gloaming falls back to an X11 window, which also takes keyboard focus.
+On GNOME, Gloaming installs a small helper extension by itself the first time it starts, so the overlay can float over fullscreen games. Sign out and back in once to activate it; until then the overlay works through an X11 window.
 
 <br>
 
@@ -337,11 +336,11 @@ sudo usermod -aG input $USER
 </details>
 
 <details>
-<summary><b>Overlay shortcuts do nothing on GNOME</b></summary>
+<summary><b>The replay overlay looks soft or sits behind a game on GNOME</b></summary>
 
 <br>
 
-Install the bridge extension with `tools/install-gnome-overlay.sh`, then sign out and in once. Without it Gloaming falls back to an X11 window, which works but can look soft at fractional scaling.
+Gloaming sets up its GNOME helper extension automatically at first start, but GNOME only loads new extensions at the next login. Sign out and back in once. Check with `gnome-extensions info gloaming-overlay@iishkas.github.io`; the state should be `ACTIVE`. The extension supports GNOME Shell 46. On other versions the overlay uses its X11 fallback window, which works but can look soft at fractional scaling.
 
 </details>
 

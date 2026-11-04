@@ -2351,6 +2351,8 @@ def start(debug: bool, open_ui: bool) -> None:
 
 
 def _run_daemon(open_ui: bool) -> None:
+    from . import gnome_extension
+    gnome_extension.setup()
     try:
         daemon = GloamingDaemon()
     except Exception:
