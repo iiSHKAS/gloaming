@@ -16,11 +16,11 @@ No scenes to build, nothing to upload, no account.
 
 <br>
 
-[Install](#install) &nbsp;·&nbsp; [Features](#features) &nbsp;·&nbsp; [Use it](#use-it) &nbsp;·&nbsp; [Performance](#performance) &nbsp;·&nbsp; [Configuration](#configuration) &nbsp;·&nbsp; [Troubleshooting](#troubleshooting) &nbsp;·&nbsp; [Develop](docs/DEVELOPMENT.md)
+[Install](#install) &nbsp;·&nbsp; [Controller](#full-controller-support) &nbsp;·&nbsp; [Live replay](#live-replay) &nbsp;·&nbsp; [Audio](#multiple-audio-sources) &nbsp;·&nbsp; [Use it](#use-it) &nbsp;·&nbsp; [Performance](#performance) &nbsp;·&nbsp; [Configuration](#configuration) &nbsp;·&nbsp; [Troubleshooting](#troubleshooting) &nbsp;·&nbsp; [Develop](docs/DEVELOPMENT.md)
 
 <br>
 
-<a href="assets/screenshots/home.png"><img src="assets/screenshots/home.png" alt="Gloaming capture studio with live replay" width="100%"></a>
+<a href="assets/screenshots/studio.png"><img src="assets/screenshots/studio.png" alt="Gloaming capture studio with live replay" width="100%"></a>
 
 </div>
 
@@ -33,7 +33,79 @@ Gloaming runs quietly in the background and keeps a rolling recording of your sc
 
 It records through [`gpu-screen-recorder`](https://git.dec05eba.com/gpu-screen-recorder/about/), so it works on NVIDIA, AMD and Intel, on Wayland and X11.
 
-## Features
+<table>
+  <tr>
+    <td width="25%" valign="top"><a href="#full-controller-support"><b>Full controller support</b></a><br><sub>Save, screenshot and replay from the gamepad</sub></td>
+    <td width="25%" valign="top"><a href="#live-replay"><b>Live replay</b></a><br><sub>Rewind a game that is still recording</sub></td>
+    <td width="25%" valign="top"><a href="#the-replay-overlay"><b>Replay overlay</b></a><br><sub>Review and save over your game</sub></td>
+    <td width="25%" valign="top"><a href="#multiple-audio-sources"><b>Multiple audio sources</b></a><br><sub>Game, media, voice chat and mic on separate tracks</sub></td>
+  </tr>
+</table>
+
+<br>
+
+## Full controller support
+
+You can run Gloaming from the gamepad, with the keyboard and mouse left alone. Controller shortcuts are global: they work while the game has focus, on any compositor.
+
+<a href="assets/screenshots/controller-settings.png"><img src="assets/screenshots/controller-settings.png" alt="Controller shortcut settings" width="100%"></a>
+
+- **One smart button.** Tap it to save a clip. Hold it to open a menu where you pick the last 1, 2, 5 or 10 minutes, the whole buffer, or open the replay. Choose with the D-pad, left stick or bumpers.
+- **Shortcuts for everything.** Give any button or combination (triggers and D-pad included) to saving a clip, taking a screenshot, opening the replay overlay, or opening the quick save menu.
+- **Xbox and PlayStation.** The controller type is detected automatically, and buttons carry the right labels and artwork.
+- **On-screen controller overlay.** Show the buttons you press over your game, for streams and clips. Choose the style (auto follows the controller you are pressing, or force Xbox or PlayStation), the position and the size, and toggle it with a keyboard shortcut.
+- **Inputs saved with each clip.** Keep the controller (and keyboard) inputs beside the footage, show them in the viewer, and include them in an editor export. Both are off by default: turn them on under Settings → Overlay.
+- **The replay overlay is controller-driven too.** Trim, save and back out without picking up the mouse.
+
+<a href="assets/screenshots/controller-inputs.png"><img src="assets/screenshots/controller-inputs.png" alt="Keyboard and controller inputs shown over a clip" width="70%"></a>
+
+<br>
+
+## Live replay
+
+Rewind your game while it is still recording, then save only the part you want.
+
+<a href="assets/screenshots/live-replay.png"><img src="assets/screenshots/live-replay.png" alt="The live replay panel" width="80%"></a>
+
+- **Scrub back through the buffer.** The timeline reaches as far back as your replay buffer (up to 30 minutes). **Return to live** jumps back to the newest moment.
+- **Pick a range and save it.** Mark a start and an end, then save the selection as an MP4. The video is rewrapped, not re-encoded, so saving is fast. Cuts land on keyframes, normally within about two seconds.
+- **No clutter.** Nothing is added to your library until you save.
+- **Closing the view does not stop recording.** The temporary history lives only while recording runs.
+- **Turn it on** with the Live preview switch on the Capture page. In this mode Gloaming records 8-bit H.264 and AAC, and the preview runs a few seconds behind your screen.
+
+<br>
+
+## The replay overlay
+
+The live replay also opens as a floating player **over your game**, so you can review a moment without alt-tabbing.
+
+<a href="assets/screenshots/replay-overlay.jpg"><img src="assets/screenshots/replay-overlay.jpg" alt="Replay overlay floating over a game" width="100%"></a>
+
+- **Open it from anywhere.** **Ctrl + Shift + R** by default, a controller button, or the smart button's hold menu. Press it again, **Esc**, or **B / ○** to close.
+- **Rewind, trim, save.** Scrub the timeline, trim the moment, and save it with a length picker, without leaving the game.
+- **Mouse, keyboard or controller.** The on-screen hints switch to whichever you used last.
+- **Fullscreen** when you want a closer look. The overlay is always dark, so it does not wash out the game.
+
+> [!TIP]
+> On GNOME, install the bridge extension (`tools/install-gnome-overlay.sh`, then sign out and in once) for the sharpest overlay. Without it Gloaming falls back to an X11 window, which also takes keyboard focus.
+
+<br>
+
+## Multiple audio sources
+
+Record your game, your media player, your voice chat and your microphone as **separate tracks** in the same clip.
+
+<a href="assets/screenshots/audio.png"><img src="assets/screenshots/audio.png" alt="Audio settings with three outputs and a microphone" width="100%"></a>
+
+- **Up to three outputs plus the microphone.** Each has its own source and its own recording volume. The microphone has its own device, level and a mono switch.
+- **Pick a device or a single app.** Use any output device, one application such as Discord, or everything except one application.
+- **A mixed track for sharing.** Browsers and Discord play only track 1, so a mixed track 1 lets a shared clip carry every source.
+- **Fix it afterwards.** In the editor, mute, rebalance or remove any track. The original recording is never changed.
+- **Names are kept.** Live replay clips store each source's name inside the MP4, including the microphone and the mixed track.
+
+<br>
+
+## Everything else
 
 <table>
   <tr>
@@ -48,38 +120,27 @@ It records through [`gpu-screen-recorder`](https://git.dec05eba.com/gpu-screen-r
   </tr>
   <tr>
     <td valign="top">
-      <b>Live replay</b><br>
-      Scrub back through the buffer while it records, mark a start and an end, and save just that part.
+      <b>Built-in editor</b><br>
+      Trim in place, or open a multi-track timeline with transitions and text.
     </td>
     <td valign="top">
-      <b>Built-in editor</b><br>
-      Trim in place, or open a multi-track timeline with transitions and text. Nothing to install.
+      <b>Share links</b><br>
+      Copy a link that plays inline when pasted into Discord. A public link needs <code>cloudflared</code>; without it the link works on your network.
     </td>
   </tr>
   <tr>
-    <td valign="top">
-      <b>Share links</b><br>
-      Every clip gets a link that plays inline when you paste it into Discord.
-    </td>
     <td valign="top">
       <b>Knows your game</b><br>
       Names each clip after the game, files it into that game's playlist, and can show it in Discord Rich Presence.
     </td>
-  </tr>
-  <tr>
     <td valign="top">
-      <b>Input overlays</b><br>
-      Show the keys or controller buttons you pressed over the footage, in the viewer or burned into an export.
-    </td>
-    <td valign="top">
-      <b>Separate audio tracks</b><br>
-      Record desktop audio and microphone as separate tracks, or pick specific apps.
+      <b>Screenshots</b><br>
+      Take a still with a keyboard or controller shortcut, saved beside your clips.
     </td>
   </tr>
 </table>
 
 **Private by design.** No account and no telemetry. Clips stay on your disk until you choose to share one.
-
 
 <table>
   <tr>
