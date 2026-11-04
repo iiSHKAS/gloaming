@@ -1,62 +1,94 @@
-<p align="center">
-  <img src="assets/gloaming-wordmark.png" width="400" alt="Gloaming">
-</p>
+<div align="center">
 
-<p align="center">
-  <b>Instant replay for Linux games.</b><br>
-  Press a key and the last 20 seconds of your game become a clip. No scenes to build, nothing to upload.
-</p>
+<img src="assets/gloaming-wordmark.png" width="380" alt="Gloaming">
 
-<p align="center">
-  <img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-blue?style=flat-square">
-  <img alt="Version 0.5.0" src="https://img.shields.io/badge/version-0.5.0-success?style=flat-square">
-  <img alt="Linux" src="https://img.shields.io/badge/platform-Linux-informational?style=flat-square">
-  <img alt="Wayland and X11" src="https://img.shields.io/badge/display-Wayland%20%7C%20X11-informational?style=flat-square">
-  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-3776AB?style=flat-square">
-</p>
+### Instant replay for Linux games
 
-<p align="center">
-  <a href="#install">Install</a> ·
-  <a href="#what-it-does">Features</a> ·
-  <a href="#use-it">Use it</a> ·
-  <a href="#performance">Performance</a> ·
-  <a href="#configuration">Configuration</a> ·
-  <a href="#troubleshooting">Troubleshooting</a> ·
-  <a href="docs/DEVELOPMENT.md">Develop</a>
-</p>
+Press one key and the last 20 seconds of your game become a clip.<br>
+No scenes to build, nothing to upload, no account.
 
-<p align="center">
-  <img src="assets/screenshots/home.png" alt="Gloaming capture studio" width="900">
-</p>
+<br>
 
-> **Gloaming is built on [Vice](https://github.com/splitshotz/Vice)** by Andrew Marin, and keeps its
-> GPL-3.0 license. See [Credits](#credits).
+<img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-blue?style=for-the-badge">
+<img alt="Version 0.5.0" src="https://img.shields.io/badge/version-0.5.0-success?style=for-the-badge">
+<img alt="Linux" src="https://img.shields.io/badge/platform-Linux-informational?style=for-the-badge">
+<img alt="Wayland and X11" src="https://img.shields.io/badge/Wayland%20%7C%20X11-supported-informational?style=for-the-badge">
 
-## What it does
+<br>
 
-Gloaming runs quietly in the background and keeps a rolling recording of your screen on the GPU's
-video encoder. When something happens in a game, press **F9**: the moment is saved as an MP4 in
-`~/Videos/Gloaming/`, with game audio and, if you want, your microphone.
+[Install](#install) &nbsp;·&nbsp; [Features](#features) &nbsp;·&nbsp; [Use it](#use-it) &nbsp;·&nbsp; [Performance](#performance) &nbsp;·&nbsp; [Configuration](#configuration) &nbsp;·&nbsp; [Troubleshooting](#troubleshooting) &nbsp;·&nbsp; [Develop](docs/DEVELOPMENT.md)
 
-- **Instant replay.** A rolling buffer you size from 1 to 30 minutes, saved with one key. Extra keys
-  can save other lengths, for example F6 for 60 seconds.
-- **Sessions.** Double-tap the clip key to record a whole match, then tap once to drop a highlight
-  marker at any moment.
-- **Live replay.** Scrub back through the buffer while it records, mark a start and an end, and save
-  just that part.
-- **Editor.** Trim in place, or open a multi-track timeline with transitions and text, all built in.
-- **Share link.** Every clip gets a link that plays inline when pasted into Discord.
-- **Game aware.** Recognizes the game you are playing, names the clip after it and files it into
-  that game's playlist. Optional Discord Rich Presence shows what you are playing.
-- **Input overlays.** Show the keys or controller buttons you press over the footage, in the viewer
-  or burned into an export.
-- **Audio tracks.** Record desktop audio and microphone as separate tracks, or pick specific apps.
-- **Private.** No account, no telemetry. Clips stay on your disk until you choose to share one.
+<br>
+
+<a href="assets/screenshots/home.png"><img src="assets/screenshots/home.png" alt="Gloaming capture studio with live replay" width="100%"></a>
+
+</div>
+
+> [!NOTE]
+> Gloaming is built on **[Vice](https://github.com/splitshotz/Vice)** by Andrew Marin and keeps its GPL-3.0 license. See [Credits](#credits).
+
+## How it works
+
+Gloaming runs quietly in the background and keeps a rolling recording of your screen on your GPU's video encoder. When something happens in a game, press **F9**. The moment is saved as an MP4 in `~/Videos/Gloaming/`, with game audio and, if you want it, your microphone.
+
+It records through [`gpu-screen-recorder`](https://git.dec05eba.com/gpu-screen-recorder/about/), so it works on NVIDIA, AMD and Intel, on Wayland and X11.
+
+## Features
 
 <table>
   <tr>
-    <td width="50%"><img src="assets/screenshots/library.png" alt="Clip library"><p align="center"><sub>The library: every clip, searchable, with trim, share and delete</sub></p></td>
-    <td width="50%"><img src="assets/screenshots/settings.png" alt="Recording settings"><p align="center"><sub>Settings: pick a capture profile and set the replay buffer</sub></p></td>
+    <td width="50%" valign="top">
+      <b>Instant replay</b><br>
+      A rolling buffer from 1 to 30 minutes, saved with one key. Extra keys save other lengths, such as F6 for 60 seconds.
+    </td>
+    <td width="50%" valign="top">
+      <b>Sessions</b><br>
+      Double-tap the clip key to record a whole match, then tap once to drop a highlight marker at any moment.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <b>Live replay</b><br>
+      Scrub back through the buffer while it records, mark a start and an end, and save just that part.
+    </td>
+    <td valign="top">
+      <b>Built-in editor</b><br>
+      Trim in place, or open a multi-track timeline with transitions and text. Nothing to install.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <b>Share links</b><br>
+      Every clip gets a link that plays inline when you paste it into Discord.
+    </td>
+    <td valign="top">
+      <b>Knows your game</b><br>
+      Names each clip after the game, files it into that game's playlist, and can show it in Discord Rich Presence.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <b>Input overlays</b><br>
+      Show the keys or controller buttons you pressed over the footage, in the viewer or burned into an export.
+    </td>
+    <td valign="top">
+      <b>Separate audio tracks</b><br>
+      Record desktop audio and microphone as separate tracks, or pick specific apps.
+    </td>
+  </tr>
+</table>
+
+**Private by design.** No account and no telemetry. Clips stay on your disk until you choose to share one.
+
+
+<table>
+  <tr>
+    <td width="50%"><a href="assets/screenshots/library.png"><img src="assets/screenshots/library.png" alt="Clip library"></a></td>
+    <td width="50%"><a href="assets/screenshots/settings.png"><img src="assets/screenshots/settings.png" alt="Recording settings"></a></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Library</b>: every clip, searchable, with trim, share and delete</sub></td>
+    <td align="center"><sub><b>Settings</b>: pick a capture profile and set the replay buffer</sub></td>
   </tr>
 </table>
 
@@ -68,12 +100,14 @@ cd gloaming
 ./install.sh
 ```
 
-The script detects `apt`, `dnf`, `pacman` or `zypper`, installs the dependencies including the
-`gpu-screen-recorder` capture backend, and sets up a systemd user service so clipping starts when
-you log in. Open **Gloaming** from your app menu (or run `gloaming-app`), then press **F9** in a game.
-If `gloaming: command not found` appears, restart your terminal once.
+The script detects `apt`, `dnf`, `pacman` or `zypper`, installs the dependencies including the capture backend, and sets up a systemd user service so clipping starts when you log in.
 
-**NixOS (flake):**
+Then open **Gloaming** from your app menu (or run `gloaming-app`) and press **F9** in a game. If `gloaming: command not found` appears, restart your terminal once.
+
+<details>
+<summary><b>NixOS (flake)</b></summary>
+
+<br>
 
 ```nix
 {
@@ -87,22 +121,26 @@ If `gloaming: command not found` appears, restart your terminal once.
 }
 ```
 
-The module installs the package, the udev rule the hotkey listener needs, the capability wrapper for
-gpu-screen-recorder, and the user daemon. Set `services.gloaming.autoStart = false;` to record only
-while the window is open. Without flakes, import `nix/package.nix` and `nix/module.nix` directly.
+The module installs the package, the udev rule the hotkey listener needs, the capability wrapper for gpu-screen-recorder, and the user daemon. Set `services.gloaming.autoStart = false;` to record only while the window is open. Without flakes, import `nix/package.nix` and `nix/module.nix` directly.
 
-**Update and remove**
+</details>
+
+<details>
+<summary><b>Update and remove</b></summary>
+
+<br>
 
 | | Update | Remove |
 |---|---|---|
 | Git clone | `cd gloaming && git pull && ./install.sh` | `gloaming uninstall && rm -rf gloaming` |
 | NixOS | `nix flake update gloaming && sudo nixos-rebuild switch` | Drop `services.gloaming.enable`, rebuild |
 
-Gloaming checks this repository's releases once a day and tells you in the app when a newer one is
-out. Turn that off in Settings → Advanced.
+Gloaming checks this repository's releases once a day and tells you in the app when a newer one is out. Turn that off in Settings → Advanced.
 
-Immutable Fedora variants (Bazzite and similar) are not supported yet: `install.sh` cannot run on
-rpm-ostree and exits before changing anything.
+</details>
+
+> [!WARNING]
+> Immutable Fedora variants (Bazzite and similar) are not supported yet. `install.sh` cannot run on rpm-ostree, so it exits before changing anything.
 
 ## Use it
 
@@ -112,46 +150,49 @@ rpm-ostree and exits before changing anything.
 | Extra clip keys | Save their own length (Settings → Shortcuts) |
 | **F9** twice | Start or stop a session recording |
 | **F9** during a session | Drop a highlight at this moment |
-| Click a clip | Open the viewer. ← → move between clips, **H** adds a highlight, **Esc** closes |
+| Click a clip | Open the viewer. **←** **→** move between clips, **H** adds a highlight, **Esc** closes |
 
-Every key can be rebound, including to a combination such as **Alt + F9**. Closing the window leaves
-the daemon recording; open it again from your launcher at any time.
+Every key can be rebound, including to a combination such as **Alt + F9**. Closing the window leaves the daemon recording; open it again from your launcher at any time.
 
 ### Compatibility
 
-| Desktop | GPU |
+| | Supported |
 |---|---|
-| Hyprland, Sway, Niri, GNOME, KDE Plasma (Wayland) | NVIDIA: NVENC |
-| Any X11 window manager | AMD and Intel: VAAPI |
-| | Anything else: libx264 in software |
+| **Wayland** | Hyprland, Sway, Niri, GNOME, KDE Plasma |
+| **X11** | Any window manager |
+| **NVIDIA** | Hardware encoding with NVENC |
+| **AMD and Intel** | Hardware encoding with VAAPI |
+| **Any other GPU** | Software encoding with libx264 |
 
-Capture runs on [`gpu-screen-recorder`](https://git.dec05eba.com/gpu-screen-recorder/about/). Gloaming
-can also use its Flatpak build (`com.dec05eba.gpu_screen_recorder`) when that is the only one
-installed, or when you choose it in Settings. `wf-recorder` and `ffmpeg x11grab` exist as explicit
-opt-ins through `recording.backend` and are never picked automatically.
+Gloaming can also use the Flatpak build of gpu-screen-recorder (`com.dec05eba.gpu_screen_recorder`) when it is the only one installed, or when you choose it in Settings. `wf-recorder` and `ffmpeg x11grab` exist as explicit opt-ins through `recording.backend` and are never picked automatically.
 
-Game detection works on X11, Hyprland, Sway and Niri, and on KDE Plasma Wayland when `kdotool` is
-installed. Elsewhere clips save without a game tag.
+Game detection works on X11, Hyprland, Sway and Niri, and on KDE Plasma Wayland when `kdotool` is installed. Elsewhere clips save without a game tag.
 
 ## Performance
 
-Measured with the Black Myth: Wukong benchmark on an RTX 4060 and Ryzen 5 9600X (GNOME on Wayland, under
-Proton), recording at 60 fps with a 30 minute buffer, desktop audio and microphone on:
+What does recording cost while you play? Measured with the Black Myth: Wukong benchmark, three runs per condition and averaged, on an RTX 4060 and Ryzen 5 9600X (GNOME on Wayland, under Proton). Gloaming recorded at 60 fps with a 30 minute buffer, desktop audio and microphone on.
 
-| | Average FPS | Low 5% |
-|---|---|---|
-| Gloaming off | 54 to 55 | 43 to 45 |
-| Gloaming recording (H.264, HEVC or AV1) | 53 to 54 | 41 to 44 |
+| Metric | Gloaming off | Gloaming on | Change |
+|---|---:|---:|---:|
+| **Average FPS** | 57.3 | 53.0 | −7.6% |
+| **Low 5% FPS** | 47.0 | 43.7 | −7.1% |
 
-The cost is about **1 to 2 FPS**, the codec made no measurable difference, and Gloaming used roughly
-9% of one CPU core and 280 MB of RAM. Saving a clip mid-game causes a one second dip in the minimum
-frame rate. Method, every run and the limits of these numbers are in
-[docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+Recording costs about **7% of your frame rate**. Beyond that:
+
+- The codec made no measurable difference. H.264, HEVC and AV1 landed within one frame of each other.
+- Gloaming used roughly 9% of one CPU core and 280 MB of RAM. Turning off audio capture brought the CPU figure to 6%.
+- Saving a clip mid-game causes a one second dip in the minimum frame rate.
+
+Method, per-setting results and the limits of these numbers are in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 ## Configuration
 
-Everything is in Settings. Under the hood it is `~/.config/gloaming/config.toml`, created on first
-run. The options you are most likely to touch:
+Everything is in Settings. Under the hood it is `~/.config/gloaming/config.toml`, created on first run.
+
+<details>
+<summary><b>Common options</b></summary>
+
+<br>
 
 ```toml
 [recording]
@@ -188,81 +229,131 @@ enabled = true               # Rich Presence when a known game is focused
 check_on_start = true        # one GitHub release check per day
 ```
 
-- `audio_tracks` records each source as its own track, in order. Browsers and Discord play only
-  track 1, editors see all of them. `audio_tracks_mix_first` adds a mixed track 1 so shared clips
-  carry every sound.
+- `audio_tracks` records each source as its own track, in order. Browsers and Discord play only track 1, editors see all of them. `audio_tracks_mix_first` adds a mixed track 1 so shared clips carry every sound.
 - Buffers over 10 minutes are kept on disk automatically (`gsr_replay_storage = "auto"`).
 - `gsr_args` expands `~` and environment variables, and has a `{default_sink_monitor}` placeholder.
-- With `gpu-screen-recorder`, `encoder` also accepts `h264_vulkan`, `hevc_vulkan` and `av1_vulkan`.
-  These need support from gpu-screen-recorder, FFmpeg and your driver.
+- With gpu-screen-recorder, `encoder` also accepts `h264_vulkan`, `hevc_vulkan` and `av1_vulkan`. These need support from gpu-screen-recorder, FFmpeg and your driver.
 
-### Command line
+</details>
 
-```
-gloaming start [--no-open-ui]   Start the recording daemon
-gloaming stop                   Stop it
-gloaming clip                   Save a clip right now
-gloaming status                 Daemon status, backend and share URL
-gloaming ui                     Open the web UI
-gloaming clips                  List saved clips
-gloaming config                 Print the current config
-gloaming list-keys              Valid hotkey names (KEY_F9, KEY_INSERT, ...)
-gloaming doctor                 Startup diagnostics
-gloaming uninstall              Remove Gloaming
-```
+<details>
+<summary><b>Command line</b></summary>
 
-The installer's systemd unit runs `gloaming start --no-open-ui`, so clipping begins at login without a
-window. Custom units can use the same command.
+<br>
+
+| Command | What it does |
+|---|---|
+| `gloaming start [--no-open-ui]` | Start the recording daemon |
+| `gloaming stop` | Stop it |
+| `gloaming clip` | Save a clip right now |
+| `gloaming status` | Daemon status, backend and share URL |
+| `gloaming ui` | Open the web UI |
+| `gloaming clips` | List saved clips |
+| `gloaming config` | Print the current config |
+| `gloaming list-keys` | Valid hotkey names (`KEY_F9`, `KEY_INSERT`, ...) |
+| `gloaming doctor` | Startup diagnostics |
+| `gloaming uninstall` | Remove Gloaming |
+
+The installer's systemd unit runs `gloaming start --no-open-ui`, so clipping begins at login without a window. Custom units can use the same command.
+
+</details>
 
 ## Troubleshooting
 
-Start with `gloaming doctor`; it checks the environment and prints what it finds.
+Start with `gloaming doctor`. It checks the environment and prints what it finds.
 
-**Hotkey does nothing.** Gloaming reads keys from `/dev/input`. Add yourself to the `input` group,
-then log in again: `sudo usermod -aG input $USER`.
+<details>
+<summary><b>The hotkey does nothing</b></summary>
 
-**Overlay shortcuts do nothing on GNOME.** Install the bridge extension with
-`tools/install-gnome-overlay.sh` and sign out and in once. Without it Gloaming falls back to an X11
-window, which works but can look soft at fractional scaling.
+<br>
 
-**The service cannot find the Wayland session (Hyprland or Sway).** The systemd user instance does not
-inherit the compositor's environment. Add this to your compositor config, restart the session, then
-run `systemctl --user restart gloaming.service`:
+Gloaming reads keys from `/dev/input`. Add yourself to the `input` group and log in again:
+
+```bash
+sudo usermod -aG input $USER
+```
+
+</details>
+
+<details>
+<summary><b>Overlay shortcuts do nothing on GNOME</b></summary>
+
+<br>
+
+Install the bridge extension with `tools/install-gnome-overlay.sh`, then sign out and in once. Without it Gloaming falls back to an X11 window, which works but can look soft at fractional scaling.
+
+</details>
+
+<details>
+<summary><b>The service cannot find the Wayland session (Hyprland, Sway)</b></summary>
+
+<br>
+
+The systemd user instance does not inherit the compositor's environment. Add these two lines to your compositor config (`exec-once =` on Hyprland, `exec` on Sway), restart the session, then run `systemctl --user restart gloaming.service`:
 
 ```
-# Hyprland: exec-once   Sway: exec
 systemctl --user import-environment WAYLAND_DISPLAY DISPLAY DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR XDG_SESSION_TYPE XDG_CURRENT_DESKTOP
 dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY DBUS_SESSION_BUS_ADDRESS XDG_CURRENT_DESKTOP
 ```
 
-**The launcher icon does nothing.** Read `~/.local/share/gloaming/gloaming-app.log`. The usual cause is
-`gpu-screen-recorder` missing from `PATH`. If it mentions `autoaudiosink`, install your distribution's
-GStreamer base and good plugins.
+</details>
 
-**Clips show a grey box in the app but play elsewhere.** The embedded browser has no H.264 decoder,
-which happens with the PyPI `PyQt6-WebEngine` wheel. Install the distribution package instead
-(`python3-pyqt6.qtwebengine` on Debian and Ubuntu, `python3-pyqt6-webengine` on Fedora,
-`python-pyqt6-webengine` on Arch), then run `./install.sh` again. The player also offers
-"Open in system player".
+<details>
+<summary><b>The launcher icon does nothing</b></summary>
 
-**The share link only works on my network.** Enable the tunnel in Settings → Sharing and install
-`cloudflared`, the only supported tunnel.
+<br>
 
-**The clip will not embed on Discord.** Discord inlines videos up to about 50 MB, and only MP4. Trim
-the clip or lower the quality. Links change when the daemon restarts, because each run gets a new
-tunnel address.
+Read `~/.local/share/gloaming/gloaming-app.log`. The usual cause is `gpu-screen-recorder` missing from `PATH`. If the log mentions `autoaudiosink`, install your distribution's GStreamer base and good plugins.
 
-**The window looks like plain HTML after an update.** The old daemon is still running old code. Run
-`gloaming stop && gloaming-app`.
+</details>
 
-**The window is slow or crashes.** `gloaming-app --debug` writes
-`~/.local/share/gloaming/gloaming-debug.log`; attach it to an issue. Do not pipe the command through
-`tee`, which can freeze the UI loop.
+<details>
+<summary><b>Clips show a grey box in the app but play elsewhere</b></summary>
+
+<br>
+
+The embedded browser has no H.264 decoder, which happens with the PyPI `PyQt6-WebEngine` wheel. Install the distribution package instead, then run `./install.sh` again:
+
+| Distribution | Package |
+|---|---|
+| Debian, Ubuntu, Mint | `python3-pyqt6.qtwebengine` |
+| Fedora | `python3-pyqt6-webengine` |
+| Arch | `python-pyqt6-webengine` |
+
+The player also offers "Open in system player".
+
+</details>
+
+<details>
+<summary><b>Sharing: the link only works on my network, or will not embed on Discord</b></summary>
+
+<br>
+
+Enable the tunnel in Settings → Sharing and install `cloudflared`, the only supported tunnel. Discord inlines videos up to about 50 MB, and only MP4, so trim the clip or lower the quality. Links change when the daemon restarts, because each run gets a new tunnel address.
+
+</details>
+
+<details>
+<summary><b>The window looks like plain HTML after an update</b></summary>
+
+<br>
+
+The old daemon is still running old code. Run `gloaming stop && gloaming-app`.
+
+</details>
+
+<details>
+<summary><b>The window is slow or crashes</b></summary>
+
+<br>
+
+`gloaming-app --debug` writes `~/.local/share/gloaming/gloaming-debug.log`. Attach it to an issue. Do not pipe the command through `tee`, which can freeze the UI loop.
+
+</details>
 
 ## Translating
 
-The interface is one JSON file per language in `ui-src/locales/`; English is the source. Adding a
-language is a pull request that touches nothing else:
+The interface is one JSON file per language in `ui-src/locales/`, with English as the source. Adding a language is a pull request that touches nothing else:
 
 ```bash
 npm install
@@ -270,27 +361,18 @@ npm run i18n:new -- pt-BR     # creates ui-src/locales/pt-BR.json
 npm run i18n:check            # coverage for every language
 ```
 
-A partial translation is fine, since missing keys fall back to English. Details are in
-[docs/TRANSLATING.md](docs/TRANSLATING.md).
+A partial translation is fine, since missing keys fall back to English. Details are in [docs/TRANSLATING.md](docs/TRANSLATING.md).
 
 ## Development
 
-A Python daemon with a React and TypeScript UI. Layout, building, running from source, packaging and
-releasing are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Pull requests are welcome; when you
-report a bug, include the output of `gloaming doctor`.
+A Python daemon with a React and TypeScript UI. Layout, building, running from source, packaging and releasing are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Pull requests are welcome. When you report a bug, include the output of `gloaming doctor`.
 
 ## Credits
 
-Gloaming is built on **[Vice](https://github.com/splitshotz/Vice)**, created by
-**Andrew Marin** ([@splitshotz](https://github.com/splitshotz)), including the capture pipeline,
-editor, sharing server and most of the interface. Thanks as well to everyone who contributed to Vice;
-the list is on its [contributors page](https://github.com/splitshotz/Vice/graphs/contributors).
-Gloaming is maintained by [iiSHKAS](https://github.com/iiSHKAS).
+Gloaming is built on **[Vice](https://github.com/splitshotz/Vice)**, created by **Andrew Marin** ([@splitshotz](https://github.com/splitshotz)), including the capture pipeline, editor, sharing server and most of the interface. Thanks as well to everyone who contributed to Vice; the list is on its [contributors page](https://github.com/splitshotz/Vice/graphs/contributors). Gloaming is maintained by [iiSHKAS](https://github.com/iiSHKAS).
 
-Recording is done by [`gpu-screen-recorder`](https://git.dec05eba.com/gpu-screen-recorder/about/) by
-dec05eba.
+Recording is done by [`gpu-screen-recorder`](https://git.dec05eba.com/gpu-screen-recorder/about/) by dec05eba.
 
 ## License
 
-Gloaming is free software under the [GNU General Public License v3.0](LICENSE), the same license as
-Vice. Third-party components keep their own licenses.
+Gloaming is free software under the [GNU General Public License v3.0](LICENSE), the same license as Vice. Third-party components keep their own licenses.
