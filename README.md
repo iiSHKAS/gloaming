@@ -57,7 +57,7 @@ You can run Gloaming from the gamepad, with the keyboard and mouse left alone. C
 - **Inputs saved with each clip.** Keep the controller (and keyboard) inputs beside the footage, show them in the viewer, and include them in an editor export. Both are off by default: turn them on under Settings → Overlay.
 - **The replay overlay is controller-driven too.** Trim, save and back out without picking up the mouse.
 
-<a href="assets/screenshots/controller-inputs.png"><img src="assets/screenshots/controller-inputs.png" alt="Keyboard and controller inputs shown over a clip" width="70%"></a>
+<a href="assets/screenshots/controller-inputs.png"><img src="assets/screenshots/controller-inputs.png" alt="PlayStation controller inputs shown over a clip" width="100%"></a>
 
 <br>
 
