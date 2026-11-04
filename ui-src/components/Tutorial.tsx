@@ -139,7 +139,7 @@ export function Tutorial({open, onClose}: {open: boolean; onClose: () => void}) 
   // Both default off, which is how Gloaming behaved before either existed. Asking
   // here is the only place a new user meets them before they matter.
   const gameCapture = Boolean(state.config?.recording?.window_capture);
-  const gameCaptureSupported = state.status.backend === 'gpu-screen-recorder';
+  const gameCaptureSupported = state.status.backend === 'gpu-screen-recorder' && state.status.game_capture_issue !== 'wayland';
   const shareDiscordFile = Boolean(state.config?.sharing?.share_discord_file);
 
   const persist = (patch: Record<string, Record<string, unknown>>) => {
@@ -295,7 +295,7 @@ export function Tutorial({open, onClose}: {open: boolean; onClose: () => void}) 
             </p>
             <Option
               title={t('tutorial.gameCaptureTitle')}
-              help={gameCaptureSupported ? t('tutorial.gameCaptureHelp') : t('home.gameCaptureUnsupported')}
+              help={gameCaptureSupported ? t('tutorial.gameCaptureHelp') : state.status.game_capture_issue === 'wayland' ? t('settings.windowCaptureWayland') : t('home.gameCaptureUnsupported')}
               checked={gameCaptureSupported && gameCapture}
               disabled={!gameCaptureSupported}
               onChange={enabled =>

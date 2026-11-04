@@ -22,8 +22,8 @@ from .runtime import actual_home_dir
 
 log = logging.getLogger("gloaming.updates")
 
-RELEASES_URL = "https://api.github.com/repos/splitshotz/Vice/releases/latest"
-RELEASE_PAGE = "https://github.com/splitshotz/Vice/releases/latest"
+RELEASES_URL = "https://api.github.com/repos/iiSHKAS/gloaming/releases/latest"
+RELEASE_PAGE = "https://github.com/iiSHKAS/gloaming/releases/latest"
 CACHE_PATH = actual_home_dir() / ".local" / "share" / "gloaming" / "update.json"
 
 # One check a day. The unauthenticated GitHub limit is 60/hour per IP, so
@@ -131,15 +131,17 @@ class UpdateCache:
     def load(self) -> dict:
         try:
             data = json.loads(self.path.read_text())
-            return data if isinstance(data, dict) else {}
         except Exception:
             return {}
+        # A cache written for another repository (an older build pointed at a different one)
+        # would announce that repository's releases here, so it counts as empty.
+        return data if isinstance(data, dict) and data.get("source") == RELEASES_URL else {}
 
     def save(self, data: dict) -> None:
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             tmp = self.path.with_suffix(".json.tmp")
-            tmp.write_text(json.dumps(data))
+            tmp.write_text(json.dumps(dict(data, source=RELEASES_URL)))
             tmp.replace(self.path)
         except OSError as exc:
             log.debug("Could not write the update cache: %s", exc)

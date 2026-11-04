@@ -1,17 +1,19 @@
-import {useId, useEffect, useRef, useState, type CSSProperties} from 'react';
+import {useId, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent} from 'react';
 import Hls from 'hls.js';
 import {api} from '../lib/api';
 import {ButtonGlyph, ControllerGlyph, type PadGlyphName, type PadLayout} from './ControllerGlyph';
 import '../styles/live-replay.css';
+import {t, dateLocale} from '../lib/i18n';
+import {isOverlayWindow} from '../lib/theme';
 
 type LiveStatus = {enabled: boolean; running?: boolean; session?: string; start?: number; end?: number; playlist?: string; error?: string};
 type Range = {start: number; end: number};
-const clock = (n?: number) => n ? new Date(n * 1000).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—';
+const clock = (n?: number) => n ? new Date(n * 1000).toLocaleTimeString(dateLocale(), {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—';
 const duration = (n: number) => `${Math.floor(Math.max(0,n) / 60)}:${String(Math.floor(Math.max(0,n) % 60)).padStart(2, '0')}`;
 
-const REPLAY_PATHS = {play:'M9 5l11 7-11 7z',pause:'M8 5v14M16 5v14',back:'M4 8V3m0 5h5M4 8a9 9 0 1 1-1 8',forward:'M20 8V3m0 5h-5M20 8a9 9 0 1 0 1 8',sound:'M4 9h4l5-4v14l-5-4H4zM17 8a6 6 0 0 1 0 8M20 5a10 10 0 0 1 0 14',mute:'M4 9h4l5-4v14l-5-4H4zM17 9l5 6m0-6-5 6',expand:'M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5',cut:'M8 8l12 12M8 16 20 4M5 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6m0 10a3 3 0 1 0 0 6 3 3 0 0 0 0-6',save:'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5'};
+const REPLAY_PATHS = {play:'M9 5l11 7-11 7z',pause:'M8 5v14M16 5v14',back:'M4 8V3m0 5h5M4 8a9 9 0 1 1-1 8',forward:'M20 8V3m0 5h-5M20 8a9 9 0 1 0 1 8',sound:'M4 9h4l5-4v14l-5-4H4zM17 8a6 6 0 0 1 0 8M20 5a10 10 0 0 1 0 14',mute:'M4 9h4l5-4v14l-5-4H4zM17 9l5 6m0-6-5 6',expand:'M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5',cut:'M8 8l12 12M8 16 20 4M5 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6m0 10a3 3 0 1 0 0 6 3 3 0 0 0 0-6',save:'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',clip:'M4 11h16v9H4zM4 11 3 6l16-3 1 5M8 5.3l2 3.5M13 4.3l2 3.5',zoom:'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5M8 11h6M11 8v6'};
 
-export function ReplayIcon({name}: {name: 'play'|'pause'|'back'|'forward'|'sound'|'mute'|'expand'|'cut'|'save'}) {
+export function ReplayIcon({name}: {name: 'play'|'pause'|'back'|'forward'|'sound'|'mute'|'expand'|'cut'|'save'|'clip'|'zoom'}) {
   const paths = REPLAY_PATHS;
   return <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]}/></svg>;
 }
@@ -148,7 +150,7 @@ export function LiveReplay({fullscreen = false, onToggleFullscreen, lens = false
     const poll = async () => {
       try {
         const response = await fetch('/api/live', {cache: 'no-store'});
-        if (!response.ok) throw new Error('Could not read live replay status.');
+        if (!response.ok) throw new Error(t('ui.lrStatusFail'));
         if (alive) setStatus(await response.json());
       } catch (err) {if (alive) setMessage(String(err));}
       finally {if (alive) {setLoaded(true); timer=setTimeout(poll,2000);}}
@@ -161,13 +163,13 @@ export function LiveReplay({fullscreen = false, onToggleFullscreen, lens = false
     const element = video.current;
     if (!ready || !element || !status.playlist) return;
     setSelection(undefined); setPosition(undefined); setMessage(''); setFollowing(true); previewEnd.current=null;
-    if (!Hls.isSupported()) {setMessage('This window does not support live replay playback.'); return;}
+    if (!Hls.isSupported()) {setMessage(t('ui.noLivePlayback')); return;}
     const player = new Hls({liveDurationInfinity:false,liveSyncDurationCount:3,
       liveMaxLatencyDurationCount:Infinity,maxBufferLength:20,backBufferLength:20,
       maxMaxBufferLength:40,enableWorker:false});
     hls.current=player;
     player.on(Hls.Events.MANIFEST_PARSED, () => {void element.play().catch(() => {});});
-    player.on(Hls.Events.ERROR, (_, data) => {if(data.fatal) setMessage('Playback interrupted. Try Go live to reconnect.');});
+    player.on(Hls.Events.ERROR, (_, data) => {if(data.fatal) setMessage(t('ui.playbackInterrupted'));});
     player.loadSource(status.playlist); player.attachMedia(element);
     return () => {player.destroy(); hls.current=null; element.removeAttribute('src'); element.load();};
   }, [status.session,ready,status.playlist]);
@@ -179,7 +181,7 @@ export function LiveReplay({fullscreen = false, onToggleFullscreen, lens = false
     if(element && fragment?.programDateTime!=null) {
       element.currentTime=fragment.start+date-fragment.programDateTime/1000;
       setPosition(date); setFollowing(false); if(play)void element.play().catch(()=>{});else element.pause();
-    } else setMessage('That moment is no longer available. Choose a newer point.');
+    } else setMessage(t('ui.momentGone'));
   };
   const goLive=()=>{
     clearTimeout(controllerSeekTimer.current);controllerSeekTimer.current=undefined;controllerSeek.current=null;
@@ -191,26 +193,44 @@ export function LiveReplay({fullscreen = false, onToggleFullscreen, lens = false
     void element.play().catch(()=>{}); setFollowing(true); setMessage('');
   };
   const enable=async()=>{
-    setBusy(true); setMessage('Starting your replay buffer…');
+    setBusy(true); setMessage(t('ui.startingBuffer'));
     try {
       const result=await api.saveConfig({recording:{live_replay:true,window_capture:false,follow_mouse_display:false}});
-      if(result.applied===false) throw new Error('Finish the active recording session, then try again.');
-      setMessage('Waiting for the first few seconds…');
+      if(result.applied===false) throw new Error(t('ui.lrFinishSession'));
+      setMessage(t('ui.waitingFirstSeconds'));
     } catch(err) {setMessage(String(err));} finally {setBusy(false);}
   };
   const save=async()=>{
     if(!validRange || busy) return;
     const chosen={...range};
-    setBusy(true); setSelection(chosen); setMessage('Saving your clip…');
+    setBusy(true); setSelection(chosen); setMessage(t('ui.savingYourClip'));
     try {
       const response=await fetch('/api/live/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session:status.session,...chosen})});
       const result=await response.json();
-      if(!response.ok) throw new Error(result.error || 'Save failed.');
-      setMessage(`Saved to your library · ${result.name}`); setSelection(undefined); if(controllerMode)setClipping(false); onSaved?.();
+      if(!response.ok) throw new Error(result.error || t('ui.lrSaveFailed'));
+      setMessage(t('ui.savedToLibrary', {name: result.name})); setSelection(undefined); if(controllerMode)setClipping(false); onSaved?.();
     } catch(err) {setMessage(String(err));} finally {setBusy(false);}
   };
   const preview=()=>{if(validRange) {setSelection({...range}); previewEnd.current=range.end; jump(range.start);}};
-  const setBoundary=(side:'start'|'end',value:number)=>{
+  const shiftHeld = useRef(false);
+  useEffect(() => {
+    const track = (e: KeyboardEvent) => { shiftHeld.current = e.shiftKey; };
+    const release = () => { shiftHeld.current = false; };
+    window.addEventListener('keydown', track);
+    window.addEventListener('keyup', track);
+    window.addEventListener('blur', release);
+    return () => { window.removeEventListener('keydown', track); window.removeEventListener('keyup', track); window.removeEventListener('blur', release); };
+  }, []);
+  /** Shift moves a trim handle in whole seconds instead of quarter seconds. */
+  const handleKeys = (side:'start'|'end', current:number) => (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (!e.shiftKey) return;
+    const dir = e.key==='ArrowRight'||e.key==='ArrowUp' ? 1 : e.key==='ArrowLeft'||e.key==='ArrowDown' ? -1 : 0;
+    if (!dir) return;
+    e.preventDefault();
+    setBoundary(side, Math.round(current)+dir);
+  };
+  const setBoundary=(side:'start'|'end',raw:number)=>{
+    const value = shiftHeld.current ? Math.round(raw) : raw;
     previewEnd.current=null;
     setSelection(side==='start' ? {start:Math.min(value,range.end-.25),end:range.end} : {start:range.start,end:Math.max(value,range.start+.25)});
   };
@@ -226,10 +246,10 @@ export function LiveReplay({fullscreen = false, onToggleFullscreen, lens = false
     const speed=seekStreak.current>16?4:seekStreak.current>7?2:1;
     const base=recent?previous.target:playhead;
     const target=Math.max(beginning,Math.min(edge,base+seconds*speed));
-    if(!clipping&&seconds>0&&target>=edge-3){goLive();controllerSeek.current=null;flashNow('LIVE');return;}
+    if(!clipping&&seconds>0&&target>=edge-3){goLive();controllerSeek.current=null;flashNow(t('ui.lrLive'));return;}
     controllerSeek.current={target,at:now};
     setPosition(target);setFollowing(false);
-    flashNow(`${seconds<0?'−':'+'}${Math.abs(seconds*speed)}s`);
+    flashNow(`${seconds<0?'−':'+'}${t('ui.secondsShort',{n:Math.abs(seconds*speed)})}`);
     const keep=!clipping&&!element.paused;
     if(element.seeking)pendingSeek.current={target,keep};
     else jump(target,keep);
@@ -251,9 +271,9 @@ export function LiveReplay({fullscreen = false, onToggleFullscreen, lens = false
   const controllerPlay=()=>{
     const element=video.current;
     if(!ready||busy||positionExpired||!element)return;
-    if(!element.paused){element.pause();flashNow('Paused');}
-    else if(clipping){preview();flashNow('Preview');}
-    else{void element.play().catch(()=>{});flashNow('Play');}
+    if(!element.paused){element.pause();flashNow(t('ui.lrPaused'));}
+    else if(clipping){preview();flashNow(t('ui.preview'));}
+    else{void element.play().catch(()=>{});flashNow(t('ui.play'));}
   };
   const markControllerBoundary=(side:'start'|'end')=>{
     if(!ready||busy||!clipping)return;
@@ -267,12 +287,12 @@ export function LiveReplay({fullscreen = false, onToggleFullscreen, lens = false
     // waiting for React to commit the media property after user activation.
     if(element){element.muted=next;if(!next&&element.volume===0){element.volume=.7;setVolume(.7);}}
     setMuted(next);
-    flashNow(next?'Muted':'Sound on');
+    flashNow(next?t('ui.muted'):t('ui.soundOn'));
   };
   const controllerFullscreen=()=>{
     if(onToggleFullscreen){onToggleFullscreen();return;}
     if(document.fullscreenElement)void document.exitFullscreen();
-    else void stage.current?.requestFullscreen().catch(()=>setMessage('Fullscreen is not available in this window.'));
+    else void stage.current?.requestFullscreen().catch(()=>setMessage(t('ui.noFullscreen')));
   };
   const controllerHandler=useRef<(event:Event)=>void>(()=>{});
   useEffect(()=>{
@@ -286,7 +306,7 @@ export function LiveReplay({fullscreen = false, onToggleFullscreen, lens = false
     controllerHandler.current=(event:Event)=>{
       const key=(event as CustomEvent<string>).detail;
       if(lens&&key==='BTN_EAST'&&durationOpen){event.preventDefault();setDurationOpen(false);return;}
-      if(key==='BTN_EAST'&&clipping){event.preventDefault();if(!busy){setClipping(false);previewEnd.current=null;flashNow('Trim cancelled');}return;}
+      if(key==='BTN_EAST'&&clipping){event.preventDefault();if(!busy){setClipping(false);previewEnd.current=null;flashNow(t('ui.trimCancelled'));}return;}
       if(key==='BTN_START'||key==='BTN_THUMBR'){controllerFullscreen();return;}
       if(key==='BTN_THUMBL'){toggleMute();return;}
       if(busy)return;
@@ -300,11 +320,11 @@ export function LiveReplay({fullscreen = false, onToggleFullscreen, lens = false
       if(key==='BTN_DPAD_RIGHT')seekController(fine);
       if(key==='BTN_TL2')seekController(clipping?-10:-30);
       if(key==='BTN_TR2')seekController(clipping?10:30);
-      if(key==='BTN_DPAD_UP'){if(clipping){markControllerBoundary('start');flashNow('IN set');}else cycleControllerDuration();}
-      if(key==='BTN_DPAD_DOWN'){if(clipping){markControllerBoundary('end');flashNow('OUT set');}else{controllerSeek.current=null;setSelection(undefined);goLive();flashNow('LIVE');}}
+      if(key==='BTN_DPAD_UP'){if(clipping){markControllerBoundary('start');flashNow(t('ui.lrInSet'));}else cycleControllerDuration();}
+      if(key==='BTN_DPAD_DOWN'){if(clipping){markControllerBoundary('end');flashNow(t('ui.lrOutSet'));}else{controllerSeek.current=null;setSelection(undefined);goLive();flashNow(t('ui.lrLive'));}}
       if(key==='BTN_WEST')toggleControllerClip();
       if(key==='BTN_NORTH')void save();
-      if(key==='BTN_SELECT'){controllerSeek.current=null;setClipping(false);setSelection(undefined);goLive();flashNow('LIVE');}
+      if(key==='BTN_SELECT'){controllerSeek.current=null;setClipping(false);setSelection(undefined);goLive();flashNow(t('ui.lrLive'));}
     };
   }
   const tickStep=[10,30,60,120,300,600].find(n=>available/n<=7)??600;
@@ -352,32 +372,32 @@ export function LiveReplay({fullscreen = false, onToggleFullscreen, lens = false
   const railUp=()=>{dragging.current=null;};
   const fine=clipping?'±0.25s':'±1s';
   const labKey=(pad:PadGlyphName,keys:string)=>input==='pad'?<ControllerGlyph name={pad} layout={layout}/>:<kbd>{keys}</kbd>;
-  const labDock = <div className="lab-dock" aria-label="Replay controls">
-    <button className="lab-play" aria-label={!ready?'Enable replay':paused?'Play':'Pause'} disabled={busy||positionExpired} onClick={()=>press('BTN_SOUTH')}><ReplayIcon name={paused?'play':'pause'}/>{labKey('south','Space')}</button>
+  const labDock = <div className="lab-dock" aria-label={t('ui.replayControls')}>
+    <button className="lab-play" aria-label={!ready?t('ui.enableReplay'):paused?t('ui.play'):t('ui.pause')} disabled={busy||positionExpired} onClick={()=>press('BTN_SOUTH')}><ReplayIcon name={paused?'play':'pause'}/>{labKey('south','Space')}</button>
     <span className="lab-divider"/>
-    {clipping ? <div className="lab-boundaries"><button disabled={!ready||busy} onClick={()=>press('BTN_DPAD_UP')}><span>START <b>−{duration(Math.max(0,edge-range.start))}</b></span>{labKey('dpad-up','↑')}</button><span className="lab-range-arrow">→</span><button disabled={!ready||busy} onClick={()=>press('BTN_DPAD_DOWN')}><span>END <b>{range.end>=edge-.5?'Live':`−${duration(Math.max(0,edge-range.end))}`}</b></span>{labKey('dpad-down','↓')}</button></div>
-      : <button className="lab-trim" disabled={!ready||busy} onClick={()=>{setDurationOpen(false);press('BTN_WEST');}}><ReplayIcon name="cut"/><span>Trim clip</span>{labKey('west','C')}</button>}
-    <div className="lab-save-group"><button className="lab-save" disabled={!validRange||busy} onClick={()=>{setDurationOpen(false);press('BTN_NORTH');}}><ReplayIcon name="save"/><span>{busy?'Saving…':'Save clip'}</span>{labKey('north','S')}</button>
-      {!clipping&&<div className="lab-duration"><button className="lab-duration-toggle" disabled={!ready||busy} aria-label="Choose clip duration" aria-expanded={durationOpen} onClick={()=>setDurationOpen(!durationOpen)}>{duration(preset)} <span>⌃</span></button>
-        {durationOpen&&<div className="lab-duration-menu" role="group" aria-label="Clip duration"><span>KEEP THE LAST</span>{[15,30,60,120].map(n=><button key={n} aria-pressed={preset===n} onClick={()=>{setPreset(n);setSelection(undefined);setDurationOpen(false);}}>{n<60?`${n} seconds`:`${n/60} ${n===60?'minute':'minutes'}`}<span>{preset===n?'✓':''}</span></button>)}</div>}
+    {clipping ? <div className="lab-boundaries"><button disabled={!ready||busy} onClick={()=>press('BTN_DPAD_UP')}><span>{t('ui.start')}<b>−{duration(Math.max(0,edge-range.start))}</b></span>{labKey('dpad-up','↑')}</button><span className="lab-range-arrow">→</span><button disabled={!ready||busy} onClick={()=>press('BTN_DPAD_DOWN')}><span>{t('ui.end')}<b>{range.end>=edge-.5?t('ui.live'):`−${duration(Math.max(0,edge-range.end))}`}</b></span>{labKey('dpad-down','↓')}</button></div>
+      : <button className="lab-trim" disabled={!ready||busy} onClick={()=>{setDurationOpen(false);press('BTN_WEST');}}><ReplayIcon name="cut"/><span>{t('ui.trimClip')}</span>{labKey('west','C')}</button>}
+    <div className="lab-save-group"><button className="lab-save" disabled={!validRange||busy} onClick={()=>{setDurationOpen(false);press('BTN_NORTH');}}><ReplayIcon name="save"/><span>{busy?t('ui.saving'):t('ui.saveClip')}</span>{labKey('north','S')}</button>
+      {!clipping&&<div className="lab-duration"><button className="lab-duration-toggle" disabled={!ready||busy} aria-label={t('ui.chooseClipDuration')} aria-expanded={durationOpen} onClick={()=>setDurationOpen(!durationOpen)}>{duration(preset)} <span>⌃</span></button>
+        {durationOpen&&<div className="lab-duration-menu" role="group" aria-label={t('ui.clipDuration')}><span>{t('ui.keepTheLast')}</span>{[15,30,60,120].map(n=><button key={n} aria-pressed={preset===n} onClick={()=>{setPreset(n);setSelection(undefined);setDurationOpen(false);}}>{n<60?t('ui.nSeconds',{count:n}):t('ui.nMinutes',{count:n/60})}<span>{preset===n?'✓':''}</span></button>)}</div>}
       </div>}
       {clipping&&<span className="lab-selected-duration">{duration(Math.max(0,range.end-range.start))}</span>}
     </div>
-    {clipping&&<button className="lab-cancel" disabled={busy} onClick={()=>press('BTN_EAST')} aria-label="Cancel trim">{labKey('east','Esc')}<span>Cancel</span></button>}
+    {clipping&&<button className="lab-cancel" disabled={busy} onClick={()=>press('BTN_EAST')} aria-label={t('ui.cancelTrim')}>{labKey('east','Esc')}<span>{t('ui.cancel')}</span></button>}
   </div>;
   const controllerPanel = controllerMode && <div className="controller-hud" data-clipping={clipping||undefined} data-busy={busy||undefined} data-input={input}>
     <div className="controller-top">
-      {!lens&&clipping&&ready&&<div className="controller-clip-readout"><span>IN <b>−{duration(Math.max(0,edge-range.start))}</b></span><span className="controller-clip-length">{duration(Math.max(0,range.end-range.start))}</span><span>OUT <b>{range.end>=edge-.5?'LIVE':`−${duration(Math.max(0,edge-range.end))}`}</b></span></div>}
-      {(buffering||busy)&&<div className="controller-spinner">{busy?'Saving clip…':'Loading…'}</div>}
+      {!lens&&clipping&&ready&&<div className="controller-clip-readout"><span>{t('ui.in')}{' '}<b>−{duration(Math.max(0,edge-range.start))}</b></span><span className="controller-clip-length">{duration(Math.max(0,range.end-range.start))}</span><span>{t('ui.out')}<b>{range.end>=edge-.5?'LIVE':`−${duration(Math.max(0,edge-range.end))}`}</b></span></div>}
+      {(buffering||busy)&&<div className="controller-spinner">{busy?t('ui.savingClip'):t('ui.loading')}</div>}
       <div className="controller-tools">
-        <button type="button" className="replay-tool-shortcut" onMouseDown={e=>e.preventDefault()} aria-label={muted?'Unmute':'Mute'} aria-pressed={muted} aria-keyshortcuts="M" title={`${muted?'Unmute':'Mute'} (${input==='pad'?'L3 — press left stick':'M'})`} onClick={()=>press('BTN_THUMBL')}><ReplayIcon name={muted?'mute':'sound'}/><span className="replay-tool-key" aria-hidden="true">{input==='pad'?<ButtonGlyph button="BTN_THUMBL" layout={layout}/>:<kbd>M</kbd>}</span></button>
-        <button type="button" className="replay-tool-shortcut" aria-label={fullscreen?'Exit fullscreen':'Fullscreen'} aria-pressed={fullscreen} aria-keyshortcuts="F" title={`Toggle fullscreen (${input==='pad'?(layout==='playstation'?'Options':'Menu'):'F'})`} onClick={()=>press('BTN_START')}><ReplayIcon name="expand"/><span className="replay-tool-key" aria-hidden="true">{input==='pad'?<ButtonGlyph button="BTN_START" layout={layout}/>:<kbd>F</kbd>}</span></button>
-        {onExit&&<button type="button" aria-label="Close" title="Close (Esc)" onClick={onExit}><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>}
+        <button type="button" className="replay-tool-shortcut" onMouseDown={e=>e.preventDefault()} aria-label={muted?t('ui.unmute'):t('ui.mute')} aria-pressed={muted} aria-keyshortcuts="M" title={`${muted?t('ui.unmute'):t('ui.mute')} (${input==='pad'?t('ui.lrL3'):'M'})`} onClick={()=>press('BTN_THUMBL')}><ReplayIcon name={muted?'mute':'sound'}/><span className="replay-tool-key" aria-hidden="true">{input==='pad'?<ButtonGlyph button="BTN_THUMBL" layout={layout}/>:<kbd>M</kbd>}</span></button>
+        <button type="button" className="replay-tool-shortcut" aria-label={fullscreen?t('ui.exitFullscreen'):t('ui.fullscreen')} aria-pressed={fullscreen} aria-keyshortcuts="F" title={t('ui.lrToggleFullscreen',{key:input==='pad'?(layout==='playstation'?t('ui.options'):t('ui.menu')):'F'})} onClick={()=>press('BTN_START')}><ReplayIcon name="expand"/><span className="replay-tool-key" aria-hidden="true">{input==='pad'?<ButtonGlyph button="BTN_START" layout={layout}/>:<kbd>F</kbd>}</span></button>
+        {onExit&&<button type="button" aria-label={t('ui.close')} title={t('ui.closeEsc')} onClick={onExit}><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>}
       </div>
     </div>
     {flash&&<div key={flash.id} className="controller-flash">{flash.text}</div>}
     <div className="controller-bottom">
-      {lens&&<div className="lab-context"><span>{clipping?'TRIM SELECTION':following?'WATCHING LIVE':`REPLAY · −${duration(Math.max(0,edge-playhead))}`}</span><button disabled={!ready||busy} onClick={()=>press('BTN_SELECT')}><i/>{following&&!clipping?'Live':'Go live'}</button></div>}
+      {lens&&<div className="lab-context"><span>{clipping?t('ui.lrTrimSelection'):following?t('ui.lrWatchingLive'):t('ui.lrReplayAt',{time:duration(Math.max(0,edge-playhead))})}</span><button disabled={!ready||busy} onClick={()=>press('BTN_SELECT')}><i/>{following&&!clipping?t('ui.live'):t('ui.goLive')}</button></div>}
       <div className="controller-timeline" data-clipping={clipping||undefined} style={{'--clip-left':`${ribbonPercent(range.start)}%`,'--clip-right':`${100-ribbonPercent(range.end)}%`,'--cursor':`${cursorPercent}%`} as CSSProperties}
         onPointerDown={railDown} onPointerMove={railMove} onPointerUp={railUp} onPointerCancel={railUp} onPointerLeave={()=>setHover(undefined)}>
         {hover&&ready&&<div className="controller-hover" style={{left:`${hover.pct}%`}}>{hover.text}</div>}
@@ -386,81 +406,109 @@ export function LiveReplay({fullscreen = false, onToggleFullscreen, lens = false
           {ready&&ticks.map(t=><span key={t} className="controller-tick" style={{left:`${ribbonPercent(edge-t)}%`}}><em>−{duration(t)}</em></span>)}
           {ready&&<div className="controller-thumb"/>}
         </div>
-        <div className="controller-rail-ends" data-live={(following&&!clipping)||undefined}><i/>LIVE</div>
+        <div className="controller-rail-ends" data-live={(following&&!clipping)||undefined}><i/>{t('ui.live2')}</div>
       </div>
       {lens ? labDock : <div className="controller-keys">
         <Hint input={input} layout={layout} pad="south" keys="Space" tone="primary" disabled={ready&&(busy||positionExpired)} onClick={()=>press('BTN_SOUTH')}
-          label={!ready?(status.enabled?'Buffering…':'Enable replay'):paused?(clipping?'Preview':'Play'):'Pause'}/>
-        <Hint input={input} layout={layout} pad="west" keys="C" label={clipping?'Exit trim':'Trim'} disabled={!ready||busy} onClick={()=>press('BTN_WEST')}/>
+          label={!ready?(status.enabled?t('ui.buffering'):t('ui.enableReplay')):paused?(clipping?t('ui.preview'):t('ui.play')):t('ui.pause')}/>
+        <Hint input={input} layout={layout} pad="west" keys="C" label={clipping?t('ui.exitTrim'):t('ui.trim')} disabled={!ready||busy} onClick={()=>press('BTN_WEST')}/>
         {clipping
-          ? <><Hint input={input} layout={layout} pad="dpad-up" keys="↑" label="Set IN" disabled={busy} onClick={()=>press('BTN_DPAD_UP')}/><Hint input={input} layout={layout} pad="dpad-down" keys="↓" label="Set OUT" disabled={busy} onClick={()=>press('BTN_DPAD_DOWN')}/></>
-          : <><Hint input={input} layout={layout} pad="dpad-up" keys="↑" label={`${duration(preset)} clip`} disabled={!ready||busy} onClick={()=>press('BTN_DPAD_UP')}/><Hint input={input} layout={layout} pad="dpad-down" keys="↓" label="Live" disabled={!ready||busy} onClick={()=>press('BTN_DPAD_DOWN')}/></>}
-        <Hint input={input} layout={layout} pad="north" keys="S" tone="save" label={`Save ${duration(Math.max(0,range.end-range.start))}`} disabled={!validRange||busy} onClick={()=>press('BTN_NORTH')}/>
+          ? <><Hint input={input} layout={layout} pad="dpad-up" keys="↑" label={t('ui.setIn')} disabled={busy} onClick={()=>press('BTN_DPAD_UP')}/><Hint input={input} layout={layout} pad="dpad-down" keys="↓" label={t('ui.setOut')} disabled={busy} onClick={()=>press('BTN_DPAD_DOWN')}/></>
+          : <><Hint input={input} layout={layout} pad="dpad-up" keys="↑" label={t('ui.lrDurationClip',{time:duration(preset)})} disabled={!ready||busy} onClick={()=>press('BTN_DPAD_UP')}/><Hint input={input} layout={layout} pad="dpad-down" keys="↓" label={t('ui.live')} disabled={!ready||busy} onClick={()=>press('BTN_DPAD_DOWN')}/></>}
+        <Hint input={input} layout={layout} pad="north" keys="S" tone="save" label={t('ui.lrSaveTime',{time:duration(Math.max(0,range.end-range.start))})} disabled={!validRange||busy} onClick={()=>press('BTN_NORTH')}/>
         <span className="controller-key-sep"/>
         <Hint input={input} layout={layout} pad="shoulders" keys="← →" label={clipping?'±1s':'±5s'}/>
         {input==='pad'
           ? <><Hint input={input} layout={layout} pad="dpad-h" keys="" label={fine}/><Hint input={input} layout={layout} pad="triggers" keys="" label={clipping?'±10s':'±30s'}/></>
           : <Hint input={input} layout={layout} pad="triggers" keys="Shift ← →" label={clipping?'±10s':'±30s'}/>}
-        <span className="controller-back-key"><Hint input={input} layout={layout} pad="east" keys="Esc" tone="quiet" label={clipping?'Cancel trim':'Back to game'} onClick={()=>{if(clipping)press('BTN_EAST');else onExit?.();}}/></span>
+        <span className="controller-back-key"><Hint input={input} layout={layout} pad="east" keys="Esc" tone="quiet" label={clipping?t('ui.cancelTrim'):t('ui.backToGame')} onClick={()=>{if(clipping)press('BTN_EAST');else onExit?.();}}/></span>
       </div>}
-      {lens&&<div className="lab-footnote">{input==='pad'?<><span className="lab-shortcut"><ControllerGlyph name="shoulders" layout={layout}/><span>{clipping?'±1s':'±10s'}</span></span><span className="lab-shortcut"><ControllerGlyph name="triggers" layout={layout}/><span>{clipping?'±10s':'±30s'}</span></span><span className="lab-shortcut"><ControllerGlyph name="dpad-h" layout={layout}/><span>{clipping?'±0.25s':'±1s'}</span></span><span className="lab-shortcut"><ControllerGlyph name="east" layout={layout}/><span>{clipping?'Cancel trim':'Back'}</span></span></>:<>
-        <span className="lab-seek-hints" aria-label="Seek shortcuts">
-          <span className="lab-seek-hint"><kbd aria-label="Left arrow">←</kbd><span>Back <strong>{clipping?'1':'10'}s</strong></span></span>
-          <span className="lab-seek-hint"><kbd aria-label="Right arrow">→</kbd><span>Forward <strong>{clipping?'1':'10'}s</strong></span></span>
+      {lens&&<div className="lab-footnote">{input==='pad'?<><span className="lab-shortcut"><ControllerGlyph name="shoulders" layout={layout}/><span>{clipping?'±1s':'±10s'}</span></span><span className="lab-shortcut"><ControllerGlyph name="triggers" layout={layout}/><span>{clipping?'±10s':'±30s'}</span></span><span className="lab-shortcut"><ControllerGlyph name="dpad-h" layout={layout}/><span>{clipping?'±0.25s':'±1s'}</span></span><span className="lab-shortcut"><ControllerGlyph name="east" layout={layout}/><span>{clipping?t('ui.cancelTrim'):t('ui.back')}</span></span></>:<>
+        <span className="lab-seek-hints" aria-label={t('ui.seekShortcuts')}>
+          <span className="lab-seek-hint"><kbd aria-label={t('ui.leftArrow')}>←</kbd><span>{t('ui.back')}<strong>{clipping?'1':'10'}s</strong></span></span>
+          <span className="lab-seek-hint"><kbd aria-label={t('ui.rightArrow')}>→</kbd><span>{t('ui.forward')}<strong>{clipping?'1':'10'}s</strong></span></span>
         </span>
         <span className="lab-shortcut"><kbd>Shift</kbd><span>+ ← →</span><span>{clipping?'±10s':'±30s'}</span></span>
-        <span className="lab-shortcut"><kbd>{clipping?'↑ ↓':'↑'}</kbd><span>{clipping?'Set boundaries':'Duration'}</span></span>
-        <span className="lab-shortcut"><kbd>Esc</kbd><span>{clipping?'Cancel':'Back'}</span></span>
+        <span className="lab-shortcut"><kbd>{clipping?'↑ ↓':'↑'}</kbd><span>{clipping?t('ui.setBoundaries'):t('ui.duration')}</span></span>
+        <span className="lab-shortcut"><kbd>Esc</kbd><span>{clipping?t('ui.cancel'):t('ui.back')}</span></span>
       </>}</div>}
     </div>
   </div>;
-  const clipBuilder = builderVisible && (compact || studio) && <aside id={clipBuilderId} className="overlay-cutbar" aria-label="Create a clip">
-        <div className="overlay-cut-presets"><span>QUICK SELECT</span>{[15,30,60].map(n=><button key={n} disabled={!ready||busy} onClick={()=>{setPreset(n);setSelection({start:Math.max(beginning,playhead-n),end:playhead});setTrimWindow({start:Math.max(beginning,playhead-n-15),end:Math.min(edge,playhead+15)});previewEnd.current=null;}}>{n<60?`${n}s`:'1 min'}</button>)}<button className="overlay-history-toggle" disabled={!ready||busy} onClick={()=>setTrimWindow(trimWindow?undefined:{start:Math.max(beginning,range.start-15),end:Math.min(edge,range.end+15)})}>{trimWindow?'Full history':'Zoom to clip'}</button><span className="overlay-cut-tip">Drag the handles to trim</span></div>
+  // On the home screen the clip tools sit under the picture so they never cover it;
+  // over a game (the replay overlay window, fullscreen) they stay on the video.
+  const belowVideo = studio && !isOverlayWindow();
+  const clipBuilder = builderVisible && (compact || studio) && <aside id={clipBuilderId} className="overlay-cutbar" aria-label={t('ui.createAClip')}>
+        <div className="overlay-cut-presets"><span>{t('ui.quickSelect')}</span>{[15,30,60].map(n=><button key={n} disabled={!ready||busy} onClick={()=>{setPreset(n);setSelection({start:Math.max(beginning,playhead-n),end:playhead});setTrimWindow({start:Math.max(beginning,playhead-n-15),end:Math.min(edge,playhead+15)});previewEnd.current=null;}}>{n<60?t('ui.secondsShort',{n}):t('ui.minutesShort',{n:1})}</button>)}<button className="overlay-history-toggle" disabled={!ready||busy} onClick={()=>setTrimWindow(trimWindow?undefined:{start:Math.max(beginning,range.start-15),end:Math.min(edge,range.end+15)})}>{trimWindow?t('ui.fullHistory'):t('ui.zoomToClip')}</button><span className="overlay-cut-tip">{t('ui.dragTheHandlesToTrim')}</span></div>
         <div className="overlay-cut-actions">
           {studio ? <div className="studio-time-fields">
-            <label>IN <input type="number" aria-label="Clip start seconds" step="0.25" min="0" max={Math.max(0,range.end-beginning-.25)} disabled={!ready||busy} value={Math.max(0,Math.round((range.start-beginning)*100)/100)} onChange={e=>setBoundary('start',Math.max(beginning,beginning+Number(e.target.value)))}/></label>
-            <label>OUT <input type="number" aria-label="Clip end seconds" step="0.25" min={Math.max(0,range.start-beginning+.25)} max={available} disabled={!ready||busy} value={Math.max(0,Math.round((range.end-beginning)*100)/100)} onChange={e=>setBoundary('end',Math.min(edge,beginning+Number(e.target.value)))}/></label>
+            <label>{t('ui.in')}{' '}<input type="number" aria-label={t('ui.clipStartSeconds')} step="0.25" min="0" max={Math.max(0,range.end-beginning-.25)} disabled={!ready||busy} value={Math.max(0,Math.round((range.start-beginning)*100)/100)} onChange={e=>setBoundary('start',Math.max(beginning,beginning+Number(e.target.value)))}/></label>
+            <label>{t('ui.out')}<input type="number" aria-label={t('ui.clipEndSeconds')} step="0.25" min={Math.max(0,range.start-beginning+.25)} max={available} disabled={!ready||busy} value={Math.max(0,Math.round((range.end-beginning)*100)/100)} onChange={e=>setBoundary('end',Math.min(edge,beginning+Number(e.target.value)))}/></label>
             <span>{duration(range.end-range.start)} selected · seconds</span>
           </div> : <>
-          <button className="overlay-mark" disabled={!ready||busy||playhead>=edge} onClick={()=>{video.current?.pause();setSelection({start:playhead,end:Math.max(range.end,Math.min(edge,playhead+.25))});}}>Set start here <b>{clock(range.start)}</b></button>
-          <button className="overlay-mark" disabled={!ready||busy||playhead<=beginning} onClick={()=>{video.current?.pause();setSelection({start:Math.min(range.start,Math.max(beginning,playhead-.25)),end:playhead});}}>Set end here <b>{clock(range.end)}</b></button>
+          <button className="overlay-mark" disabled={!ready||busy||playhead>=edge} onClick={()=>{video.current?.pause();setSelection({start:playhead,end:Math.max(range.end,Math.min(edge,playhead+.25))});}}>{t('ui.setStartHere')}<b>{clock(range.start)}</b></button>
+          <button className="overlay-mark" disabled={!ready||busy||playhead<=beginning} onClick={()=>{video.current?.pause();setSelection({start:Math.min(range.start,Math.max(beginning,playhead-.25)),end:playhead});}}>{t('ui.setEndHere')}<b>{clock(range.end)}</b></button>
           </>}
-          <button className="overlay-cut-preview" disabled={!validRange||busy} onClick={preview} aria-label="Preview selection"><ReplayIcon name="play"/></button>
-          <button className="overlay-cut-save" disabled={!validRange||busy} onClick={()=>void save()}><ReplayIcon name="save"/>{busy?'Saving…':`Save clip · ${duration(range.end-range.start)}`}</button>
+          <button className="overlay-cut-preview" disabled={!validRange||busy} onClick={preview} aria-label={t('ui.previewSelection')}><ReplayIcon name="play"/></button>
+          <button className="overlay-cut-save" disabled={!validRange||busy} onClick={()=>void save()}><ReplayIcon name="save"/>{busy?t('ui.saving'):t('ui.lrSaveClipTime',{time:duration(range.end-range.start)})}</button>
         </div>
       </aside>;
   const transport = <div className="replay-transport">
-            <button aria-label="Back 10 seconds" disabled={!ready} onClick={()=>{previewEnd.current=null;jump(Math.max(beginning,playhead-10));}}><SkipIcon direction="back"/></button>
-            <button aria-label={paused?'Play replay':'Pause replay'} disabled={!ready||positionExpired} onClick={()=>{if(paused) void video.current?.play().catch(()=>{});else video.current?.pause();}}><ReplayIcon name={paused?'play':'pause'}/></button>
-            <button className="replay-skip-forward" aria-label="Forward 10 seconds" disabled={!ready||positionExpired||playhead>=edge-1} onClick={()=>{previewEnd.current=null;jump(Math.min(edge,playhead+10));}}><SkipIcon direction="forward"/></button>
-            <span className="replay-playtime">{clock(position)}</span><span className="replay-transport-spacer"/>
-            <button aria-label={muted?'Unmute replay':'Mute replay'} disabled={!ready} onClick={()=>setMuted(!muted)}><ReplayIcon name={muted?'mute':'sound'}/></button>
-            <input className="replay-volume" aria-label="Replay volume" type="range" min="0" max="1" step="0.05" value={muted?0:volume} onChange={e=>{const v=Number(e.target.value);setVolume(v);setMuted(v===0);if(video.current)video.current.volume=v;}}/>
-            <button className="replay-live-button" disabled={!ready} onClick={goLive}><i/>Go live</button>
+            <div className="rt-group">
+            <button aria-label={t('ui.back10Seconds')} disabled={!ready} onClick={()=>{previewEnd.current=null;jump(Math.max(beginning,playhead-10));}}><SkipIcon direction="back"/></button>
+            <button className="replay-play" aria-label={paused?t('ui.playReplay'):t('ui.pauseReplay')} disabled={!ready||positionExpired} onClick={()=>{if(paused) void video.current?.play().catch(()=>{});else video.current?.pause();}}><ReplayIcon name={paused?'play':'pause'}/></button>
+            <button className="replay-skip-forward" aria-label={t('ui.forward10Seconds')} disabled={!ready||positionExpired||playhead>=edge-1} onClick={()=>{previewEnd.current=null;jump(Math.min(edge,playhead+10));}}><SkipIcon direction="forward"/></button>
+            <span className="replay-playtime">{clock(position)}</span>
+            </div>
+            <div className="rt-group">
+            <button aria-label={muted?t('ui.unmuteReplay'):t('ui.muteReplay')} disabled={!ready} onClick={()=>setMuted(!muted)}><ReplayIcon name={muted?'mute':'sound'}/></button>
+            <input className="replay-volume" aria-label={t('ui.replayVolume')} type="range" min="0" max="1" step="0.05" value={muted?0:volume} onChange={e=>{const v=Number(e.target.value);setVolume(v);setMuted(v===0);if(video.current)video.current.volume=v;}}/>
+            <button className="replay-live-button" disabled={!ready} onClick={goLive}><i/>{t('ui.goLive')}</button>
             {studio && showClipBuilder && <button className="replay-cut-toggle"
-              aria-label={clipping ? 'Hide clip tools' : 'Create a clip'} title={clipping ? 'Hide clip tools' : 'Create a clip'}
+              aria-label={clipping ? t('ui.hideClipTools') : t('ui.createAClip')} title={clipping ? t('ui.hideClipTools') : t('ui.createAClip')}
               aria-expanded={clipping} aria-controls={clipping ? clipBuilderId : undefined} disabled={busy}
               onClick={()=>{if (!clipping && ready && (!selection || expired)) setSelection({...range,start:Math.max(beginning,range.start)});previewEnd.current=null;setClipping(!clipping);}}>
               <ReplayIcon name="cut"/>
             </button>}
-            <button aria-label="Fullscreen replay" disabled={!ready} onClick={()=>{if(document.fullscreenElement)void document.exitFullscreen();else void stage.current?.requestFullscreen().catch(()=>setMessage('Fullscreen is not available in this window.'));}}><ReplayIcon name="expand"/></button>
+            <button aria-label={t('ui.fullscreenReplay')} disabled={!ready} onClick={()=>{if(document.fullscreenElement)void document.exitFullscreen();else void stage.current?.requestFullscreen().catch(()=>setMessage(t('ui.noFullscreen')));}}><ReplayIcon name="expand"/></button>
+            </div>
           </div>;
   const scrubber = <div className="replay-scrubber" data-clipping={builderVisible || undefined}>
-          <div className="replay-timeline-labels"><span>{(compact||studio)&&builderVisible&&trimWindow?'TRIM TIMELINE':'REPLAY TIMELINE'}</span><span>{clock(timelineStart)} — {clock(timelineEnd)}</span></div>
+          <div className="replay-timeline-labels"><span>{(compact||studio)&&builderVisible&&trimWindow?t('ui.lrTrimTimeline'):t('ui.lrReplayTimeline')}</span><span>{clock(timelineStart)} — {clock(timelineEnd)}</span></div>
           <div className="replay-track" style={{'--range-left':`${percentage(range.start)}%`,'--range-width':`${percentage(range.end)-percentage(range.start)}%`} as CSSProperties}>
             {validRange&&builderVisible&&<div className="replay-selection-band"/>}
-            <input className="replay-seek" aria-label="Replay position" type="range" disabled={!ready} min={timelineStart} max={timelineEnd} step=".25" value={following&&!builderVisible?timelineEnd:Math.max(timelineStart,Math.min(playhead,timelineEnd))} onChange={e=>{previewEnd.current=null;const value=Number(e.currentTarget.value);if(!builderVisible&&value>=timelineEnd-2)goLive();else jump(value);}}/>
+            <input className="replay-seek" aria-label={t('ui.replayPosition')} type="range" disabled={!ready} min={timelineStart} max={timelineEnd} step=".25" value={following&&!builderVisible?timelineEnd:Math.max(timelineStart,Math.min(playhead,timelineEnd))} onChange={e=>{previewEnd.current=null;const value=Number(e.currentTarget.value);if(!builderVisible&&value>=timelineEnd-2)goLive();else jump(value);}}/>
             {(compact || studio) && builderVisible && <>
-              <input className="overlay-trim-handle" aria-label="Clip start" type="range" min={timelineStart} max={timelineEnd} step=".25" disabled={!ready||busy} value={Math.max(beginning,range.start)} onChange={e=>setBoundary('start',Number(e.currentTarget.value))}/>
-              <input className="overlay-trim-handle overlay-trim-end" aria-label="Clip end" type="range" min={timelineStart} max={timelineEnd} step=".25" disabled={!ready||busy} value={range.end} onChange={e=>setBoundary('end',Number(e.currentTarget.value))}/>
+              <input className="overlay-trim-handle" aria-label={t('ui.clipStart')} type="range" min={timelineStart} max={timelineEnd} step=".25" disabled={!ready||busy} value={Math.max(beginning,range.start)} onKeyDown={handleKeys('start',range.start)} onChange={e=>setBoundary('start',Number(e.currentTarget.value))}/>
+              <input className="overlay-trim-handle overlay-trim-end" aria-label={t('ui.clipEnd')} type="range" min={timelineStart} max={timelineEnd} step=".25" disabled={!ready||busy} value={range.end} onKeyDown={handleKeys('end',range.end)} onChange={e=>setBoundary('end',Number(e.currentTarget.value))}/>
             </>}
           </div>
-          <div className="replay-timeline-ticks">{[0,.25,.5,.75,1].map(n=><span key={n}>{n===1&&timelineEnd===edge?'NOW':`−${duration(edge-(timelineStart+timelineDuration*n))}`}</span>)}</div>
-          {studio && clipBuilder}
+          <div className="replay-timeline-ticks">{[0,.25,.5,.75,1].map(n=><span key={n}>{n===1&&timelineEnd===edge?t('ui.lrNow'):`−${duration(edge-(timelineStart+timelineDuration*n))}`}</span>)}</div>
+          {studio && !belowVideo && clipBuilder}
 
         </div>;
-  return <section className={`replay-studio ${studio ? 'studio-player' : ''} ${lens ? 'replay-lens' : ''}`} aria-label="Live replay studio">
-    <header className="replay-header"><div className="replay-header-title"><span className="replay-indicator" data-running={status.running}/><h2>Live replay</h2><span className="replay-chip">{bufferSeconds ? `${Math.round(bufferSeconds/60)} MIN BUFFER` : 'REPLAY BUFFER'}</span></div><span className="replay-capacity">{duration(available)} available</span></header>
+  const quickSelect = (n: number) => {setPreset(n);setSelection({start:Math.max(beginning,playhead-n),end:playhead});setTrimWindow({start:Math.max(beginning,playhead-n-15),end:Math.min(edge,playhead+15)});previewEnd.current=null;};
+  const studioPanel = <section id={clipBuilderId} ref={el=>{if(el&&!el.dataset.seen){el.dataset.seen='1';requestAnimationFrame(()=>el.scrollIntoView({block:'nearest',behavior:'smooth'}));}}} className="studio-clip-panel ui-panel" aria-label={t('ui.createAClip')}>
+    <header className="ui-panel-head">
+      <div><h3>{t('ui.createAClip')}</h3><p className="ui-hint">{t('ui.dragTheHandlesToTrim')}</p></div>
+      <span className="ui-badge" data-tone="accent">{t('ui.selectedLength',{time:duration(Math.max(0,range.end-range.start))})}</span>
+    </header>
+    {scrubber}
+    <div className="ui-toolbar">
+      <div className="ui-group">
+        <div className="ui-chip-row" role="group" aria-label={t('ui.quickSelect')}>
+          {[15,30,60].map(n=><button type="button" className="ui-chip" key={n} disabled={!ready||busy} onClick={()=>quickSelect(n)}>{n<60?t('ui.secondsShort',{n}):t('ui.minutesShort',{n:1})}</button>)}
+          <button type="button" className="ui-chip ui-icon-chip" aria-pressed={Boolean(trimWindow)} aria-label={trimWindow?t('ui.fullHistory'):t('ui.zoomToClip')} title={trimWindow?t('ui.fullHistory'):t('ui.zoomToClip')} disabled={!ready||busy} onClick={()=>setTrimWindow(trimWindow?undefined:{start:Math.max(beginning,range.start-15),end:Math.min(edge,range.end+15)})}><ReplayIcon name="zoom"/></button>
+        </div>
+      </div>
+      <p className="ui-shift-hint"><kbd>Shift</kbd><span>{t('ui.shiftSnapHint')}</span></p>
+      <div className="ui-actions">
+        <button type="button" className="btn btn-quiet ui-icon-btn" disabled={!validRange||busy} onClick={preview} aria-label={t('ui.previewSelection')} title={t('ui.previewSelection')}><ReplayIcon name="play"/></button>
+        <button type="button" className="btn" disabled={!validRange||busy} onClick={()=>void save()}><ReplayIcon name="clip"/>{busy?t('ui.saving'):t('ui.lrSaveClipTime',{time:duration(range.end-range.start)})}</button>
+      </div>
+    </div>
+  </section>;
+  return <section className={`replay-studio ${studio ? 'studio-player' : ''} ${lens ? 'replay-lens' : ''}`} aria-label={t('ui.liveReplayStudio')}>
+    <header className="replay-header"><div className="replay-header-title"><span className="replay-indicator" data-running={status.running}/><h2>{t('ui.liveReplay')}</h2><span className="replay-chip">{bufferSeconds ? t('ui.lrMinBuffer',{n:Math.round(bufferSeconds/60)}) : t('ui.lrReplayBuffer')}</span></div><span className="replay-capacity">{t('ui.lrAvailable',{time:duration(available)})}</span></header>
     <div className="replay-workspace">
       <div className="replay-monitor">
         <div ref={stage} className="replay-stage" data-controller={controllerMode || undefined}
@@ -472,30 +520,31 @@ export function LiveReplay({fullscreen = false, onToggleFullscreen, lens = false
             onWaiting={()=>setBuffering(true)} onCanPlay={()=>setBuffering(false)} onSeeked={()=>{setBuffering(false);const next=pendingSeek.current;pendingSeek.current=null;if(next)jump(next.target,next.keep);}}
             onPlay={()=>setPaused(false)} onPause={()=>{setPaused(true);setFollowing(false);}}
             onTimeUpdate={()=>{if(controllerMode&&(video.current?.seeking||(controllerSeek.current&&performance.now()-controllerSeek.current.at<250)))return;const value=currentDate();if(value!=null){setPosition(value);if(!following&&!video.current?.paused&&!(controllerSeek.current&&performance.now()-controllerSeek.current.at<1500)&&edge-value<10)setFollowing(true);if(previewEnd.current!=null && value>=previewEnd.current){video.current?.pause();previewEnd.current=null;}}}}/>
-          {(!ready || positionExpired) && <div className="replay-placeholder"><span className="replay-placeholder-icon"><ReplayIcon name="play"/></span><h3>{positionExpired?'This moment has expired':!loaded?'Connecting to your screen…':status.enabled?'Your replay is warming up':'Never miss the moment'}</h3><p>{positionExpired?'Jump back to live to keep watching.':status.enabled?'Your replay history will appear here as you record.':'Revisit your screen, find the moment, and keep just the good part.'}</p>{!status.enabled&&loaded&&<button className="btn" disabled={busy} onClick={()=>void enable()}>Start live replay</button>}{positionExpired&&<button className="btn" onClick={goLive}>Go live</button>}</div>}
-          {ready && !positionExpired && <div className="replay-video-badge"><i/>{following?'LIVE':`${duration(edge-playhead)} AGO`}</div>}
+          {(!ready || positionExpired) && <div className="replay-placeholder"><span className="replay-placeholder-icon"><ReplayIcon name="play"/></span><h3>{positionExpired?t('ui.thisMomentHasExpired'):!loaded?t('ui.connectingToYourScreen'):status.enabled?t('ui.yourReplayIsWarmingUp'):t('ui.neverMissTheMoment')}</h3><p>{positionExpired?t('ui.jumpBackToLiveTo'):status.enabled?t('ui.yourReplayHistoryWillAppear'):t('ui.revisitYourScreenFindThe')}</p>{!status.enabled&&loaded&&<button className="btn" disabled={busy} onClick={()=>void enable()}>{t('ui.startLiveReplay')}</button>}{positionExpired&&<button className="btn" onClick={goLive}>{t('ui.goLive')}</button>}</div>}
+          {ready && !positionExpired && <div className="replay-video-badge"><i/>{following?t('ui.lrLive'):t('ui.lrAgo',{time:duration(edge-playhead)})}</div>}
           {controllerMode ? controllerPanel : studio ? <div className="studio-video-controls" data-clipping={builderVisible || undefined}
             data-visible={controlsVisible || busy} onPointerDown={()=>{draggingControl.current=true;revealControls();}}>
-            {scrubber}
+            {!(belowVideo && builderVisible) && scrubber}
             {transport}
           </div> : transport}
         </div>
+        {belowVideo && builderVisible && studioPanel}
         {!studio && scrubber}
       </div>
       {!studio && clipBuilder}
-      {builderVisible && !compact && !studio && <aside className="replay-clip-builder" aria-label="Create a clip">
-        <div className="replay-builder-icon"><ReplayIcon name="cut"/></div><h3>Keep this moment.</h3><p>Pick a length. Save a clip ending at the moment you’re watching.</p>
-        <label className="replay-field-label">QUICK LENGTH</label>
+      {builderVisible && !compact && !studio && <aside className="replay-clip-builder" aria-label={t('ui.createAClip')}>
+        <div className="replay-builder-icon"><ReplayIcon name="cut"/></div><h3>{t('ui.keepThisMoment')}</h3><p>{t('ui.pickALengthSaveA')}</p>
+        <label className="replay-field-label">{t('ui.quickLength')}</label>
         <div className="replay-presets">{[15,30,60,120].map(n=><button key={n} aria-pressed={!selection&&preset===n} disabled={!ready||busy} onClick={()=>{setPreset(n);setSelection(undefined);previewEnd.current=null;}}>{n<60?`${n}s`:`${n/60}m`}</button>)}</div>
-        <div className="replay-selection-heading"><span>Fine-tune your clip</span>{selection&&<button disabled={busy} onClick={()=>setSelection(undefined)}>Reset</button>}</div>
-        <label className="replay-boundary"><span>Start <b>{ready?clock(range.start):'—'}</b></span><input aria-label="Clip start" type="range" disabled={!ready||busy} min={beginning} max={Math.max(beginning,range.end-.25)} step=".25" value={Math.max(beginning,range.start)} onChange={e=>setBoundary('start',Number(e.currentTarget.value))}/></label>
-        <label className="replay-boundary"><span>End <b>{ready?clock(range.end):'—'}</b></span><input aria-label="Clip end" type="range" disabled={!ready||busy} min={Math.min(edge,Math.max(beginning,range.start+.25))} max={edge} step=".25" value={range.end} onChange={e=>setBoundary('end',Number(e.currentTarget.value))}/></label>
-        <div className="replay-export-summary"><span>Clip duration</span><strong>{duration(ready?range.end-range.start:0)}</strong></div>
-        <button className="replay-save" disabled={!validRange||busy} onClick={()=>void save()}><ReplayIcon name="save"/>{busy?'Saving…':`Save ${duration(ready?range.end-range.start:0)} clip`}</button>
-        <button className="replay-preview" disabled={!validRange||busy} onClick={preview}><ReplayIcon name="play"/>Preview selection</button>
-        <p className="replay-footnote">Only saved clips stay in your library. Older replay history disappears automatically.</p>
+        <div className="replay-selection-heading"><span>{t('ui.fineTuneYourClip')}</span>{selection&&<button disabled={busy} onClick={()=>setSelection(undefined)}>{t('ui.reset')}</button>}</div>
+        <label className="replay-boundary"><span>{t('ui.start2')}<b>{ready?clock(range.start):'—'}</b></span><input aria-label={t('ui.clipStart')} type="range" disabled={!ready||busy} min={beginning} max={Math.max(beginning,range.end-.25)} step=".25" value={Math.max(beginning,range.start)} onChange={e=>setBoundary('start',Number(e.currentTarget.value))}/></label>
+        <label className="replay-boundary"><span>{t('ui.end2')}<b>{ready?clock(range.end):'—'}</b></span><input aria-label={t('ui.clipEnd')} type="range" disabled={!ready||busy} min={Math.min(edge,Math.max(beginning,range.start+.25))} max={edge} step=".25" value={range.end} onChange={e=>setBoundary('end',Number(e.currentTarget.value))}/></label>
+        <div className="replay-export-summary"><span>{t('ui.clipDuration')}</span><strong>{duration(ready?range.end-range.start:0)}</strong></div>
+        <button className="replay-save" disabled={!validRange||busy} onClick={()=>void save()}><ReplayIcon name="save"/>{busy?t('ui.saving'):t('ui.lrSaveTimeClip',{time:duration(ready?range.end-range.start:0)})}</button>
+        <button className="replay-preview" disabled={!validRange||busy} onClick={preview}><ReplayIcon name="play"/>{t('ui.previewSelection')}</button>
+        <p className="replay-footnote">{t('ui.onlySavedClipsStayIn')}</p>
       </aside>}
     </div>
-    {(message||status.error||expired)&&<div className="replay-message" role="status">{expired?'Your selection expired. Reset it to choose a newer moment.':message||status.error}</div>}
+    {(message||status.error||expired)&&<div className="replay-message" role="status">{expired?t('ui.yourSelectionExpiredResetIt'):message||status.error}</div>}
   </section>;
 }

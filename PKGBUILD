@@ -1,10 +1,10 @@
-# Maintainer: Andrew Marin <andrewmarin367@gmail.com>
+# Maintainer: iiSHKAS
 pkgname=gloaming-clipper
-pkgver=2.15.0
+pkgver=0.5.0
 pkgrel=1
 pkgdesc="Medal.tv-style game clip recorder for Linux: instant replay, session recording, and one-click sharing"
 arch=('x86_64')
-url="https://github.com/splitshotz/Vice"
+url="https://github.com/iiSHKAS/gloaming"
 license=('GPL-3.0-or-later')
 install=gloaming-clipper.install
 depends=(
@@ -13,7 +13,6 @@ depends=(
     'python-evdev'
     'python-aiohttp'
     'python-click'
-    'python-psutil'
     'python-pywebview'
     'python-tomli-w'
     'python-pyqt6-webengine'
@@ -46,21 +45,21 @@ makedepends=(
     'python-setuptools'
     'python-wheel'
 )
-source=("$pkgname-$pkgver.tar.gz::https://github.com/splitshotz/Vice/archive/refs/tags/v$pkgver.tar.gz")
+source=("$pkgname-$pkgver.tar.gz::https://github.com/iiSHKAS/gloaming/archive/refs/tags/$pkgver.tar.gz")
 sha256sums=('SKIP')
 
 build() {
-    cd "$srcdir/Vice-$pkgver"
+    cd "$srcdir/gloaming-$pkgver"
     python -m build --wheel --no-isolation
 }
 
 check() {
-    cd "$srcdir/Vice-$pkgver"
+    cd "$srcdir/gloaming-$pkgver"
     python -m compileall gloaming
 }
 
 package() {
-    cd "$srcdir/Vice-$pkgver"
+    cd "$srcdir/gloaming-$pkgver"
 
     python -m installer --destdir="$pkgdir" dist/*.whl
 

@@ -1,3 +1,4 @@
+import {t, dateLocale} from './i18n';
 /** Formatting shared across screens. */
 
 /**
@@ -28,11 +29,11 @@ export function formatDuration(seconds: number, withUnit = false): string {
  * form used and it was right.
  */
 export function formatLengthLong(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return '0 s';
-  if (seconds < 60) return `${Math.round(seconds)} s`;
+  if (!Number.isFinite(seconds) || seconds < 0) return t('ui.lenSec', {n: 0});
+  if (seconds < 60) return t('ui.lenSec', {n: Math.round(seconds)});
   const m = Math.floor(seconds / 60);
   const r = Math.round(seconds % 60);
-  return r === 0 ? `${m} min` : `${m}:${String(r).padStart(2, '0')} min`;
+  return r === 0 ? t('ui.lenMin', {n: m}) : t('ui.lenMinSec', {m, s: String(r).padStart(2, '0')});
 }
 
 export function formatBytes(bytes: number): string {
@@ -45,7 +46,7 @@ export function formatBytes(bytes: number): string {
 
 /** Format every key in an evdev combination, including modifier names. */
 export function hotkeyLabel(key: string | undefined | null): string {
-  if (!key) return 'the clip key';
+  if (!key) return t('ui.theClipKey');
   const labels: Record<string, string> = {
     LEFTCTRL: 'Ctrl', RIGHTCTRL: 'Ctrl', LEFTALT: 'Alt', RIGHTALT: 'Alt',
     LEFTSHIFT: 'Shift', RIGHTSHIFT: 'Shift', LEFTMETA: 'Super', RIGHTMETA: 'Super',
@@ -64,9 +65,9 @@ export function relativeTime(isoTimestamp: string | null | undefined): string {
   const then = new Date(isoTimestamp).getTime();
   if (Number.isNaN(then)) return '';
   const diff = (Date.now() - then) / 1000;
-  if (diff < 60) return 'just now';
-  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
-  return new Date(then).toLocaleDateString();
+  if (diff < 60) return t('ui.justNow');
+  if (diff < 3600) return t('ui.minAgo', {n: Math.floor(diff / 60)});
+  if (diff < 86400) return t('ui.hoursAgo', {n: Math.floor(diff / 3600)});
+  if (diff < 604800) return t('ui.daysAgo', {n: Math.floor(diff / 86400)});
+  return new Date(then).toLocaleDateString(dateLocale());
 }

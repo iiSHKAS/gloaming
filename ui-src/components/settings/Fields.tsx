@@ -223,6 +223,7 @@ export function TextField({
   disabled,
   min,
   max,
+  step,
 }: {
   value: string | number;
   onChange: (next: string) => void;
@@ -234,8 +235,9 @@ export function TextField({
   type?: 'text' | 'number';
   min?: number;
   max?: number;
+  step?: number;
 }) {
-  return (
+  const input = (
     <input
       className="text-input"
       data-mono={mono || undefined}
@@ -244,12 +246,43 @@ export function TextField({
       disabled={disabled}
       min={min}
       max={max}
+      step={step}
       value={value}
       placeholder={placeholder}
       aria-label={label}
       spellCheck={false}
       onChange={e => onChange(e.target.value)}
     />
+  );
+  if (type !== 'number') return input;
+
+  const nudge = (dir: 1 | -1) => {
+    const amount = step ?? 1;
+    const next = Math.round(((Number(value) || 0) + dir * amount) * 1000) / 1000;
+    onChange(String(Math.min(max ?? Infinity, Math.max(min ?? -Infinity, next))));
+  };
+  return (
+    <div className="num-field" data-disabled={disabled || undefined}>
+      {input}
+      <div className="num-steps">
+        <button
+          type="button"
+          tabIndex={-1}
+          disabled={disabled || (max !== undefined && Number(value) >= max)}
+          aria-label={`${label} +`}
+          onClick={() => nudge(1)}>
+          <svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 5l4-4 4 4" /></svg>
+        </button>
+        <button
+          type="button"
+          tabIndex={-1}
+          disabled={disabled || (min !== undefined && Number(value) <= min)}
+          aria-label={`${label} −`}
+          onClick={() => nudge(-1)}>
+          <svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" /></svg>
+        </button>
+      </div>
+    </div>
   );
 }
 

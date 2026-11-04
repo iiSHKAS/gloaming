@@ -1,3 +1,4 @@
+import {t} from './i18n';
 import type {Draft} from './settingsDraft';
 
 /** Follow recorder selection, including wf-recorder's microphone fallback. */
@@ -12,7 +13,7 @@ export function recordingCapabilities(draft: Pick<Draft, 'backend' | 'liveReplay
   const flags = gsr && !draft.liveReplay ? gsrArgumentFlags(draft.gsrArgs) : [];
   const note = (...names: string[]) => {
     const found = names.filter(name => flags.includes(name));
-    return found.length ? {text: `Extra GSR arguments (${found.join(', ')}) override this saved setting. Remove those arguments to use this control.`} : undefined;
+    return found.length ? {text: t('ui.gsrOverrideThis', {args: found.join(', ')})} : undefined;
   };
   const qualityOverride = note('-q', '-bm');
   const resolutionOverride = note('-s');
@@ -22,12 +23,12 @@ export function recordingCapabilities(draft: Pick<Draft, 'backend' | 'liveReplay
   const storageNote = note('-replay-storage');
   const containerNote = note('-c');
   const manualOverrides = Boolean(qualityOverride || resolutionOverride || fpsOverride || codecNote || bufferNote || storageNote || containerNote);
-  const overrideNote = manualOverrides ? {text: 'Extra GSR arguments override some saved recording defaults. See the affected controls for details.'} : undefined;
+  const overrideNote = manualOverrides ? {text: t('ui.gsrOverrideSome')} : undefined;
   const wfEncoder = WF_ENCODERS.includes(draft.encoder) ? draft.encoder : 'libx264';
   const depthLocked = draft.liveReplay || (wf && (wfEncoder !== 'hevc_nvenc' || !wfTenBit));
   const depthNote = wf ? {text: wfEncoder === 'hevc_nvenc' && wfTenBit
-    ? '10-bit uses HEVC NVENC and this wf-recorder build supports the required pixel format option.'
-    : 'wf-recorder uses 8-bit here. 10-bit requires HEVC NVENC and a wf-recorder build with --pixel-format support.'} : codecNote;
+    ? t('ui.depth10Supported')
+    : t('ui.depth8Only')} : codecNote;
   return {
     windowCaptureActive: gsr && draft.windowCapture,
     windowToggleDisabled: !gsr && !draft.windowCapture,
@@ -36,10 +37,10 @@ export function recordingCapabilities(draft: Pick<Draft, 'backend' | 'liveReplay
     overrideNote,
     gsr,
     wf,
-    qualityNote: gsr ? qualityOverride : {text: 'Picture quality and fixed bitrate require GPU Screen Recorder.'},
-    resolutionNote: wf ? {text: 'wf-recorder uses the capture size; picture size cannot be changed here.'} : resolutionOverride,
-    fpsNote: wf ? {text: 'wf-recorder controls its own frame rate.'} : fpsOverride,
-    liveNote: draft.liveReplay ? {text: 'Live replay uses GPU Screen Recorder, 8-bit H.264/AAC, MP4 clips and a disk buffer. Turn it off to change these settings. Your saved preferences are kept.'} : undefined,
+    qualityNote: gsr ? qualityOverride : {text: t('ui.qualityNeedsGsr')},
+    resolutionNote: wf ? {text: t('ui.wfUsesCaptureSize')} : resolutionOverride,
+    fpsNote: wf ? {text: t('ui.wfOwnFrameRate')} : fpsOverride,
+    liveNote: draft.liveReplay ? {text: t('ui.liveReplayLocks')} : undefined,
   };
 }
 

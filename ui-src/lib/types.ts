@@ -89,6 +89,8 @@ export interface Status {
   ready: boolean;
   recorder_error: string | null;
   cpu_fallback: boolean;
+  /** Why Game Capture can't work on this machine, when Gloaming can tell. */
+  game_capture_issue?: 'wayland' | 'tools' | 'failed' | null;
   /** Why the GPU encoder would not open, when Gloaming can tell (#247). */
   cpu_fallback_reason?: {
     kind: 'nvenc_api';

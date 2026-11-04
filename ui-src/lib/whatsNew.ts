@@ -15,7 +15,7 @@ export interface ReleaseNotes {
 }
 
 export const WHATS_NEW: Record<string, ReleaseNotes> = {
-  '2.15.0': {
+  '0.5.0': {
     items: [
       'gameCapture',
       'keyOverlay',

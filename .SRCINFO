@@ -1,8 +1,8 @@
 pkgbase = gloaming-clipper
 	pkgdesc = Medal.tv-style game clip recorder for Linux: instant replay, session recording, and one-click sharing
-	pkgver = 2.15.0
+	pkgver = 0.5.0
 	pkgrel = 1
-	url = https://github.com/splitshotz/Vice
+	url = https://github.com/iiSHKAS/gloaming
 	install = gloaming-clipper.install
 	arch = x86_64
 	license = GPL-3.0-or-later
@@ -15,7 +15,6 @@ pkgbase = gloaming-clipper
 	depends = python-evdev
 	depends = python-aiohttp
 	depends = python-click
-	depends = python-psutil
 	depends = python-pywebview
 	depends = python-tomli-w
 	depends = python-pyqt6-webengine
@@ -37,7 +36,7 @@ pkgbase = gloaming-clipper
 	optdepends = python-gobject: keyboard overlay
 	optdepends = python-cairo: keyboard overlay
 	optdepends = gtk-layer-shell: keyboard overlay on Wayland
-	source = gloaming-clipper-2.15.0.tar.gz::https://github.com/splitshotz/Vice/archive/refs/tags/v2.15.0.tar.gz
+	source = gloaming-clipper-0.5.0.tar.gz::https://github.com/iiSHKAS/gloaming/archive/refs/tags/0.5.0.tar.gz
 	sha256sums = SKIP
 
 pkgname = gloaming-clipper

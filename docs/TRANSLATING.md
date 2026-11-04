@@ -13,8 +13,8 @@ to the repository.
 **1. Start the file.**
 
 ```bash
-git clone https://github.com/splitshotz/Vice
-cd Vice
+git clone https://github.com/iiSHKAS/gloaming
+cd gloaming
 npm install
 npm run i18n:new -- pt-BR
 ```

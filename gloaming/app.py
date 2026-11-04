@@ -1131,6 +1131,7 @@ def _run_webview(url: str) -> None:
             Path(__file__).resolve().parent.parent / "assets/gloaming.png",
             actual_home_dir() / ".local/share/icons/hicolor/scalable/apps/gloaming.svg",
             Path(__file__).resolve().parent.parent / "assets/gloaming.svg",
+            *((Path(os.environ["APPDIR"]) / "gloaming.png",) if os.environ.get("APPDIR") else ()),
         ),
         shutdown_daemon=_stop_daemon_completely,
         close_window=lambda: _close_window_after_bridge(win),

@@ -8,8 +8,8 @@ import {api} from './api';
  *
  * Kept in localStorage so the very first paint can read it (index.html does,
  * before the bundle parses), and applied as data-theme on the root element.
- * Windows drawn over a game, the replay overlay and its save menu, are always
- * dark.
+ * The replay overlay follows the theme too; the save menu drawn over a game is
+ * always dark.
  */
 export const THEMES = ['dark', 'light', 'system'] as const;
 /** What the user chose. 'system' follows the desktop's light or dark setting. */
@@ -21,6 +21,9 @@ const KEY = 'gloaming-appearance';
 
 export const isOverlayWindow = (): boolean =>
   new URLSearchParams(location.search).get('replayOverlay') === '1';
+
+/** The save menu is the one overlay window that stays dark. */
+const isDarkOnlyWindow = (): boolean => isOverlayWindow() && new URLSearchParams(location.search).has('saveMenu');
 
 const asPreference = (value: unknown): ThemePreference =>
   value === 'light' || value === 'system' ? value : 'dark';
@@ -37,13 +40,13 @@ const systemQuery = typeof matchMedia === 'function' ? matchMedia('(prefers-colo
 const resolve = (choice: ThemePreference): ThemeName =>
   choice === 'system' ? (systemQuery?.matches ? 'light' : 'dark') : choice;
 
-let preference: ThemePreference = isOverlayWindow() ? 'dark' : stored();
+let preference: ThemePreference = isDarkOnlyWindow() ? 'dark' : stored();
 let current: ThemeName = resolve(preference);
 const listeners = new Set<() => void>();
 
 // 'system' follows the desktop live, so switching it at night recolours the app.
 systemQuery?.addEventListener('change', () => {
-  if (preference !== 'system' || isOverlayWindow()) return;
+  if (preference !== 'system' || isDarkOnlyWindow()) return;
   current = resolve(preference);
   paint();
   for (const fn of listeners) fn();
@@ -83,7 +86,7 @@ export function setTheme(next: ThemePreference): void {
 
 /** Pick up the choice the daemon kept, for builds that lost localStorage. */
 export function restoreTheme(): void {
-  if (isOverlayWindow()) return;
+  if (isDarkOnlyWindow()) return;
   void api
     .getAppState()
     .then(saved => {

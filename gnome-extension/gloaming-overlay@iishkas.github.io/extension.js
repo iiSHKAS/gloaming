@@ -3,8 +3,8 @@ import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-const APP_ID = 'dev.basilforge.GloamingReplay';
-const BUS = 'dev.basilforge.GloamingOverlay';
+const APP_ID = 'io.github.iishkas.GloamingReplay';
+const BUS = 'io.github.iishkas.GloamingOverlay';
 const XML = `<node><interface name="${BUS}"><method name="Version"><arg type="i" direction="out"/></method><method name="Status"><arg type="s" direction="out"/></method></interface></node>`;
 
 export default class GloamingOverlay extends Extension {
@@ -24,7 +24,7 @@ export default class GloamingOverlay extends Extension {
                 above: win.is_above(), clientType: win.get_client_type(),
                 frame: (() => {const r=win.get_frame_rect();return {x:r.x,y:r.y,width:r.width,height:r.height};})(), monitor: win.get_monitor(), fullscreen: win.is_fullscreen(),
             }))) });
-        this._dbus.export(Gio.DBus.session, '/dev/basilforge/GloamingOverlay');
+        this._dbus.export(Gio.DBus.session, '/io/github/iishkas/GloamingOverlay');
         this._owner = Gio.bus_own_name(Gio.BusType.SESSION, BUS, Gio.BusNameOwnerFlags.NONE, null, null, null);
         for (const actor of global.get_window_actors()) this._track(actor.meta_window);
     }

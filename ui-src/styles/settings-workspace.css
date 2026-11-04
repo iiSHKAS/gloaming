@@ -365,3 +365,18 @@
 .settings-studio .swatch {width:34px;height:34px;transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s}
 .settings-studio .swatch:hover {transform:scale(1.12)}
 .settings-studio .swatch[data-active] {box-shadow:0 0 0 3px var(--pref-paper),0 0 0 5px var(--studio-accent)}
+
+/* ── number field: custom stepper instead of the native spin arrows ── */
+.num-field {position:relative;display:inline-flex;width:110px}
+.num-field .text-input[type=number] {width:100%;padding-inline-end:34px;appearance:textfield;-moz-appearance:textfield}
+.num-field .text-input[type=number]::-webkit-inner-spin-button,
+.num-field .text-input[type=number]::-webkit-outer-spin-button {-webkit-appearance:none;margin:0}
+.num-steps {position:absolute;inset-block:4px;inset-inline-end:4px;display:flex;flex-direction:column;gap:2px;width:22px}
+.num-steps button {flex:1;min-height:0;display:grid;place-items:center;padding:0;border:0;border-radius:4px;background:transparent;color:var(--color-text-secondary);cursor:pointer;transition:background var(--duration-fast) var(--ease-standard),color var(--duration-fast) var(--ease-standard)}
+.num-steps button svg {width:8px;height:5px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.num-steps button:hover:not(:disabled) {background:var(--pref-tint-strong);color:var(--color-text-primary)}
+.num-steps button:active:not(:disabled) {background:color-mix(in srgb,var(--studio-accent) 22%,transparent);color:var(--studio-accent)}
+.num-steps button:disabled {opacity:.3;cursor:default}
+.num-field:focus-within .num-steps button {color:var(--color-text-primary)}
+.settings-studio .settings-card>.srow:not([data-stack])>.srow-control>.num-field {width:100%}
+html[data-theme='light'] .num-steps button:hover:not(:disabled) {background:#00000010}

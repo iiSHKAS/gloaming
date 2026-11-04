@@ -49,7 +49,6 @@ python3Packages.buildPythonApplication rec {
     aiohttp
     click
     tomli-w
-    psutil
     pywebview
   ] ++ lib.optionals withQtWebEngine [ pyqt6 pyqt6-webengine qtpy ];
 
@@ -79,7 +78,7 @@ python3Packages.buildPythonApplication rec {
 
   meta = {
     description = "Instant-replay game clip recorder for Linux, for Wayland and X11";
-    homepage = "https://github.com/splitshotz/Vice";
+    homepage = "https://github.com/iiSHKAS/gloaming";
     license = lib.licenses.gpl3Plus;
     mainProgram = "gloaming-app";
     platforms = lib.platforms.linux;

@@ -3,6 +3,7 @@ import {useEffect, useLayoutEffect, useRef, type ReactNode} from 'react';
 import {useEscape} from '../lib/escape';
 import {useExitTransition} from '../lib/exit';
 import {IconClose} from './Icons';
+import {t} from '../lib/i18n';
 
 /**
  * A dialog with a scrim. Escape closes, focus moves in on open and returns to
@@ -75,7 +76,7 @@ export function Modal({
         ref={boxRef}>
         <div className="modal-head">
           <h2 ref={titleRef}>{title}</h2>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
+          <button type="button" className="modal-close" onClick={onClose} aria-label={t('ui.close')}>
             <IconClose size={15} />
           </button>
         </div>

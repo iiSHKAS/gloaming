@@ -1,0 +1,139 @@
+/* Shared building blocks (.ui-*): a panel with a header, chips, labelled fields,
+   badges and an action row. Everything is coloured from the --ds tokens, so a
+   component built from these follows the light and dark themes by itself.
+   New panels (toolbars, inspectors, dialogs) should start here. */
+.ui-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--ds-border);
+  border-radius: 14px;
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  min-width: 0;
+}
+.ui-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ui-panel-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--ds-text-strong, var(--ds-text));
+}
+.ui-hint {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--ds-text-muted);
+}
+.ui-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ds-text-muted);
+}
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border: 1px solid var(--ds-border);
+  border-radius: 999px;
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ui-badge[data-tone='accent'] {
+  border-color: var(--studio-accent-border, var(--ds-border));
+  background: color-mix(in srgb, var(--studio-accent) 14%, transparent);
+  color: var(--studio-accent-text, var(--studio-accent));
+}
+.ui-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px 24px;
+}
+.ui-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.ui-group:has(> .ui-field) {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 12px;
+}
+.ui-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ui-chip {
+  padding: 7px 13px;
+  border: 1px solid var(--ds-border);
+  border-radius: 999px;
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background var(--duration-fast, 0.12s), border-color var(--duration-fast, 0.12s), color var(--duration-fast, 0.12s);
+}
+.ui-chip:hover:not(:disabled) {
+  border-color: var(--studio-accent-border, var(--ds-outline));
+  background: color-mix(in srgb, var(--studio-accent) 10%, var(--ds-surface-2));
+}
+.ui-chip[aria-pressed='true'] {
+  border-color: var(--studio-accent);
+  background: var(--studio-accent);
+  color: var(--studio-on-accent);
+}
+.ui-chip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.ui-chip:focus-visible,
+.ui-panel .btn:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 2px;
+}
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ui-field .num-field {
+  width: 116px;
+}
+.ui-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+}
+.ui-panel .ui-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 650;
+}
+/* The stepper sits outside Settings here, so give its tokens a fallback. */
+.num-steps button:hover:not(:disabled) {
+  background: var(--pref-tint-strong, var(--ds-tint));
+}
+.ui-label small {
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.8;
+}

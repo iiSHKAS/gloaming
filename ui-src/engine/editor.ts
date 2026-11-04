@@ -117,6 +117,7 @@ export interface EditorEngine {
   undo: () => void;
   redo: () => void;
   setController: (value: {enabled: boolean; position: [number,number]}) => void;
+  setKeyboardPosition: (value: [number,number]) => void;
   controllerFrame: () => {clipId: string; time: number} | null;
   duplicate: () => void;
   remove: () => void;
@@ -2224,6 +2225,7 @@ export function createEditorEngine(deps: EditorDeps): EditorEngine {
     undo,
     redo,
     setController(value){if(!project)return;begin();project.controller=value;commit();},
+    setKeyboardPosition(value){if(!project)return;begin();project.keyboardPosition=value;commit();},
     controllerFrame(){
       if(!project)return null;
       const tracks=videoTracks();const track=tracks[tracks.length-1];

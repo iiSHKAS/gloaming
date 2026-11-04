@@ -17,12 +17,14 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-# Placeholder. Andrew creates a Discord application at
-# https://discord.com/developers/applications, uploads the Gloaming icon as the
-# `vice_logo` art asset, and pastes the Application ID here before tagging
-# a release. Until then, users with a `client_id_override` in config can
-# still use their own Discord app.
-DEFAULT_CLIENT_ID = "1496646444726354031"
+# Application ID of the Gloaming app in the Discord Developer Portal. It is public by design
+# (it only names the app in the Rich Presence card). Users can point at their own app with
+# `client_id_override` in the config.
+DEFAULT_CLIENT_ID = "1567510133511037079"
+
+# Discord fetches external image URLs, so the card shows the current Gloaming
+# icon without re-uploading art to the Discord application.
+DISCORD_LOGO_URL = "https://raw.githubusercontent.com/iiSHKAS/gloaming/main/assets/gloaming.png"
 
 _OP_HANDSHAKE = 0
 _OP_FRAME = 1

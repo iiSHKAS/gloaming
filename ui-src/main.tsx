@@ -36,6 +36,11 @@ import './styles/settings-workspace.css';
 import './styles/capture-home.css';
 import './styles/theme-light.generated.css';
 import './styles/theme-light.css';
+import './styles/ui-kit.css';
+import './styles/studio-player.css';
+import './styles/studio-home.css';
+import './styles/arabic.css';
+import './styles/textscale.css';
 
 function syncNativeTrayLabels(): void {
   setNativeTrayLabels(t('tray.openGloaming'), t('tray.quitGloaming'));
@@ -86,7 +91,7 @@ function App() {
       <PlaybackProvider>
         <div className="gloaming-app" style={accentVars(ramp, mode)}>
           <OverlayRoot>
-          {new URLSearchParams(location.search).get("replayOverlay") === "1" ? (new URLSearchParams(location.search).has("saveMenu") ? <SaveMenu/> : <ReplayOverlay experimental={new URLSearchParams(location.search).get("overlayDesign")==="test"}/>) : <AppFrame>
+          {new URLSearchParams(location.search).get("replayOverlay") === "1" ? (new URLSearchParams(location.search).has("saveMenu") ? <SaveMenu/> : <ReplayOverlay/>) : <AppFrame>
             <Screen view={view} />
           </AppFrame>}
           </OverlayRoot>

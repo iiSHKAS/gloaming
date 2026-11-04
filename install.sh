@@ -192,7 +192,7 @@ install_pkgs_pacman() {
     # fallback for systems missing Qt bindings.
     local pkgs=(python python-pip ffmpeg
                 python-pywebview python-aiohttp python-click
-                python-psutil python-evdev python-tomli-w
+                python-evdev python-tomli-w
                 python-pyqt6 python-pyqt6-webengine python-qtpy
                 webkit2gtk-4.1 gstreamer gst-plugins-base gst-plugins-good
                 xdotool xorg-xprop wmctrl)
@@ -269,7 +269,7 @@ install_pkgs_apt() {
     # Mirror the pacman branch: install Gloaming's Python runtime deps as system
     # packages so --system-site-packages picks them up. Per-package loop,
     # batched apt-get install aborts on the first NotFound, leaving the rest.
-    for p in python3-aiohttp python3-tomli-w python3-click python3-psutil python3-evdev; do
+    for p in python3-aiohttp python3-tomli-w python3-click python3-evdev; do
         sudo apt-get install -y "$p" >/dev/null 2>&1 || \
             warn "$p not available via apt; will fall back to PyPI wheel."
     done
@@ -350,7 +350,7 @@ install_pkgs_dnf() {
     # Mirror the pacman branch: install Gloaming's Python runtime deps as system
     # packages so --system-site-packages picks them up. Per-package loop,
     # a single missing pkg on RHEL-without-EPEL must not skip the rest.
-    for p in python3-aiohttp python3-tomli-w python3-click python3-psutil python3-evdev; do
+    for p in python3-aiohttp python3-tomli-w python3-click python3-evdev; do
         sudo dnf install -y "$p" >/dev/null 2>&1 || \
             warn "$p not available via dnf; will fall back to PyPI wheel."
     done
@@ -391,7 +391,7 @@ install_pkgs_zypper() {
     # Mirror the pacman branch: install Gloaming's Python runtime deps as system
     # packages so --system-site-packages picks them up. Per-package loop,
     # Leap 15.x is missing python3-tomli-w; pip fallback handles it.
-    for p in python3-aiohttp python3-tomli-w python3-click python3-psutil python3-evdev; do
+    for p in python3-aiohttp python3-tomli-w python3-click python3-evdev; do
         sudo zypper install -y "$p" >/dev/null 2>&1 || \
             warn "$p not available via zypper; will fall back to PyPI wheel."
     done
@@ -919,7 +919,6 @@ CORE = {
     "webview":  "pywebview>=5.0",
     "aiohttp":  "aiohttp>=3.9.0",
     "click":    "click>=8.1.7",
-    "psutil":   "psutil>=5.9.0",
     "tomli_w":  "tomli-w>=1.0.0",
     "evdev":    "evdev>=1.6.1",
 }
@@ -977,7 +976,7 @@ PY
     # Better to abort here than let gloaming-app crash at startup with ModuleNotFoundError.
     local failed=()
     local mod
-    for mod in webview aiohttp click psutil tomli_w evdev; do
+    for mod in webview aiohttp click tomli_w evdev; do
         "$VENV_DIR/bin/python" -c "import $mod" >/dev/null 2>&1 || failed+=("$mod")
     done
     if [[ ${#failed[@]} -gt 0 ]]; then

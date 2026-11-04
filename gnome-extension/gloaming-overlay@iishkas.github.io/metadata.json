@@ -1,5 +1,5 @@
 {
-  "uuid": "gloaming-overlay@basilforge.local",
+  "uuid": "gloaming-overlay@iishkas.github.io",
   "name": "Gloaming Native Replay Overlay",
   "description": "Positions Gloaming's native Wayland replay overlay above fullscreen windows without XWayland scaling.",
   "shell-version": ["46"],

@@ -874,7 +874,7 @@
     "title": "Nouveautés de Gloaming {version}",
     "close": "Compris",
     "thanks": "Merci à {names} pour leur travail sur cette version.",
-    "v2_15_0": {
+    "v0_5_0": {
       "gameCapture": {
         "title": "Enregistrer uniquement le jeu",
         "body": "Active la capture de jeu dans les réglages rapides et Gloaming enregistre uniquement la fenêtre du jeu, afin que Discord et tout le reste n'apparaissent pas dans tes clips. Elle est désactivée par défaut."

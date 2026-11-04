@@ -1,5 +1,6 @@
 import {useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent} from 'react';
 import {OverlayPortal} from '../OverlayPortal';
+import {zoomOf} from '../../lib/zoom';
 
 type Option = [string, string];
 type Group = {group: string; options: Option[]};
@@ -45,10 +46,15 @@ export function Select({value, onChange, options, disabled, label, className = '
   useLayoutEffect(() => {
     if (!mounted) return;
     const place = () => {
-      const rect = trigger.current?.getBoundingClientRect();
-      if (!rect) return;
+      const screenRect = trigger.current?.getBoundingClientRect();
+      if (!screenRect) return;
       const popup = menu.current;
       if (!popup) return;
+      // Work in the menu's own (zoomed) pixels: the anchor and the viewport are
+      // measured on screen, the box is placed in zoomed units.
+      const zoom = zoomOf(popup);
+      const rect = {left: screenRect.left / zoom, top: screenRect.top / zoom, bottom: screenRect.bottom / zoom, width: screenRect.width / zoom};
+      const viewWidth = window.innerWidth / zoom, viewHeight = window.innerHeight / zoom;
       const style = getComputedStyle(popup);
       const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
       const border = parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
@@ -56,13 +62,13 @@ export function Select({value, onChange, options, disabled, label, className = '
       // Group headings count towards the available space; never expose more
       // than five option rows, even after scrolling past a heading.
       const desired = Math.min(popup.scrollHeight + border, rowHeight * 5 + padding + border);
-      const below = Math.max(0, window.innerHeight - rect.bottom - 14);
+      const below = Math.max(0, viewHeight - rect.bottom - 14);
       const above = Math.max(0, rect.top - 14);
       const upwards = below < desired && above > below;
       const maxHeight = Math.min(desired, upwards ? above : below);
-      const width = Math.max(0, Math.min(rect.width, window.innerWidth - 16));
-      const next = {left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
-        top: Math.max(8, Math.min(upwards ? rect.top - 6 - maxHeight : rect.bottom + 6, window.innerHeight - maxHeight - 8)),
+      const width = Math.max(0, Math.min(rect.width, viewWidth - 16));
+      const next = {left: Math.max(8, Math.min(rect.left, viewWidth - width - 8)),
+        top: Math.max(8, Math.min(upwards ? rect.top - 6 - maxHeight : rect.bottom + 6, viewHeight - maxHeight - 8)),
         width, maxHeight};
       setPlacement(upwards ? 'top' : 'bottom');
       setPosition(previous => Object.keys(next).every(key => previous[key as keyof typeof next] === next[key as keyof typeof next]) ? previous : next);

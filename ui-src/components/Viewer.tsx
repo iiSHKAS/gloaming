@@ -20,6 +20,7 @@ import {KeyOverlay} from './KeyOverlay';
 import type {KeyInterval} from '../lib/keyLayout';
 import {InlineRename} from './InlineRename';
 import {t, tNode} from '../lib/i18n';
+import {zoomOf} from '../lib/zoom';
 
 /** Cycled by index as highlights are added, so a clip's marks stay distinct. */
 const HIGHLIGHT_COLORS = MARK_COLORS;
@@ -361,7 +362,7 @@ export function Viewer(props: ViewerProps) {
       const result = await api.addHighlight(clip.slug, {time, label, color});
       if (!result.highlight) throw new Error(result.error || t('viewer.daemonNoMark'));
       onHighlightsChange(sortHighlights([...highlights, result.highlight]));
-      props.notify(`${label} at ${formatDuration(time, true)}`, undefined, 'accent');
+      props.notify(t('viewer.highlightAt', {label, time: formatDuration(time, true)}), undefined, 'accent');
     } catch (err) {
       props.notify(t('viewer.errAddHighlight'), (err as Error).message, 'error');
     }
@@ -472,7 +473,7 @@ export function Viewer(props: ViewerProps) {
       try {
         const result = await api.updateHighlight(clip.slug, highlight.id, {time: applied});
         if (result.ok === false) throw new Error(result.error || t('viewer.daemonRejectedMove'));
-        props.notify(`Highlight moved to ${formatDuration(applied, true)}`, undefined, 'accent');
+        props.notify(t('ui.highlightMovedTo', {time: formatDuration(applied, true)}), undefined, 'accent');
       } catch (err) {
         // Put it back where it was. An optimistic move that silently did not
         // persist is worse than one that visibly snaps back.
@@ -720,7 +721,7 @@ export function Viewer(props: ViewerProps) {
             <div
               className="viewer-timeline"
               ref={timelineRef}
-              role="slider" tabIndex={0} aria-label="Playback position"
+              role="slider" tabIndex={0} aria-label={t('ui.playbackPosition')}
               aria-valuemin={0} aria-valuemax={duration} aria-valuenow={position.current}
               onKeyDown={e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();seekTo(videoRef.current,e.key==='Home'?0:e.key==='End'?duration:Math.max(0,Math.min(duration,position.current+(e.key==='ArrowRight'?5:-5))));}}}
               onClick={e => seekFromPointer(e.clientX)}>
@@ -736,7 +737,7 @@ export function Viewer(props: ViewerProps) {
                     left: `${duration ? (h.time / duration) * 100 : 0}%`,
                     background: h.color || DEFAULT_HIGHLIGHT_COLOR,
                   }}
-                  title={`${h.label}, ${formatDuration(h.time, true)}, drag to move`}
+                  title={t('ui.dragToMove', {label: h.label, time: formatDuration(h.time, true)})}
                   aria-label={t('viewer.highlightAt', {label: h.label, time: formatDuration(h.time, true)})}
                   onPointerDown={e => beginHighlightDrag(e, h)}
                   onClick={e => {
@@ -1095,6 +1096,8 @@ function ColorPicker({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(1);
+  useLayoutEffect(() => setZoom(zoomOf(ref.current)), []);
 
   useEffect(() => {
     const dismiss = (e: Event) => {
@@ -1110,7 +1113,7 @@ function ColorPicker({
   }, [onClose]);
 
   return (
-    <div className="hl-picker" ref={ref} style={{left: at.x, top: at.y}} role="menu">
+    <div className="hl-picker" ref={ref} style={{left: at.x / zoom, top: at.y / zoom}} role="menu">
       {HIGHLIGHT_COLORS.map(color => (
         <button
           key={color}

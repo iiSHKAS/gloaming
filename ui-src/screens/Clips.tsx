@@ -151,10 +151,10 @@ export function Clips() {
     await Promise.all([refreshClips(), refreshImages()]).catch(() => undefined);
     const done = keys.length - failures.length;
     if (failures.length) {
-      notify({kind: 'error', title: `Deleted ${done} of ${keys.length}`, detail: `${failures.length} could not be deleted.`, tone: 'error', holdMs: 7000});
+      notify({kind: 'error', title: t('ui.deletedOf', {done, total: keys.length}), detail: t('ui.couldNotBeDeleted', {count: failures.length}), tone: 'error', holdMs: 7000});
       setSelected(new Set(failures));
     } else {
-      notify({kind: 'info', title: done === 1 ? 'Deleted 1 item' : `Deleted ${done} items`, tone: 'accent', holdMs: 3500});
+      notify({kind: 'info', title: t('ui.deletedItems', {count: done}), tone: 'accent', holdMs: 3500});
       leaveSelection();
     }
   };
@@ -187,7 +187,7 @@ export function Clips() {
     setEditingPlaylist(null);
   };
 
-  const title = playlist ? playlist.name : 'Library';
+  const title = playlist ? playlist.name : t('ui.library');
   const count = visibleClips.length;
   const query = searchQuery.trim();
   const subtitle = query
@@ -230,32 +230,32 @@ export function Clips() {
             aria-pressed={selectMode}
             disabled={empty}
             onClick={() => (selectMode ? leaveSelection() : setSelectMode(true))}>
-            {selectMode ? 'Cancel selection' : 'Select'}
+            {selectMode ? t('ui.cancelSelection') : t('ui.select')}
           </button>
-          <button className="btn btn-quiet" onClick={()=>dispatch({type:'setView',view:'images'})}>Images</button>
+          <button className="btn btn-quiet" onClick={()=>dispatch({type:'setView',view:'images'})}>{t('ui.images')}</button>
         </div>
       </header>
 
       <div className="studio-library-tools">
         <div className="library-filters">
-        <label className="library-search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input type="search" aria-label="Search captures" placeholder="Search clips…" value={searchQuery} onChange={e=>dispatch({type:'setSearch',query:e.target.value})}/></label>
-        <Select label="Collection" value={currentPlaylistId??''} onChange={value=>dispatch({type:'setView',view:'clips',playlistId:value||null})} options={[["", "All clips"],...playlists.map(p=>[p.id,p.name] as [string,string])]}/>
+        <label className="library-search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input type="search" aria-label={t('ui.searchCaptures')} placeholder={t('ui.searchClips')} value={searchQuery} onChange={e=>dispatch({type:'setSearch',query:e.target.value})}/></label>
+        <Select label={t('ui.collection')} value={currentPlaylistId??''} onChange={value=>dispatch({type:'setView',view:'clips',playlistId:value||null})} options={[["", t('nav.allClips')],...playlists.map(p=>[p.id,p.name] as [string,string])]}/>
         </div>
         <div className="library-controls">
-          <Select label="Sort clips" value={sort} onChange={setSort} options={[["latest","Newest first"],["oldest","Oldest first"],["duration","Longest first"]]}/>
-          <div className="library-view-toggle" role="group" aria-label="Library layout">
-            <button aria-label="Grid view" aria-pressed={layout==='grid'} onClick={()=>setLayout('grid')}><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="10" y="1" width="5" height="5" rx="1"/><rect x="1" y="10" width="5" height="5" rx="1"/><rect x="10" y="10" width="5" height="5" rx="1"/></svg></button>
-            <button aria-label="List view" aria-pressed={layout==='list'} onClick={()=>setLayout('list')}><svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor"><path d="M1 3h3m3 0h8M1 8h3m3 0h8M1 13h3m3 0h8"/></svg></button>
+          <Select label={t('ui.sortClips')} value={sort} onChange={setSort} options={[["latest",t('ui.newestFirst')],["oldest",t('ui.oldestFirst')],["duration",t('ui.longestFirst')]]}/>
+          <div className="library-view-toggle" role="group" aria-label={t('ui.libraryLayout')}>
+            <button aria-label={t('ui.gridView')} aria-pressed={layout==='grid'} onClick={()=>setLayout('grid')}><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="10" y="1" width="5" height="5" rx="1"/><rect x="1" y="10" width="5" height="5" rx="1"/><rect x="10" y="10" width="5" height="5" rx="1"/></svg></button>
+            <button aria-label={t('ui.listView')} aria-pressed={layout==='list'} onClick={()=>setLayout('list')}><svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor"><path d="M1 3h3m3 0h8M1 8h3m3 0h8M1 13h3m3 0h8"/></svg></button>
           </div>
         </div>
       </div>
       {empty ? (
-        <div className="library-empty"><ReplayIcon name="cut"/><h3>{query ? "No matching moments" : "Your highlights start here"}</h3><p>
+        <div className="library-empty"><ReplayIcon name="cut"/><h3>{query ? t('ui.noMatchingMoments') : t('ui.yourHighlightsStartHere')}</h3><p>
           {query
             ? t('clips.emptySearch', {query})
             : playlist
               ? t('clips.emptyPlaylist')
-              : 'Your saved clips will appear here. Browse, organize and revisit your moments.' }
+              : t('ui.yourSavedClipsWillAppear') }
         </p></div>
       ) : null}
 
@@ -357,28 +357,28 @@ export function Clips() {
       </Modal>
 
       {selectMode ? (
-        <div className="select-bar" role="toolbar" aria-label="Selected items">
+        <div className="select-bar" role="toolbar" aria-label={t('ui.selectedItems')}>
           <span className="select-bar-count" role="status">
-            {selected.size === 0 ? 'Pick items' : selected.size === 1 ? '1 selected' : `${selected.size} selected`}
+            {selected.size === 0 ? t('ui.pickItems') : t('ui.selectedCount', {count: selected.size})}
           </span>
           <button type="button" className="btn btn-quiet btn-sm" onClick={() => setSelected(new Set(order))} disabled={selected.size === order.length}>
-            Select all
+            {t('ui.selectAll')}
           </button>
           <button type="button" className="btn btn-quiet btn-sm" onClick={() => setSelected(new Set())} disabled={selected.size === 0}>
-            Clear
+            {t('ui.clear')}
           </button>
           <button type="button" className="btn btn-danger-solid btn-sm" onClick={() => setConfirmBulk(true)} disabled={selected.size === 0}>
             Delete{selected.size ? ` ${selected.size}` : ''}
           </button>
           <button type="button" className="btn btn-quiet btn-sm" onClick={leaveSelection}>
-            Done
+            {t('ui.done')}
           </button>
         </div>
       ) : null}
 
       <Modal
         open={confirmBulk}
-        title={selected.size === 1 ? 'Delete 1 item?' : `Delete ${selected.size} items?`}
+        title={t('ui.deleteItemsQ', {count: selected.size})}
         onClose={() => !bulkBusy && setConfirmBulk(false)}
         footer={
           <>
@@ -386,11 +386,11 @@ export function Clips() {
               {t('common.keepIt')}
             </button>
             <button type="button" className="btn btn-danger-solid" disabled={bulkBusy} onClick={() => void deleteSelected()}>
-              {bulkBusy ? 'Deleting…' : t('common.delete')}
+              {bulkBusy ? t('ui.deleting') : t('common.delete')}
             </button>
           </>
         }>
-        <p>These files are removed from your disk and cannot be restored.</p>
+        <p>{t('ui.theseFilesAreRemovedFrom')}</p>
       </Modal>
 
       {overlays}

@@ -874,7 +874,7 @@
     "title": "Neu in Gloaming {version}",
     "close": "Verstanden",
     "thanks": "Danke an {names} für die Arbeit an diesem Release.",
-    "v2_15_0": {
+    "v0_5_0": {
       "gameCapture": {
         "title": "Nur das Spiel aufnehmen",
         "body": "Schalte die Spielaufnahme in den Schnelleinstellungen ein, und Gloaming nimmt nur das Fenster des Spiels auf. So bleiben Discord und alles andere aus deinen Clips draußen. Sie ist aus, bis du sie einschaltest."

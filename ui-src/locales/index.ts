@@ -12,12 +12,14 @@
  * docs/TRANSLATING.md.
  */
 import en from "./en.json";
+import ar from "./ar.json";
 import fr from "./fr.json";
 import de_DE from "./de-DE.json";
 import pt_BR from "./pt-BR.json";
 
 export const LOCALES = {
   en,
+  ar,
   "de-DE": de_DE,
   fr,
   "pt-BR": pt_BR,
@@ -27,6 +29,7 @@ export type LocaleName = keyof typeof LOCALES;
 
 export const LOCALE_LABELS: Record<LocaleName, string> = {
   en: "English",
+  ar: "العربية",
   fr: "Français",
   "pt-BR": "Português Brasileiro",
   "de-DE": "Deutsch",

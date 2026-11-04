@@ -67,8 +67,8 @@ def gnome_bridge_available():
         from gi.repository import Gio, GLib
         bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
         reply = bus.call_sync(
-            'dev.basilforge.GloamingOverlay', '/dev/basilforge/GloamingOverlay',
-            'dev.basilforge.GloamingOverlay', 'Version', None, GLib.VariantType('(i)'),
+            'io.github.iishkas.GloamingOverlay', '/io/github/iishkas/GloamingOverlay',
+            'io.github.iishkas.GloamingOverlay', 'Version', None, GLib.VariantType('(i)'),
             Gio.DBusCallFlags.NO_AUTO_START, 500, None)
         return reply.unpack()[0] == 1
     except Exception:
@@ -88,7 +88,7 @@ def main():
         os.environ.pop('GDK_DPI_SCALE', None)
     elif 'gnome' in desktop and os.environ.get('DISPLAY'):
         log.warning('Native replay bridge is inactive; XWayland fallback may blur at fractional scale. '
-                    'Enable gloaming-overlay@basilforge.local and sign out/in once after installation.')
+                    'Enable gloaming-overlay@iishkas.github.io and sign out/in once after installation.')
         os.environ['GDK_BACKEND'] = 'x11'
     plugins = Path.home() / '.local/share/gloaming-dev/gstreamer-1.0'
     if plugins.is_dir():
@@ -120,8 +120,8 @@ def main():
     app = None
     if native_gnome:
         from gi.repository import Gio
-        GLib.set_prgname('dev.basilforge.GloamingReplay')
-        app = Gtk.Application(application_id='dev.basilforge.GloamingReplay', flags=Gio.ApplicationFlags.NON_UNIQUE)
+        GLib.set_prgname('io.github.iishkas.GloamingReplay')
+        app = Gtk.Application(application_id='io.github.iishkas.GloamingReplay', flags=Gio.ApplicationFlags.NON_UNIQUE)
         app.register(None)
         win = Gtk.ApplicationWindow(application=app)
     else:
@@ -136,7 +136,16 @@ def main():
     css.load_from_data(b'window { background-color: transparent; }')
     win.get_style_context().add_provider(css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
     win.set_decorated(False)
-    win.set_type_hint(Gdk.WindowTypeHint.NOTIFICATION)
+    # Fallback path: a plain X11 window under XWayland. It must stay a window the
+    # compositor manages. Override-redirect and notification-type windows are never
+    # given keyboard focus by Mutter, so every shortcut inside the overlay was dead.
+    x11_managed = not layer and not native_gnome
+    if not x11_managed:
+        win.set_type_hint(Gdk.WindowTypeHint.NOTIFICATION)
+    else:
+        win.set_type_hint(Gdk.WindowTypeHint.NORMAL)
+        win.set_accept_focus(True)
+        win.set_focus_on_map(True)
     win.set_keep_above(True)
     win.set_skip_taskbar_hint(True)
     win.set_skip_pager_hint(True)
@@ -146,8 +155,6 @@ def main():
         layer.set_layer(win, layer.Layer.OVERLAY)
         layer.set_keyboard_mode(win, layer.KeyboardMode.EXCLUSIVE)
         layer.set_exclusive_zone(win, -1)
-    elif not native_gnome:
-        win.connect('realize', lambda *_: win.get_window().set_override_redirect(True))
     pointer = display.get_default_seat().get_pointer().get_position()
     monitor = display.get_monitor_at_point(pointer.x, pointer.y) or display.get_monitor(0)
     if recording.display and not recording.follow_mouse_display:
@@ -168,7 +175,7 @@ def main():
         # windows receive an opaque black backdrop from Mutter.
         width, height = min(1000, width - 48), min(960, height - 80)
     win.set_default_size(width, height)
-    if not layer and not native_gnome:
+    if x11_managed:
         win.move(geo.x + (geo.width-width)//2, geo.y + (geo.height-height)//2)
     manager = WebKit2.UserContentManager()
     manager.register_script_message_handler('gloamingOverlay')
@@ -192,16 +199,10 @@ def main():
         elif action == 'exit':
             win.unfullscreen()
     manager.connect('script-message-received::gloamingReplayFullscreen', page_fullscreen)
-    if '--design-test' in sys.argv:
-        # A running daemon may still emit its old immutable asset key. Give
-        # every lab run a fresh cache, without clearing the main app's data.
-        context = WebKit2.WebContext.new_ephemeral()
-        view = WebKit2.WebView(web_context=context, user_content_manager=manager)
-    else:
-        view = WebKit2.WebView(user_content_manager=manager)
-        # Pick up rebuilt assets even when an older daemon still serves its
-        # previous immutable revision. Keep local storage and preferences.
-        view.get_context().clear_cache()
+    view = WebKit2.WebView(user_content_manager=manager)
+    # Pick up rebuilt assets even when an older daemon still serves its
+    # previous immutable revision. Keep local storage and preferences.
+    view.get_context().clear_cache()
     transparent = Gdk.RGBA(0, 0, 0, 0)
     view.set_background_color(transparent)
     # Apply before the page paints so the boot screen cannot flash opaque.
@@ -234,19 +235,41 @@ def main():
             return True
         return False
     loaded = {'page': False}
-    view.connect('load-changed', lambda _v, ev: loaded.update(page=True) if ev == WebKit2.LoadEvent.FINISHED else None)
+    def page_loaded(_v, ev):
+        if ev == WebKit2.LoadEvent.FINISHED:
+            loaded.update(page=True)
+            # The first grab_focus runs before the page exists; without this one
+            # the page never owns the keyboard and shortcuts are ignored.
+            view.grab_focus()
+            view.run_javascript('window.focus();document.body.focus();', None, None, None)
+    view.connect('load-changed', page_loaded)
+    win.connect('focus-in-event', lambda *_: view.grab_focus() and None)
     win.connect('key-press-event', key)
     query = '&controller=1' if '--controller' in sys.argv else ''
-    if '--design-test' in sys.argv:
-        query += '&overlayDesign=test'
     if '--menu' in sys.argv:
         query = f"&saveMenu={int(sys.argv[sys.argv.index('--menu') + 1])}"
     view.load_uri(f'http://127.0.0.1:{int(sys.argv[1])}/?replayOverlay=1' + query)
     win.show_all()
     view.grab_focus()
-    if not layer and not native_gnome:
-        win.get_window().raise_()
-        win.get_window().focus(Gdk.CURRENT_TIME)
+    if x11_managed:
+        # Ask for focus now and keep asking briefly: the first request can land before
+        # the compositor has mapped the window, and a game may still hold focus.
+        attempts = {'n': 0}
+        def take_focus():
+            attempts['n'] += 1
+            gdk_win = win.get_window()
+            if gdk_win is not None:
+                win.present_with_time(Gdk.CURRENT_TIME)
+                gdk_win.raise_()
+                gdk_win.focus(Gdk.CURRENT_TIME)
+            view.grab_focus()
+            if win.has_toplevel_focus() or attempts['n'] >= 12:
+                if not win.has_toplevel_focus():
+                    print('[replay-overlay] warning: compositor refused keyboard focus', file=sys.stderr, flush=True)
+                return False
+            return True
+        take_focus()
+        GLib.timeout_add(120, take_focus)
     # Parent EOF closes the panel even if the browser is still loading.
     GLib.io_add_watch(sys.stdin.fileno(), GLib.IOCondition.HUP | GLib.IOCondition.IN,
                       lambda *_: (print('[replay-overlay] closing: parent pipe event', file=sys.stderr, flush=True), Gtk.main_quit(), False)[2])

@@ -20,16 +20,16 @@ interface Preset {
 
 /** What each choice means in plain terms. The numbers behind them are real recorder settings. */
 const PRESETS: Preset[] = [
-  {id: 'light', name: 'Light', blurb: '30 fps · 1080p · compact clips', fps: '30', resolution: '1920x1080', colorDepth: '8', quality: 'medium'},
-  {id: 'balanced', name: 'Balanced', blurb: '60 fps · 1080p · sharp', fps: '60', resolution: '1920x1080', colorDepth: '8', quality: 'high'},
-  {id: 'high', name: 'High', blurb: '60 fps · full size · very sharp', fps: '60', resolution: '', colorDepth: '8', quality: 'very_high'},
-  {id: 'ultra', name: 'Ultra', blurb: '144 fps · full size · 10-bit · best', fps: '144', resolution: '', colorDepth: '10', quality: 'ultra'},
+  {id: 'light', name: 'ui.light', blurb: 'ui.presetLightBlurb', fps: '30', resolution: '1920x1080', colorDepth: '8', quality: 'medium'},
+  {id: 'balanced', name: 'ui.balanced', blurb: 'ui.presetBalancedBlurb', fps: '60', resolution: '1920x1080', colorDepth: '8', quality: 'high'},
+  {id: 'high', name: 'ui.high', blurb: 'ui.presetHighBlurb', fps: '60', resolution: '', colorDepth: '8', quality: 'very_high'},
+  {id: 'ultra', name: 'ui.ultra', blurb: 'ui.presetUltraBlurb', fps: '144', resolution: '', colorDepth: '10', quality: 'ultra'},
 ];
 
 const REACH = [60, 120, 300, 600, 1200, 1800];
 
 /** The recorder's own quality names, plainly. Higher keeps fine detail in fast motion and makes bigger clips. */
-const QUALITIES: Array<[string, string]> = [['medium', 'Medium'], ['high', 'High'], ['very_high', 'Very high'], ['ultra', 'Ultra'], ['custom', 'Fixed bitrate']];
+const QUALITIES: Array<[string, string]> = [['medium', 'ui.medium'], ['high', 'ui.high'], ['very_high', 'ui.veryHigh'], ['ultra', 'ui.ultra'], ['custom', 'ui.fixedBitrate']];
 const BITRATES = [8, 12, 16, 20, 30, 40, 60, 80];
 
 const matches = (draft: Draft, p: Preset) =>
@@ -61,10 +61,10 @@ function loadOf(draft: Draft): number {
 
 function impact(draft: Draft): {level: 'low' | 'medium' | 'high' | 'extreme'; label: string} {
   const load = loadOf(draft);
-  if (load < 12) return {level: 'low', label: 'Low'};
-  if (load < 24) return {level: 'medium', label: 'Medium'};
-  if (load < 38) return {level: 'high', label: 'High'};
-  return {level: 'extreme', label: 'Very high'};
+  if (load < 12) return {level: 'low', label: t('ui.low')};
+  if (load < 24) return {level: 'medium', label: t('ui.medium')};
+  if (load < 38) return {level: 'high', label: t('ui.high')};
+  return {level: 'extreme', label: t('ui.veryHigh')};
 }
 
 /** Size of each quality step relative to "very high", measured on a busy 1440p60 picture (24.8, 49.2, 80.9, 104 Mbit/s). */
@@ -119,57 +119,57 @@ export function QualityCard({
   };
 
   return (
-    <section className="settings-card quality-card" id="settings-quality" aria-label="Recording quality">
-      <h2>Recording quality</h2>
-      <div className="recording-group quality-profile-group"><div className="quality-heading"><h3>Capture profile</h3><p>Choose a preset, or select Custom to tune the details.</p></div>
-      {caps.qualityNote && <p className="quality-note">{caps.qualityNote.text}{!caps.gsr ? ' Use Custom for supported settings.' : ''}</p>}
-      <div className="quality-presets" role="radiogroup" aria-label="Quality">
+    <section className="settings-card quality-card" id="settings-quality" aria-label={t('ui.recordingQuality')}>
+      <h2>{t('ui.recordingQuality')}</h2>
+      <div className="recording-group quality-profile-group"><div className="quality-heading"><h3>{t('ui.captureProfile')}</h3><p>{t('ui.chooseAPresetOrSelect')}</p></div>
+      {caps.qualityNote && <p className="quality-note">{caps.qualityNote.text}{!caps.gsr ? ` ${t('ui.useCustomForSupported')}` : ''}</p>}
+      <div className="quality-presets" role="radiogroup" aria-label={t('ui.quality')}>
         {PRESETS.map((p, index) => (
           <button key={p.id} type="button" role="radio" aria-checked={current === p.id} data-active={current === p.id || undefined}
             disabled={!caps.gsr} onClick={() => choose(p)}>
             <span className="quality-level" aria-hidden="true">{[1, 2, 3, 4].map(level => <i key={level} data-filled={level <= index + 1 || undefined}/>)}</span>
-            <strong>{p.name}</strong>
-            <small>{draft.liveReplay ? p.blurb.replace('10-bit', '8-bit') : p.blurb}</small>
-            {p.id === 'balanced' ? <em>Recommended</em> : null}
+            <strong>{t(p.name)}</strong>
+            <small>{t(p.blurb, {depth: draft.liveReplay ? 8 : 10})}</small>
+            {p.id === 'balanced' ? <em>{t('ui.recommended')}</em> : null}
           </button>
         ))}
         <button type="button" role="radio" aria-checked={current === 'custom'} data-active={current === 'custom' || undefined}
           onClick={() => setCustomOpen(true)}>
           <span className="quality-level quality-level-custom" aria-hidden="true">↗</span>
-          <strong>Custom</strong>
-          <small>{current === 'custom' && !caps.wf ? `${draft.fps} fps` : 'Your own mix'}</small>
+          <strong>{t('ui.custom')}</strong>
+          <small>{current === 'custom' && !caps.wf ? t('ui.fpsLower',{n:draft.fps}) : t('ui.yourOwnMix')}</small>
         </button>
       </div>
 
-      {caps.manualOverrides && <p className="quality-note">Saved defaults below; extra GSR arguments may change the actual recording.</p>}
-      <div className="quality-summary" aria-label={caps.manualOverrides ? 'Saved recording defaults; extra GSR arguments take priority' : 'Recording settings'}>
-        <span>{caps.wf ? 'Frame rate: controlled by wf-recorder' : <><b>{draft.fps}</b> fps</>}</span>
-        <span><b>{caps.wf ? 'Size: controlled by wf-recorder' : draft.resolution ? (draft.resolution === 'custom' ? draft.customResolution || 'Custom size' : draft.resolution) : 'Full size'}</b></span>
-        <span><b>{effectiveDraft.colorDepth}-bit</b> color</span>
-        {caps.gsr && !caps.manualOverrides && <span className="quality-summary-cost">Estimated buffer <b>{approx}</b> {inRam ? 'in memory' : 'on disk'} · {cost.label.toLowerCase()} load</span>}
+      {caps.manualOverrides && <p className="quality-note">{t('ui.qDefaultsNote')}</p>}
+      <div className="quality-summary" aria-label={caps.manualOverrides ? t('ui.savedRecordingDefaultsExtraGsr') : t('ui.recordingSettings')}>
+        <span>{caps.wf ? t('ui.frameRateControlledByWf') : <b>{t('ui.fpsLower',{n:draft.fps})}</b>}</span>
+        <span><b>{caps.wf ? t('ui.sizeControlledByWfRecorder') : draft.resolution ? (draft.resolution === 'custom' ? draft.customResolution || t('ui.customSize') : draft.resolution) : t('ui.fullSize')}</b></span>
+        <span><b>{t('ui.depthColor',{n:effectiveDraft.colorDepth})}</b></span>
+        {caps.gsr && !caps.manualOverrides && <span className="quality-summary-cost">{t('ui.estimatedBuffer')}<b>{approx}</b> {t('ui.bufferCostTail',{where: inRam ? t('ui.inMemory') : t('ui.onDisk'), load: cost.label.toLowerCase()})}</span>}
       </div>
 
       </div>
 
       {showCustomQuality(customOpen || matched === 'custom', searching) ? (
-        <div className="quality-fine recording-group" aria-label="Custom recording settings">
-          <h3>Custom settings</h3>
-      <Row label="Picture quality" note={caps.qualityNote} help="How much detail is kept, especially in fast motion. Higher looks sharper and makes bigger clips and a bigger buffer.">
-        <div className="quality-reach quality-grade" role="radiogroup" aria-label="Picture quality">
+        <div className="quality-fine recording-group" aria-label={t('ui.customRecordingSettings')}>
+          <h3>{t('ui.customSettings')}</h3>
+      <Row label={t('ui.pictureQuality')} note={caps.qualityNote} help={t('ui.qualityHelp')}>
+        <div className="quality-reach quality-grade" role="radiogroup" aria-label={t('ui.pictureQuality')}>
           {QUALITIES.map(([value, name]) => (
             <button key={value} type="button" role="radio" aria-checked={draft.videoQuality === value}
               disabled={!caps.gsr} data-active={draft.videoQuality === value || undefined}
               onClick={() => { update({videoQuality: value}); void persistNow({recording: {video_quality: value}}, () => undefined, failure); }}>
-              {name}
+              {t(name)}
             </button>
           ))}
         </div>
       </Row>
       {draft.videoQuality === 'custom' ? (
-        <Row label="Fixed bitrate" help="The recording always uses this much data per second, whatever is on screen.">
-          <Select disabled={!caps.gsr} label="Fixed bitrate" value={String(Math.round(draft.videoBitrate / 1000))}
+        <Row label={t('ui.fixedBitrate')} help={t('ui.bitrateHelp')}>
+          <Select disabled={!caps.gsr} label={t('ui.fixedBitrate')} value={String(Math.round(draft.videoBitrate / 1000))}
             onChange={mbps => { const kbps = Number(mbps) * 1000; update({videoBitrate: kbps}); void persistNow({recording: {video_bitrate_kbps: kbps}}, () => undefined, failure); }}
-            options={BITRATES.map(v => [String(v), `${v} Mbit/s`] as [string, string])} />
+            options={BITRATES.map(v => [String(v), t('ui.mbitUnit',{n:v})] as [string, string])} />
         </Row>
       ) : null}
 
@@ -177,25 +177,25 @@ export function QualityCard({
           <Row label={t('settings.frameRate')} note={caps.fpsNote}>
             <Select disabled={caps.wf} label={t('settings.frameRate')} value={draft.fps}
               onChange={fps => { update({fps}); void persistNow({recording: {fps: Number(fps)}}, () => undefined, failure); }}
-              options={['24', '30', '50', '60', '120', '144'].map(v => [v, `${v} fps`] as [string, string])} />
+              options={['24', '30', '50', '60', '120', '144'].map(v => [v, t('ui.fpsLower',{n:v})] as [string, string])} />
           </Row>
-          <Row label="Picture size" note={caps.resolutionNote}>
+          <Row label={t('ui.pictureSize')} note={caps.resolutionNote}>
             <div className="settings-resolution">
-              <Select disabled={caps.wf} label="Picture size" value={draft.resolution}
+              <Select disabled={caps.wf} label={t('ui.pictureSize')} value={draft.resolution}
                 onChange={resolution => {
                   update({resolution});
                   if (resolution !== 'custom') void persistNow({recording: {resolution: resolution || null}}, () => undefined, failure);
                 }}
-                options={[...RESOLUTION_PRESETS.map(([value, name]) => [value, value ? name : 'Full size (your screen)'] as [string, string]),
-                  ['custom', 'Custom size'] as [string, string]]} />
+                options={[...RESOLUTION_PRESETS.map(([value, name]) => [value, value ? name : t('ui.fullSizeYourScreen')] as [string, string]),
+                  ['custom', t('ui.customSize')] as [string, string]]} />
               {draft.resolution === 'custom' ? <>
-                <TextField disabled={caps.wf} label="Custom size" mono value={draft.customResolution} placeholder="1600x900"
+                <TextField disabled={caps.wf} label={t('ui.customSize')} mono value={draft.customResolution} placeholder="1600x900"
                   onChange={customResolution => update({customResolution})} />
                 {resolvedResolution(draft) === false ? <span className="settings-invalid">Use the form 1600x900.</span> : null}
               </> : null}
             </div>
           </Row>
-          <Row label={t('settings.colourDepth')} note={caps.liveNote ?? caps.depthNote} help="10-bit looks smoother in gradients and is heavier. It needs a recent GPU.">
+          <Row label={t('settings.colourDepth')} note={caps.liveNote ?? caps.depthNote} help={t('ui.depthHelp')}>
             <Select disabled={caps.depthLocked} label={t('settings.colourDepth')} value={effectiveDraft.colorDepth}
               onChange={colorDepth => { update({colorDepth}); void persistNow({recording: {color_depth: colorDepth}}, () => undefined, failure); }}
               options={[['8', t('settings.colour8')], ['10', t('settings.colour10')]]} />
@@ -203,8 +203,8 @@ export function QualityCard({
         </div>
       ) : null}
 
-      <div className="recording-group quality-buffer-group"><h3>Replay history</h3>
-      <Row label={t('settings.bufferDuration')} note={caps.bufferNote} help="How much of the past Gloaming keeps, ready to save. Longer history uses more memory or disk space.">
+      <div className="recording-group quality-buffer-group"><h3>{t('ui.replayHistory')}</h3>
+      <Row label={t('settings.bufferDuration')} note={caps.bufferNote} help={t('ui.historyHelp')}>
         <div className="quality-reach" role="radiogroup" aria-label={t('settings.bufferDuration')}>
           {REACH.map(seconds => (
             <button key={seconds} type="button" role="radio"
@@ -215,17 +215,17 @@ export function QualityCard({
           ))}
           <button type="button" role="radio" aria-checked={!REACH.includes(draft.bufferDuration)}
             data-active={!REACH.includes(draft.bufferDuration) || undefined}
-            onClick={onCustomBuffer} title="Customize buffer duration in Advanced settings">
-            Custom{!REACH.includes(draft.bufferDuration) ? ` · ${formatLengthLong(draft.bufferDuration)}` : ''}
+            onClick={onCustomBuffer} title={t('ui.customizeBufferDurationInAdvanced')}>
+            {t('ui.custom')}{!REACH.includes(draft.bufferDuration) ? ` · ${formatLengthLong(draft.bufferDuration)}` : ''}
           </button>
         </div>
       </Row>
-      {draft.liveReplay ? <p className="quality-note">Live replay uses this buffer too. Changing it restarts recording and clears the current replay history.</p> : null}
+      {draft.liveReplay ? <p className="quality-note">{t('ui.liveReplayUsesThisBuffer')}</p> : null}
 
       </div>
       <div className="quality-foot recording-link">
-        <span>These settings are shared with Advanced recording. Choose an encoder, file format or storage location there.</span>
-        <button type="button" className="btn btn-quiet btn-sm" onClick={onAdvanced}>Advanced settings →</button>
+        <span>{t('ui.theseSettingsAreSharedWith')}</span>
+        <button type="button" className="btn btn-quiet btn-sm" onClick={onAdvanced}>{t('ui.advancedSettingsArrow')}</button>
       </div>
     </section>
   );

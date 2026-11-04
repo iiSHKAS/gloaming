@@ -1,6 +1,7 @@
 import type {ReactNode} from 'react';
 
 import {LOCALES, type LocaleName} from '../locales';
+import {applyTextScale} from './textScale';
 
 /**
  * Translation, in about as little code as it can be done correctly.
@@ -19,6 +20,14 @@ import {LOCALES, type LocaleName} from '../locales';
 
 const FALLBACK: LocaleName = 'en';
 const STORAGE_KEY = 'gloaming-locale';
+const RTL_LANGUAGES = new Set(['ar', 'he', 'fa', 'ur']);
+
+/** Language and reading direction on <html>, so CSS logical properties follow. */
+function applyDocumentLocale(name: string): void {
+  document.documentElement.lang = name;
+  document.documentElement.dir = RTL_LANGUAGES.has(name.split('-')[0]) ? 'rtl' : 'ltr';
+  applyTextScale(name);
+}
 
 /** A leaf is either a plain string or a set of CLDR plural categories. */
 type Leaf = string | Partial<Record<Intl.LDMLPluralRule, string>>;
@@ -59,8 +68,11 @@ function isPlural(value: unknown): value is Partial<Record<Intl.LDMLPluralRule, 
 
 function fill(template: string, vars?: Vars): string {
   if (!vars) return template;
+  // In a right-to-left language each value is wrapped in a first-strong
+  // isolate, so "16 GB" or a game name keeps its own order inside the sentence.
+  const wrap = RTL_LANGUAGES.has(active.split('-')[0]);
   return template.replace(/\{(\w+)\}/g, (whole, name: string) =>
-    name in vars ? String(vars[name]) : whole,
+    name in vars ? (wrap ? `\u2068${vars[name]}\u2069` : String(vars[name])) : whole,
   );
 }
 
@@ -119,6 +131,11 @@ export function availableLocales(): LocaleName[] {
   return Object.keys(LOCALES) as LocaleName[];
 }
 
+/** Locale for Intl date and time formatting. Arabic keeps Latin digits. */
+export function dateLocale(): string {
+  return active === 'ar' ? 'ar-u-nu-latn' : active;
+}
+
 export function currentLocale(): LocaleName {
   return active;
 }
@@ -149,7 +166,7 @@ export function setLocale(name: LocaleName): void {
     // Private windows and some WebKit builds refuse storage. The choice just
     // does not survive a restart, which beats failing to apply it at all.
   }
-  document.documentElement.lang = name;
+  applyDocumentLocale(name);
   for (const fn of listeners) fn();
 }
 
@@ -167,6 +184,6 @@ export function initLocale(): LocaleName {
   const name = stored ? resolveLocale(stored) : resolveLocale(navigator.language);
   active = name;
   plurals = new Intl.PluralRules(name);
-  document.documentElement.lang = name;
+  applyDocumentLocale(name);
   return name;
 }

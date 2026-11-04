@@ -1,0 +1,127 @@
+/* The live replay player on the home screen, in the --ds tokens so it follows
+   the light and dark themes. Over a game the replay overlay window keeps its own
+   always-dark skin (replay-overlay.css); everything here is under .capture-home. */
+.capture-home .studio-player .replay-stage {
+  background: var(--ds-surface-sunken);
+  border-color: var(--ds-border);
+  border-radius: 0 0 14px 14px;
+}
+.capture-home .studio-player .replay-placeholder {
+  background: var(--ds-surface-sunken);
+  color: var(--ds-text);
+}
+.capture-home .studio-player .replay-placeholder h3 {
+  color: var(--ds-text-strong, var(--ds-text));
+}
+.capture-home .studio-player .replay-placeholder p {
+  color: var(--ds-text-muted);
+}
+.capture-home .studio-player .replay-placeholder-icon {
+  border-color: var(--ds-outline);
+}
+
+/* Floating controls: a glass dock that follows the theme instead of a dark bar. */
+.capture-home .studio-player .replay-video-badge {
+  background: color-mix(in srgb, var(--ds-surface) 88%, transparent);
+  border: 1px solid var(--ds-border);
+  color: var(--studio-accent-text, var(--studio-accent));
+  backdrop-filter: blur(10px);
+}
+.capture-home .studio-player .studio-video-controls {
+  inset: auto 12px 12px;
+  padding: 8px 14px 6px;
+  border: 1px solid var(--ds-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ds-surface) 90%, transparent);
+  color: var(--ds-text);
+  box-shadow: 0 10px 28px #0000003d;
+  backdrop-filter: blur(14px) saturate(1.15);
+}
+.capture-home .studio-player .replay-transport {
+  background: none;
+  color: inherit;
+}
+.capture-home .studio-player .replay-transport button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ds-text) 12%, transparent);
+}
+.capture-home .studio-player .replay-transport button:disabled {
+  opacity: 0.4;
+}
+.capture-home .studio-player .replay-live-button {
+  color: var(--studio-accent-text, var(--studio-accent));
+}
+.capture-home .studio-player .replay-transport .replay-cut-toggle[aria-expanded='true'] {
+  background: var(--studio-accent);
+  color: var(--studio-on-accent);
+}
+.capture-home .studio-player .studio-video-controls .replay-track {
+  background: color-mix(in srgb, var(--ds-text) 18%, transparent);
+}
+.capture-home .studio-player .studio-video-controls .replay-timeline-ticks {
+  color: var(--ds-text-muted);
+}
+
+/* Clip tools: their own panel under the picture, never over it. */
+.capture-home .studio-player .studio-clip-panel {
+  margin-top: 12px;
+}
+.capture-home .studio-player .studio-clip-panel .replay-scrubber {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.capture-home .studio-player .studio-clip-panel .replay-timeline-labels {
+  display: flex;
+  color: var(--ds-text-muted);
+  font-size: 11px;
+}
+.capture-home .studio-player .studio-clip-panel .replay-timeline-ticks {
+  display: flex;
+  color: var(--ds-text-muted);
+  font-size: 10px;
+}
+.capture-home .studio-player .studio-clip-panel .replay-track {
+  height: 58px;
+  margin: 8px 0 6px;
+  border: 1px solid var(--ds-border);
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0, transparent 39px, var(--ds-tint) 39px, var(--ds-tint) 40px),
+    var(--ds-surface-sunken);
+  overflow: hidden;
+}
+.capture-home .studio-player .studio-clip-panel .replay-track input {
+  height: 100%;
+}
+.capture-home .studio-player .studio-clip-panel .replay-selection-band {
+  border: 0;
+  border-inline: 3px solid var(--studio-accent);
+  background: color-mix(in srgb, var(--studio-accent) 18%, transparent);
+}
+.capture-home .studio-player .studio-clip-panel .replay-seek::-webkit-slider-thumb {
+  width: 3px;
+  height: 58px;
+  border-radius: 0;
+  background: var(--ds-text);
+}
+.capture-home .studio-player .studio-clip-panel .replay-seek::-moz-range-thumb {
+  width: 3px;
+  height: 58px;
+  border-radius: 0;
+  background: var(--ds-text);
+}
+.capture-home .studio-player .studio-clip-panel .overlay-trim-handle::-webkit-slider-thumb {
+  width: 14px;
+  height: 58px;
+  border-radius: 6px;
+  background: var(--studio-accent);
+  box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--studio-on-accent) 0%, transparent);
+}
+.capture-home .studio-player .studio-clip-panel .overlay-trim-handle::-moz-range-thumb {
+  width: 14px;
+  height: 58px;
+  border-radius: 6px;
+  background: var(--studio-accent);
+}

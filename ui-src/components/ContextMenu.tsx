@@ -1,4 +1,5 @@
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {zoomOf} from '../lib/zoom';
 
 export interface MenuItem {
   id: string;
@@ -51,9 +52,10 @@ export function ContextMenu({
     // entry animation, and a client rect reports the transformed box, so the
     // clamp would under-correct by however far the animation has left to run.
     const margin = 8;
+    const zoom = zoomOf(node);
     setPos({
-      x: Math.max(margin, Math.min(at.x, window.innerWidth - node.offsetWidth - margin)),
-      y: Math.max(margin, Math.min(at.y, window.innerHeight - node.offsetHeight - margin)),
+      x: Math.max(margin, Math.min(at.x / zoom, window.innerWidth / zoom - node.offsetWidth - margin)),
+      y: Math.max(margin, Math.min(at.y / zoom, window.innerHeight / zoom - node.offsetHeight - margin)),
     });
   }, [at]);
 

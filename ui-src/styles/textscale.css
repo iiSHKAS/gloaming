@@ -1,0 +1,9 @@
+/* Interface text size (Settings, General). --ui-zoom is set from script. The
+   editor measures its stage and timeline in script, which zoom would skew, so
+   there only the surrounding text panels are scaled. */
+.gloaming-app:not(:has(.cut-editor)) {
+  zoom: var(--ui-zoom, 1);
+}
+:is(.cut-header, .cut-properties, .cut-toolstrip, .cut-transport, .ed-tl-toolbar) {
+  zoom: var(--ui-zoom, 1);
+}

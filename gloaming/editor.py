@@ -257,6 +257,10 @@ def validate_project(raw: dict, sources: dict[str, Source]) -> tuple[dict, list[
     project = {"version": 1, "tracks": tracks, "items": items}
     if 'keyboard' in raw:
         project['keyboard'] = bool(raw['keyboard'])
+    key_position = raw.get('keyboardPosition')
+    if (isinstance(key_position, (list, tuple)) and len(key_position) == 2
+            and all(type(v) in (int, float) and math.isfinite(v) for v in key_position)):
+        project['keyboardPosition'] = [max(0, min(1, v)) for v in key_position]
     controller = raw.get('controller')
     if isinstance(controller, dict):
         position = controller.get('position', [.98, .98])
@@ -617,8 +621,13 @@ def build_export_cmd(project: dict, sources: dict[str, Source], out_path: Path,
 
     image_inputs: list[Path] = []
     if key_burn is not None:
+        placed = project.get('keyboardPosition')
+        origin = None
+        if placed:
+            origin = (round((w - key_burn.size[0]) * placed[0]),
+                      round((h - key_burn.size[1]) * placed[1]))
         cur = _burn_keys(lines, ctx, cur, key_burn, lane(main_id), w, h,
-                         len(input_order), image_inputs)
+                         len(input_order), image_inputs, origin=origin)
 
     if pad_burn is not None:
         pad_index = len(input_order) + len(image_inputs)

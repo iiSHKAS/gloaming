@@ -41,16 +41,16 @@ export function WindowTitlebar() {
         }}>
         <div className="tb-title"><IconMark size={18} className="tb-mark" />{t('app.name')}</div>
         <div className="tb-controls">
-          <button type="button" className="tb-btn" title="Minimize" aria-label="Minimize" onClick={() => windowAction('minimize')}>
+          <button type="button" className="tb-btn" title={t('ui.minimize')} aria-label={t('ui.minimize')} onClick={() => windowAction('minimize')}>
             <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
           </button>
-          <button type="button" className="tb-btn" title={maximized ? 'Restore' : 'Maximize'} aria-label={maximized ? 'Restore' : 'Maximize'}
+          <button type="button" className="tb-btn" title={maximized ? t('ui.restore') : t('ui.maximize')} aria-label={maximized ? t('ui.restore') : t('ui.maximize')}
             onClick={() => windowAction('toggle_maximize')}>
             {maximized
               ? <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="3.5" width="6.5" height="6.5" rx="1.3" fill="none" stroke="currentColor" strokeWidth="1.3" /><path d="M4 3.5V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-.5" fill="none" stroke="currentColor" strokeWidth="1.3" /></svg>
               : <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="2" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.3" /></svg>}
           </button>
-          <button type="button" className="tb-btn close" title="Close" aria-label="Close" onClick={() => windowAction('close')}>
+          <button type="button" className="tb-btn close" title={t('ui.close')} aria-label={t('ui.close')} onClick={() => windowAction('close')}>
             <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
           </button>
         </div>

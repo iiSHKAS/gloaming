@@ -375,8 +375,13 @@ class WindowTrayController:
                 if self._start_hidden:
                     GLib.idle_add(lambda: (native.iconify(), False)[1])
                 return False
-            indicator = Indicator.Indicator.new('gloaming', str(icon) if icon else 'gloaming',
-                Indicator.IndicatorCategory.APPLICATION_STATUS)
+            # An AppImage's icon lives in a private FUSE mount the tray host
+            # often cannot read. Like Tauri's tray-icon, copy it to a real
+            # directory and hand that over as the indicator's theme path.
+            theme_dir, icon_name = self._stage_tray_icon(icon)
+            indicator = Indicator.Indicator.new_with_path(
+                'gloaming', icon_name or 'gloaming',
+                Indicator.IndicatorCategory.APPLICATION_STATUS, theme_dir or '')
             indicator.set_title('Gloaming')
             menu = Gtk.Menu()
             self._open_action = Gtk.MenuItem(label=self._open_label)
@@ -399,6 +404,26 @@ class WindowTrayController:
         except Exception:
             self._log.exception('GTK tray unavailable; taskbar minimize remains available')
         return False
+
+    def _stage_tray_icon(self, icon: Path | None) -> tuple[str | None, str | None]:
+        """Copy the icon to a stable host-visible directory; return (dir, icon name)."""
+        if icon is None:
+            return None, None
+        import hashlib
+        import shutil
+        try:
+            digest = hashlib.sha1(icon.read_bytes()).hexdigest()[:10]
+            base = Path(os.environ.get('XDG_RUNTIME_DIR') or Path.home() / '.cache')
+            directory = base / 'gloaming-tray'
+            directory.mkdir(parents=True, exist_ok=True)
+            name = f'gloaming-tray-{digest}'
+            target = directory / f'{name}{icon.suffix or ".png"}'
+            if not target.is_file():
+                shutil.copyfile(icon, target)
+            return str(directory), name
+        except OSError as exc:
+            self._log.warning('Could not stage tray icon: %s', exc)
+            return None, None
 
     def _set_gtk_labels(self, open_label, quit_label):
         if self._open_action is not None: self._open_action.set_label(open_label)

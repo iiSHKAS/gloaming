@@ -9,6 +9,7 @@ import {IS_NATIVE, trayAvailable} from '../lib/env';
 import type {KeyOverlayState} from '../lib/types';
 import {formatLengthLong} from '../lib/format';
 import {availableLocales, currentLocale, setLocale, t, tNode} from '../lib/i18n';
+import {TEXT_SCALE_MAX, TEXT_SCALE_MIN, TEXT_SCALE_STEP, effectiveTextScale, setTextScale} from '../lib/textScale';
 import {LOCALE_LABELS, type LocaleName} from '../locales';
 import {
   EFFECTS_MODES,
@@ -87,6 +88,7 @@ export function Settings() {
   const {state, saveConfig, notify} = useStore();
   const {choose, chooseCustom, seed} = useAccentChoice();
   const [picking, setPicking] = useState(false);
+  const [textScale, setTextScaleState] = useState(() => effectiveTextScale(currentLocale()));
   const customBase = seed ? deriveCustom(seed).ramp.base : null;
   const {config, accent, status} = state;
 
@@ -479,7 +481,7 @@ export function Settings() {
           <h3 className="adv-group">{t('settingsUi.screenshotOverlays')}</h3>
           {keyRow({label: t('settings.screenshotKey'), help: t('settings.screenshotKeyHelp'), field: 'screenshotKey', api: 'screenshot', saved: key => t('settings.screenshotKeyNow', {key})})}
           {keyRow({label: t('settings.replayShortcut'), help: t('settings.replayShortcutHelp'), field: 'replayOverlayKey', api: 'replay_overlay', saved: () => t('settings.replayShortcutUpdated')})}
-          {keyRow({label: t('settingsUi.quickSaveMenu'), help: t('settingsUi.openTheSaveLengthMenu'), field: 'menuKey', api: 'menu', saved: key => `Quick save menu is now ${key}`})}
+          {keyRow({label: t('settingsUi.quickSaveMenu'), help: t('settingsUi.openTheSaveLengthMenu'), field: 'menuKey', api: 'menu', saved: key => t('ui.quickSaveMenuNow', {key})})}
           {keyRow({label: t('settings.keyOverlayKey'), help: t('settings.keyOverlayKeyHelp'), field: 'keyOverlayKey', api: 'key_overlay', saved: key => t('settings.keyOverlayKeyNow', {key})})}
           {keyRow({label: t('settings.padOverlayKey'), help: t('settings.padOverlayKeyHelp'), field: 'padOverlayKey', api: 'pad_overlay', saved: key => t('settings.padOverlayKeyNow', {key})})}
           <h3 className="adv-group">{t('settingsUi.controller')}</h3>
@@ -536,6 +538,18 @@ export function Settings() {
               value={currentLocale()}
               onChange={name => setLocale(name as LocaleName)}
               options={availableLocales().map(name => [name, LOCALE_LABELS[name]] as [string, string])}
+            />
+          </Row>
+
+          <Row label={t('ui.textSize')} help={t('ui.textSizeHelp')}>
+            <Slider
+              label={t('ui.textSize')}
+              value={Math.round(textScale * 100)}
+              min={Math.round(TEXT_SCALE_MIN * 100)}
+              max={Math.round(TEXT_SCALE_MAX * 100)}
+              step={Math.round(TEXT_SCALE_STEP * 100)}
+              format={value => `${value}%`}
+              onChange={value => {setTextScale(value / 100, currentLocale()); setTextScaleState(value / 100);}}
             />
           </Row>
 
@@ -801,15 +815,17 @@ export function Settings() {
           <Row
             label={t('settings.windowCapture')}
             note={
-              windowCaptureSupported
-                ? null
-                : {text: t('settings.windowCaptureUnsupported'), tone: 'warning' as const}
+              !windowCaptureSupported
+                ? {text: t('settings.windowCaptureUnsupported'), tone: 'warning' as const}
+                : status.game_capture_issue
+                  ? {text: t(`settings.windowCapture${{wayland: 'Wayland', tools: 'Tools', failed: 'Failed'}[status.game_capture_issue]}`), tone: 'warning' as const}
+                  : null
             }
             help={t('settings.windowCaptureHelp')}>
             <Toggle
               label={t('settings.windowCapture')}
               checked={draft.windowCapture}
-              disabled={caps.windowToggleDisabled}
+              disabled={caps.windowToggleDisabled || (status.game_capture_issue === 'wayland' && !draft.windowCapture)}
               onChange={windowCapture => update({windowCapture, followMouse: windowCapture ? false : draft.followMouse})}
             />
           </Row>

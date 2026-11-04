@@ -41,6 +41,8 @@ export interface EdProject {
   items: EdItem[];
   keyboard?: boolean;
   controller?: {enabled: boolean; position: [number, number]};
+  /** Where the keyboard panel sits on the picture, 0..1 each way; unset is the bottom-left corner. */
+  keyboardPosition?: [number, number];
 }
 
 export type EdTab = 'library' | 'effects' | 'text';

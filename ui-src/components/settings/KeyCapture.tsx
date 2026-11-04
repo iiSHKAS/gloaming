@@ -57,7 +57,7 @@ export function KeyCapture({
       disabled={disabled}
       aria-label={`${label ? `${label}: ` : ''}${listening ? t('keyCapture.pressKey') : display}`}
       aria-pressed={listening}
-      title={listening ? 'Escape to cancel' : label}
+      title={listening ? t('ui.escapeToCancel') : label}
       onBlur={() => setListening(false)}
       onClick={() => setListening(current => !current)}>
       {listening ? <span role="status">{t('keyCapture.pressKey')}</span> : value ?

@@ -1,8 +1,9 @@
 import {useEffect, useState} from 'react';
 import {ControllerGlyph, type PadLayout} from './ControllerGlyph';
 import '../styles/replay-overlay.css';
+import {t} from '../lib/i18n';
 
-const label = (seconds: number) => seconds % 60 === 0 ? `${seconds / 60} min` : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+const label = (seconds: number) => seconds % 60 === 0 ? t('ui.minutesShort', {n: seconds / 60}) : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
 /** Hold-menu: pick how much of the replay buffer to save, driven entirely by the controller. */
 export function SaveMenu() {
@@ -76,10 +77,10 @@ export function SaveMenu() {
     return () => {window.removeEventListener('gloaming-save-menu', handle); window.removeEventListener('keydown', key);};
   });
   const focused = options[index];
-  const title = focused === 0 ? 'Open replay' : focused === max && clips.length > 1 ? `Save everything · ${label(max)}` : `Save the last ${label(focused)}`;
+  const title = focused === 0 ? t('ui.openReplay') : focused === max && clips.length > 1 ? t('ui.saveEverything', {label: label(max)}) : t('ui.saveLast', {label: label(focused)});
   const R = 36, C = 2 * Math.PI * R;
   return <main className="replay-overlay-page save-menu-page" onClick={event => {if (event.target === event.currentTarget) close();}}>
-    <section className="save-menu" aria-label="Gloaming quick actions" data-done={done || undefined}>
+    <section className="save-menu" aria-label={t('ui.gloamingQuickActions')} data-done={done || undefined}>
       <p className="save-menu-eyebrow">GLOAMING</p>
       <div className="save-menu-row" role="listbox">
         {options.map((seconds, i) => {
@@ -107,11 +108,11 @@ export function SaveMenu() {
           </div>;
         })}
       </div>
-      <h2 key={index} className="save-menu-title">{done ? 'Working on it…' : title}</h2>
+      <h2 key={index} className="save-menu-title">{done ? t('ui.workingOnIt') : title}</h2>
       <footer>
-        <span><ControllerGlyph name="dpad-h" layout={layout}/>Browse</span>
-        <span><ControllerGlyph name="south" layout={layout}/>Select</span>
-        <span><ControllerGlyph name="east" layout={layout}/>Back</span>
+        <span><ControllerGlyph name="dpad-h" layout={layout}/>{t('ui.browse')}</span>
+        <span><ControllerGlyph name="south" layout={layout}/>{t('ui.select')}</span>
+        <span><ControllerGlyph name="east" layout={layout}/>{t('ui.back')}</span>
       </footer>
     </section>
   </main>;

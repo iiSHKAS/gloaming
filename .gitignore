@@ -34,7 +34,15 @@ node_modules/
 *.swp
 *.swo
 
-# Stray runtime files from local test harnesses.
+# Stray runtime files
 *.pid
+*.log
 
-# Build output from tools/verify-custom-accent.mjs.
+# Local, private or machine-specific files. Never commit these.
+.env
+.env.*
+.claude/
+CLAUDE.md
+/design/
+/dist/
+*.tar.gz

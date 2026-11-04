@@ -9,6 +9,7 @@
 // rots: the plumbing lands, and six months later half the new copy is English
 // only and nobody noticed.
 
+import {fileURLToPath} from 'node:url';
 import {readFileSync, readdirSync} from 'node:fs';
 import {join} from 'node:path';
 
@@ -102,7 +103,7 @@ function walk(dir) {
 }
 
 const suspects = [];
-for (const file of walk(new URL('.', UI_SRC).pathname)) {
+for (const file of walk(fileURLToPath(UI_SRC))) {
   const src = readFileSync(file, 'utf8');
   const seen = new Set();
   const add = (text, {oneWordOk = false} = {}) => {

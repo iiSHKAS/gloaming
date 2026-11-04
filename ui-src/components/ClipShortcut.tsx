@@ -12,17 +12,17 @@ export function ClipShortcut() {
     try {
       const result = await saveConfig({hotkeys: {clip}});
       if (result.applied === false) {
-        notify({kind: 'info', title: 'Shortcut saved', detail: result.warning || 'The shortcut is pending application.', tone: 'neutral', holdMs: 5000});
+        notify({kind: 'info', title: t('ui.shortcutSaved'), detail: result.warning || t('ui.shortcutPending'), tone: 'neutral', holdMs: 5000});
       } else {
-        notify({kind: 'info', title: 'Clip shortcut updated', tone: 'accent', holdMs: 2500});
+        notify({kind: 'info', title: t('ui.clipShortcutUpdated'), tone: 'accent', holdMs: 2500});
       }
     } catch (error) {
       notify({kind: 'error', title: t('settings.errSaveKey'), detail: String(error), tone: 'error', holdMs: 5000});
     } finally { setSaving(false); }
   };
   return <div className="clip-shortcut">
-    <span className="clip-shortcut-label">{saving ? 'Saving…' : 'Save shortcut'}<span aria-hidden="true">↗</span></span>
-    <KeyCapture value={hotkey} label="Change save clip shortcut" disabled={saving}
+    <span className="clip-shortcut-label">{saving ? t('ui.saving') : t('ui.saveShortcut')}<span aria-hidden="true">↗</span></span>
+    <KeyCapture value={hotkey} label={t('ui.changeSaveClipShortcut')} disabled={saving}
       onCapture={key => void save(key)}
       onUnsupported={() => notify({kind: 'error', title: t('settings.keyUnsupported'), tone: 'error', holdMs: 4000})}/>
   </div>;

@@ -1,0 +1,455 @@
+/* Home screen player and clip tools, redesigned.
+   Every colour comes from the --ds tokens, so the light and dark themes both work.
+   Scoped to .capture-home: the replay overlay over a game keeps its own skin.
+
+   Layout rule: the playback dock, the timelines and the clip toolbar are always
+   left-to-right, whatever the interface language. Buttons never swap sides in
+   Arabic; only the text inside them (and the panel title) follows the language. */
+
+.capture-home .studio-player :is(.studio-video-controls, .replay-transport, .rt-group, .replay-scrubber, .studio-clip-panel .ui-toolbar, .studio-clip-panel .ui-actions, .studio-clip-panel .ui-chip-row, .studio-clip-panel .ui-group) {
+  direction: ltr;
+}
+/* Words inside the fixed-LTR rows still read in their own direction. */
+.capture-home .studio-player :is(.ui-chip, .btn, .ui-label, .replay-live-button) {
+  unicode-bidi: plaintext;
+}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+.capture-home .studio-player .replay-header {
+  height: 48px;
+  padding: 0 18px;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-bottom: 0;
+  border-radius: 14px 14px 0 0;
+}
+.capture-home .studio-player .replay-header h2 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ds-text-strong, var(--ds-text));
+}
+.capture-home .studio-player .replay-capacity {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--ds-surface-2);
+  color: var(--ds-text-muted);
+  font-size: 11px;
+}
+
+/* ── Stage ──────────────────────────────────────────────────────── */
+.capture-home .studio-player .replay-stage {
+  background: var(--ds-surface-sunken);
+  border: 1px solid var(--ds-border);
+  border-radius: 0 0 14px 14px;
+  color: var(--ds-text);
+}
+.capture-home .studio-player .replay-placeholder {
+  background: var(--ds-surface-sunken);
+  color: var(--ds-text);
+}
+
+/* ── Dock: seek bar on top, one row of buttons below ─────────────── */
+.capture-home .studio-player .studio-video-controls {
+  inset: auto 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 8px;
+  overflow: visible;
+  border: 1px solid var(--ds-border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--ds-surface) 92%, transparent);
+  color: var(--ds-text);
+  box-shadow: 0 12px 32px #0000004d;
+  backdrop-filter: blur(16px) saturate(1.2);
+}
+.capture-home .studio-player .studio-video-controls .replay-scrubber {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.capture-home .studio-player .studio-video-controls .replay-track {
+  height: 6px;
+  margin: 8px 0 4px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ds-text) 20%, transparent);
+  transition: height 0.12s;
+}
+.capture-home .studio-player .studio-video-controls:hover .replay-track {
+  height: 8px;
+}
+.capture-home .studio-player .studio-video-controls .replay-track .replay-seek {
+  height: 22px;
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+}
+.capture-home .studio-player .studio-video-controls .replay-seek::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ds-text-strong, var(--ds-text));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--studio-accent) 55%, transparent);
+}
+.capture-home .studio-player .studio-video-controls .replay-seek::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ds-text-strong, var(--ds-text));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--studio-accent) 55%, transparent);
+}
+.capture-home .studio-player .studio-video-controls .replay-timeline-ticks {
+  font-size: 10px;
+  color: var(--ds-text-muted);
+}
+
+/* Transport: playback cluster on the left, tools on the right. */
+.capture-home .studio-player .replay-transport {
+  position: static;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+  background: none;
+  color: inherit;
+}
+.capture-home .studio-player .rt-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.capture-home .studio-player .replay-transport button {
+  height: 34px;
+  min-width: 34px;
+  border-radius: 10px;
+}
+.capture-home .studio-player .replay-transport button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ds-text) 12%, transparent);
+}
+.capture-home .studio-player .replay-transport button:disabled {
+  opacity: 0.4;
+}
+.capture-home .studio-player .replay-transport .replay-play {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--studio-accent);
+  color: var(--studio-on-accent);
+}
+.capture-home .studio-player .replay-transport .replay-play:hover:not(:disabled) {
+  background: var(--studio-accent);
+  filter: brightness(1.1);
+}
+.capture-home .studio-player .replay-playtime {
+  margin-inline: 8px 4px;
+  font-size: 12px;
+  color: var(--ds-text-muted);
+}
+.capture-home .studio-player .replay-volume {
+  width: 64px;
+  margin-inline: 2px 6px;
+}
+.capture-home .studio-player .replay-live-button {
+  height: 30px;
+  margin-inline: 4px;
+  padding: 0 12px;
+  border: 1px solid var(--studio-accent-border, var(--studio-accent));
+  border-radius: 999px;
+  color: var(--studio-accent-text, var(--studio-accent));
+  font-size: 12px;
+  font-weight: 600;
+}
+.capture-home .studio-player .replay-transport .replay-cut-toggle[aria-expanded='true'] {
+  background: var(--studio-accent);
+  color: var(--studio-on-accent);
+}
+
+/* ── Clip panel ─────────────────────────────────────────────────── */
+.capture-home .studio-player .studio-clip-panel {
+  margin-top: 14px;
+  gap: 16px;
+  padding: 18px 20px;
+  border-radius: 16px;
+}
+.capture-home .studio-player .studio-clip-panel .replay-scrubber {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.capture-home .studio-player .studio-clip-panel .replay-timeline-labels {
+  font-size: 11px;
+  color: var(--ds-text-muted);
+}
+.capture-home .studio-player .studio-clip-panel .replay-timeline-labels > span:first-child {
+  letter-spacing: 0.04em;
+}
+.capture-home .studio-player .studio-clip-panel .replay-timeline-ticks {
+  font-size: 10px;
+  color: var(--ds-text-dim, var(--ds-text-muted));
+}
+.capture-home .studio-player .studio-clip-panel .replay-track {
+  height: 64px;
+  margin: 8px 0 6px;
+  border: 1px solid var(--ds-border);
+  border-radius: 12px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 39px, var(--ds-tint) 39px 40px),
+    var(--ds-surface-sunken);
+  overflow: hidden;
+}
+.capture-home .studio-player .studio-clip-panel .replay-track input {
+  height: 100%;
+}
+/* The selected span: tinted, with handles that read as grips. */
+.capture-home .studio-player .studio-clip-panel .replay-selection-band {
+  border: 0;
+  border-block: 2px solid var(--studio-accent);
+  background: color-mix(in srgb, var(--studio-accent) 20%, transparent);
+}
+.capture-home .studio-player .studio-clip-panel .replay-seek::-webkit-slider-thumb {
+  width: 3px;
+  height: 64px;
+  border-radius: 0;
+  background: var(--ds-text-strong, var(--ds-text));
+  box-shadow: none;
+}
+.capture-home .studio-player .studio-clip-panel .replay-seek::-moz-range-thumb {
+  width: 3px;
+  height: 64px;
+  border-radius: 0;
+  background: var(--ds-text-strong, var(--ds-text));
+  box-shadow: none;
+}
+.capture-home .studio-player .studio-clip-panel .overlay-trim-handle::-webkit-slider-thumb {
+  width: 16px;
+  height: 64px;
+  border-radius: 8px;
+  background:
+    linear-gradient(var(--studio-on-accent), var(--studio-on-accent)) center / 2px 20px no-repeat,
+    var(--studio-accent);
+}
+.capture-home .studio-player .studio-clip-panel .overlay-trim-handle::-moz-range-thumb {
+  width: 16px;
+  height: 64px;
+  border: 0;
+  border-radius: 8px;
+  background:
+    linear-gradient(var(--studio-on-accent), var(--studio-on-accent)) center / 2px 20px no-repeat,
+    var(--studio-accent);
+}
+
+/* Toolbar: quick lengths | in / out | preview + save, in that order always.
+   Flex with wrapping: nothing is squeezed, a group that does not fit drops to
+   the next row whole. */
+.capture-home .studio-player .studio-clip-panel .ui-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 28px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ds-border);
+}
+.capture-home .studio-player .studio-clip-panel .ui-group {
+  flex: none;
+}
+.capture-home .studio-player .studio-clip-panel .ui-group:has(> .ui-field) {
+  gap: 12px;
+}
+.capture-home .studio-player .studio-clip-panel .ui-field {
+  flex: none;
+  align-items: flex-start;
+}
+.capture-home .studio-player .studio-clip-panel .ui-label {
+  white-space: nowrap;
+}
+.capture-home .studio-player .studio-clip-panel .ui-chip {
+  white-space: nowrap;
+}
+/* Number fields: digits and steppers are LTR, so the arrows never sit on the text. */
+.capture-home .studio-player .studio-clip-panel .num-field {
+  direction: ltr;
+  width: 120px;
+}
+.capture-home .studio-player .studio-clip-panel .num-field .text-input {
+  text-align: left;
+  unicode-bidi: plaintext;
+}
+.capture-home .studio-player .studio-clip-panel .ui-actions {
+  flex: none;
+  margin-inline-start: auto;
+}
+.capture-home .studio-player .studio-clip-panel .ui-actions .btn {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 12px;
+  white-space: nowrap;
+  flex: none;
+}
+/* The time range is digits: keep it in reading order whatever the language. */
+.capture-home .studio-player .studio-clip-panel .replay-timeline-labels > span:last-child {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+@container(max-width:560px) {
+  .capture-home .studio-player .studio-clip-panel .ui-actions {
+    flex: 1 1 100%;
+  }
+  .capture-home .studio-player .studio-clip-panel .ui-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+@container(max-width:520px) {
+  .capture-home .studio-player .studio-video-controls {
+    inset: auto 8px 8px;
+    padding: 8px 8px 6px;
+  }
+  .capture-home .studio-player .replay-volume,
+  .capture-home .studio-player .replay-playtime {
+    display: none;
+  }
+}
+
+/* Icon-only buttons: square, same height as the fields beside them. */
+.capture-home .studio-player .studio-clip-panel .ui-icon-chip {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+.capture-home .studio-player .studio-clip-panel .ui-chip {
+  height: 36px;
+  padding: 0 14px;
+}
+.capture-home .studio-player .studio-clip-panel .ui-icon-chip svg {
+  width: 18px;
+  height: 18px;
+}
+.capture-home .studio-player .studio-clip-panel .ui-actions .btn.ui-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  padding: 0;
+}
+/* One row: lengths, in/out, then actions pushed to the end. */
+.capture-home .studio-player .studio-clip-panel .ui-toolbar {
+  align-items: flex-end;
+}
+.capture-home .studio-player .studio-clip-panel .ui-group:first-child {
+  align-self: flex-end;
+}
+
+/* Chip row: one centre line, round icon button the same height as the chips. */
+.capture-home .studio-player .studio-clip-panel .ui-chip-row {
+  align-items: center;
+  flex-wrap: nowrap;
+}
+.capture-home .studio-player .studio-clip-panel .ui-chip,
+.capture-home .studio-player .studio-clip-panel .ui-icon-chip {
+  box-sizing: border-box;
+  flex: none;
+  line-height: 1;
+}
+.capture-home .studio-player .studio-clip-panel .ui-icon-chip {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+.capture-home .studio-player .studio-clip-panel .ui-icon-chip svg {
+  display: block;
+  margin: 0;
+}
+
+/* Shift hint sits between the lengths and the actions. */
+.capture-home .studio-player .studio-clip-panel .ui-shift-hint {
+  display: flex;
+  align-items: center;
+  align-self: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--ds-text-muted);
+  font-size: 12px;
+}
+.capture-home .studio-player .studio-clip-panel .ui-shift-hint kbd {
+  padding: 2px 7px;
+  border: 1px solid var(--ds-border);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ── Dock colours follow the theme ──────────────────────────────────
+   Icons and text take the theme text colour, so they are dark on the light dock
+   and light on the dark one. `html` in front lifts these above the light-theme
+   overrides. */
+html .capture-home .studio-player .studio-video-controls {
+  background: color-mix(in srgb, var(--ds-surface) 95%, transparent);
+  color: var(--ds-text);
+}
+html .capture-home .studio-player .studio-video-controls .replay-transport button {
+  color: var(--ds-text);
+}
+html .capture-home .studio-player .studio-video-controls .replay-transport .replay-play,
+html .capture-home .studio-player .studio-video-controls .replay-transport .replay-cut-toggle[aria-expanded='true'] {
+  color: var(--studio-on-accent);
+}
+html .capture-home .studio-player .studio-video-controls .replay-playtime,
+html .capture-home .studio-player .studio-video-controls .replay-timeline-ticks {
+  color: var(--ds-text-muted);
+}
+html .capture-home .studio-player .studio-video-controls .replay-live-button {
+  color: var(--studio-accent-text, var(--studio-accent));
+}
+html .capture-home .studio-player .replay-video-badge {
+  background: color-mix(in srgb, var(--ds-surface) 92%, transparent);
+  border: 1px solid var(--ds-border);
+  color: var(--studio-accent-text, var(--studio-accent));
+}
+
+/* Root cause of white icons on a light dock: theme-light.css turns every
+   .replay-stage into an always-black stage and flips --ds-text to near-white
+   inside it. The dock is a themed surface, so it takes the light values back. */
+html[data-theme='light'] .capture-home .studio-player .studio-video-controls,
+html[data-theme='light'] .capture-home .studio-player .replay-video-badge {
+  --ds-text: #1c2025;
+  --ds-text-strong: #0d0f12;
+  --ds-text-muted: #4a505a;
+  --ds-text-dim: #6c727d;
+  --color-text-primary: #1c2025;
+  --color-text-secondary: #4a505a;
+  --color-text-disabled: #6c727d;
+  color: #1c2025;
+}
+html[data-theme='light'] .capture-home .studio-player .studio-video-controls .replay-track {
+  background: #00000026;
+}
+
+/* Dock icons use the accent the user picked. The play button keeps its filled
+   accent background, so its icon stays the on-accent colour. */
+html .capture-home .studio-player .studio-video-controls .replay-transport button {
+  color: var(--studio-accent-text, var(--studio-accent));
+}
+html .capture-home .studio-player .studio-video-controls .replay-transport button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--studio-accent) 16%, transparent);
+}
+html .capture-home .studio-player .studio-video-controls .replay-transport .replay-play,
+html .capture-home .studio-player .studio-video-controls .replay-transport .replay-cut-toggle[aria-expanded='true'] {
+  background: var(--studio-accent);
+  color: var(--studio-on-accent);
+}
+html .capture-home .studio-player .studio-video-controls .replay-volume {
+  accent-color: var(--studio-accent);
+}

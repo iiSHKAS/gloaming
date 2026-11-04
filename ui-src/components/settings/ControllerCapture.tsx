@@ -1,5 +1,6 @@
 import {useEffect, useRef, useState} from 'react';
 import {ButtonGlyph, type PadLayout} from '../ControllerGlyph';
+import {t} from '../../lib/i18n';
 
 type Capture = {token: string; combo: string; devices: string[]; pressed: string[]; layout?: PadLayout; error?: string};
 const request = async (body: object): Promise<Capture> => {
@@ -46,7 +47,7 @@ export function ControllerCapture({value,onCapture}: {value:string;onCapture:(va
         current.token=state.token;
         if(current.cancelled){void request({token:state.token,stop:true}).catch(()=>{});return;}
         setPressed(state.pressed);if(state.layout)setLayout(state.layout);
-        setHint(state.devices.length ? `${state.devices.join(', ')} · Hold your buttons together, then release.` : 'No readable controller. Connect a controller and press a button.');
+        setHint(state.devices.length ? t('ui.holdButtons', {devices: state.devices.join(', ')}) : t('ui.noReadableControllerConnectA'));
         if(state.combo){
           await request({token:state.token,stop:true});
           if(current.cancelled)return;
@@ -63,10 +64,10 @@ export function ControllerCapture({value,onCapture}: {value:string;onCapture:(va
   const buttons=listening?pressed:value.split('+').filter(Boolean);
   return <div className="controller-binding">
     <div className="key-pair">
-      <button type="button" className="key-capture mono controller-capture" data-listening={listening&&!buttons.length||undefined} aria-label={listening?"Listening for controller buttons":"Assign controller shortcut"} aria-pressed={listening} onClick={()=>void capture()}>
-        {buttons.length ? <span className="shortcut-keycaps">{buttons.map((name,index)=><span className="shortcut-key-part" key={name}>{index>0&&<span className="shortcut-plus">+</span>}<ButtonGlyph button={name} layout={layout}/></span>)}</span> : listening?'Press controller buttons…':'Assign controller buttons'}
+      <button type="button" className="key-capture mono controller-capture" data-listening={listening&&!buttons.length||undefined} aria-label={listening?t('ui.listeningForControllerButtons'):t('ui.assignControllerShortcut')} aria-pressed={listening} onClick={()=>void capture()}>
+        {buttons.length ? <span className="shortcut-keycaps">{buttons.map((name,index)=><span className="shortcut-key-part" key={name}>{index>0&&<span className="shortcut-plus">+</span>}<ButtonGlyph button={name} layout={layout}/></span>)}</span> : listening?t('ui.pressControllerButtons'):t('ui.assignControllerButtons')}
       </button>
-      {listening?<button type="button" className="btn btn-quiet btn-sm" onClick={cancel}>Cancel</button>:value&&<button type="button" className="btn btn-quiet btn-sm" onClick={()=>{setHint('');onCapture('');}}>Clear</button>}
+      {listening?<button type="button" className="btn btn-quiet btn-sm" onClick={cancel}>{t('ui.cancel')}</button>:value&&<button type="button" className="btn btn-quiet btn-sm" onClick={()=>{setHint('');onCapture('');}}>{t('ui.clear')}</button>}
     </div>
     {hint&&<small role="status">{hint}</small>}
   </div>;
@@ -74,16 +75,16 @@ export function ControllerCapture({value,onCapture}: {value:string;onCapture:(va
 
 export function ControllerStatus() {
   const [devices,setDevices]=useState<string[]>([]);
-  const [message,setMessage]=useState('Checking controller connection…');
+  const [message,setMessage]=useState(t('ui.checkingController'));
   useEffect(()=>{
     let active=true;
     let timer:ReturnType<typeof setTimeout>;
     const poll=async()=>{
       try{
         const response=await fetch('/api/controller',{cache:'no-store'});
-        if(!response.ok)throw new Error(response.status===404?'Restart Gloaming to load controller status.':'Could not read controller status.');
+        if(!response.ok)throw new Error(response.status===404?t('ui.restartGloamingToLoadController'):t('ui.couldNotReadControllerStatus'));
         const data=await response.json() as {devices:string[]};
-        if(active){setDevices(data.devices);setMessage(data.devices.length?'Connected · Choose an action below to assign its buttons.':'No controller detected. Connect your controller to begin.');}
+        if(active){setDevices(data.devices);setMessage(data.devices.length?t('ui.connectedChooseAnActionBelow'):t('ui.noControllerDetectedConnectYour'));}
       }catch(error){if(active){setDevices([]);setMessage(error instanceof Error?error.message:String(error));}}
       if(active)timer=setTimeout(poll,2000);
     };
@@ -91,6 +92,6 @@ export function ControllerStatus() {
   },[]);
   return <div className="controller-status" data-connected={devices.length>0} role="status">
     <span className="controller-connection-dot" aria-hidden="true"/>
-    <div><strong>{devices.length?devices.join(' · '):'Controller connection'}</strong><small>{message}</small></div>
+    <div><strong>{devices.length?devices.join(' · '):t('ui.controllerConnection')}</strong><small>{message}</small></div>
   </div>;
 }

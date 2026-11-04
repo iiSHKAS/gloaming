@@ -2665,6 +2665,7 @@ class ShareServer:
         self.editor_project.save({"version": 1, "tracks": body["tracks"],
                                   "items": body["items"],
                                   **({'keyboard': bool(body['keyboard'])} if 'keyboard' in body else {}),
+                                  **({'keyboardPosition': body['keyboardPosition']} if isinstance(body.get('keyboardPosition'), list) else {}),
                                   **({'controller': body['controller']} if isinstance(body.get('controller'), dict) else {})})
         return web.json_response({"ok": True})
 

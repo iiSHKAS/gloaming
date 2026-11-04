@@ -27,7 +27,7 @@ export function EditorController({engine,container,position,onPositionChange}: {
     savedPosition={position} onPositionChange={onPositionChange}/> : null;
 }
 
-export function EditorKeyboard({engine}:{engine:EditorEngine}){
+export function EditorKeyboard({engine,container,position,onPositionChange}:{engine:EditorEngine;container:RefObject<HTMLDivElement|null>;position?:[number,number];onPositionChange:(p:[number,number])=>void}){
   const [slug,setSlug]=useState<string|null>(null);
   const [data,setData]=useState<{slug:string;keys:KeyInterval[]}|null>(null);
   useEffect(()=>{let raf=0;const tick=()=>{setSlug(engine.controllerFrame()?.clipId ?? null);raf=requestAnimationFrame(tick);};tick();return ()=>cancelAnimationFrame(raf);},[engine]);
@@ -38,5 +38,5 @@ export function EditorKeyboard({engine}:{engine:EditorEngine}){
     return ()=>abort.abort();
   },[slug]);
   const clock=useCallback(()=>engine.controllerFrame()?.time ?? 0,[engine]);
-  return data && data.slug===slug ? <KeyOverlay intervals={data.keys} clock={clock}/> : null;
+  return data && data.slug===slug ? <KeyOverlay intervals={data.keys} clock={clock} container={container} position={position} onPositionChange={onPositionChange}/> : null;
 }

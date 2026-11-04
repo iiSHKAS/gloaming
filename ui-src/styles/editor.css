@@ -1200,7 +1200,7 @@
 .cut-history { display: flex; align-items: center; gap: 5px; border: 0; background: transparent; color: var(--color-text-primary); padding: 7px; cursor: pointer; font-size: 22px; }
 .cut-history span { font-size: 11px; }
 .cut-history:disabled { opacity: .3; cursor: default; }
-.cut-workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0,1fr) 240px; }
+.cut-workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0,1fr) var(--cut-props-w, 240px); }
 .cut-screen { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: #060709; }
 .cut-toolstrip { flex: none; min-height: 46px; display: flex; gap: 14px; align-items: center; padding: 4px 14px; background: #14161a; border-bottom: 1px solid #262c35; }
 .cut-edit-tools { display: flex; gap: 3px; padding: 3px; border: 1px solid #303743; border-radius: 7px; background: #0d1015; }
@@ -1244,14 +1244,14 @@
 .cut-editor[data-focus=true] .cut-properties, .cut-editor[data-focus=true] .cut-timeline, .cut-editor[data-focus=true] > .ed-resize { display: none; }
 .cut-editor[data-focus=true] .cut-workspace { grid-template-columns: minmax(0,1fr); }
 @media (max-width: 1100px) {
-  .cut-workspace { grid-template-columns: minmax(0,1fr) 205px; }
+  .cut-workspace { grid-template-columns: minmax(0,1fr) var(--cut-props-w, 205px); }
   .cut-tool-hint,.cut-title small,.cut-history span { display: none; }
   .cut-title { min-width: auto; }
   .cut-header { padding: 10px; gap: 12px; }
   .cut-properties section { padding: 12px; }
 }
 @media (max-width: 750px) {
-  .cut-workspace { grid-template-columns: minmax(0,1fr) 165px; }
+  .cut-workspace { grid-template-columns: minmax(0,1fr) var(--cut-props-w, 165px); }
   .cut-modes button { padding: 7px 10px; }
   .cut-title { display: none; }
   .cut-trim-hint { display: none; }
@@ -1288,3 +1288,14 @@
 [dir='rtl'] .cut-editor[data-mode=advanced] .cut-modes::before { transform: translateX(calc(-100% - 4px)); }
 .cut-editor .cut-modes button { position: relative; z-index: 1; transition: color 220ms ease; }
 .cut-editor .cut-modes button[aria-pressed=true] { background: transparent; }
+
+/* The keyboard panel can be dragged on the preview, like the controller. */
+.cut-editor .key-overlay[data-movable] { pointer-events: auto; cursor: grab; touch-action: none; user-select: none; }
+.cut-editor .key-overlay[data-movable]:active { cursor: grabbing; }
+.cut-editor .key-overlay[data-movable]:focus-visible { outline: 2px solid var(--studio-accent, var(--color-accent)); outline-offset: 3px; }
+
+/* Drag the edge of the side panel to give it more or less room; double-click resets it. */
+.cut-properties { position: relative; }
+.cut-props-resize { position: absolute; inset-block: 0; inset-inline-start: 0; width: 7px; z-index: 30; cursor: col-resize; touch-action: none; }
+.cut-props-resize::after { content: ''; position: absolute; inset-block: 0; inset-inline-start: 0; width: 1px; background: transparent; transition: background var(--duration-fast, .12s); }
+.cut-props-resize:hover::after, .cut-props-resize:active::after { width: 3px; background: var(--studio-accent, var(--color-accent)); }

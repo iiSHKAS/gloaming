@@ -13,6 +13,7 @@ import {Modal} from '../components/Modal';
 import {IconClose, IconExpand} from '../components/Icons';
 import {Select, TextField, Toggle} from '../components/settings/Fields';
 import {t} from '../lib/i18n';
+import {zoomOf} from '../lib/zoom';
 
 const EDITOR_LIB_HINT: Record<EdTab, string> = {
   library: 'editor.libHintLibrary',
@@ -119,7 +120,19 @@ export function Editor() {
   const audioTracks=project?.tracks.filter(tr=>tr.type==='audio' && project.items.some(i=>i.trackId===tr.id)) ?? [];
   const chooseTool=(tab:EdTab)=>{engine.setTab(tab);setDrawer(!(drawer && snap.tab===tab));};
   const displaySource=(label:string)=>label.replace(/^device:/,'').replace(/\.monitor$/,'').replace(/^sink[_-]/,'').replace(/[_-]/g,' ');
-  return <div className="editor cut-editor" data-mode={mode} data-focus={focus} ref={frameRef} style={{['--ed-tl-h' as string]:`${mode==='easy'?158:timelineHeight}px`}}>
+  const [propsWidth,setPropsWidth]=useState<number>(()=>{try{const v=Number(localStorage.getItem('gloaming-editor-props-width'));return Number.isFinite(v)&&v>=160&&v<=640?v:0;}catch{return 0;}});
+  const startPropsResize=(e:React.PointerEvent<HTMLDivElement>)=>{
+    const workspace=e.currentTarget.closest('.cut-workspace') as HTMLElement|null;if(!workspace)return;
+    e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);
+    const rtl=getComputedStyle(workspace).direction==='rtl';
+    const move=(ev:PointerEvent)=>{const box=workspace.getBoundingClientRect();
+      const width=rtl?ev.clientX-box.left:box.right-ev.clientX;
+      setPropsWidth(Math.round(Math.max(160,Math.min(640,Math.min(width,box.width-320)))));};
+    const stop=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',stop);
+      setPropsWidth(w=>{try{localStorage.setItem('gloaming-editor-props-width',String(w));}catch{/* Storage may be disabled. */}return w;});};
+    window.addEventListener('pointermove',move);window.addEventListener('pointerup',stop);
+  };
+  return <div className="editor cut-editor" data-mode={mode} data-focus={focus} ref={frameRef} style={{['--ed-tl-h' as string]:`${mode==='easy'?158:timelineHeight}px`,...(propsWidth?{['--cut-props-w' as string]:`${propsWidth}px`}:{})}}>
     <header className="cut-header">
       <div className="cut-title"><span>{t('editor.workspace')}</span><small>{t(mode==='easy'?'editor.easyDescription':'editor.advancedDescription')}</small></div>
       <div className="cut-modes" role="group" aria-label={t('editor.editingMode')}>
@@ -147,7 +160,7 @@ export function Editor() {
             {snap.preparing ? <div className="ed-stage-preparing">{t('editor.preparingMedia')}</div> : null}
             <div className="ed-fade-overlay" ref={fadeRef}/>
             {projectHasPad && controller.enabled ? <EditorController engine={engine} container={stageRef} position={controller.position} onPositionChange={position=>engine.setController({...controller,position})}/> : null}
-            {projectHasKeys && project?.keyboard ? <EditorKeyboard engine={engine}/> : null}
+            {projectHasKeys && project?.keyboard ? <EditorKeyboard engine={engine} container={stageRef} position={project?.keyboardPosition} onPositionChange={position=>engine.setKeyboardPosition(position)}/> : null}
           </div></div>
           <aside className="cut-drawer" hidden={!drawer}>
             <div className="cut-drawer-head"><b>{TABS.find(([id])=>id===snap.tab)?.[1]()}</b><button type="button" className="ed-iconbtn" onClick={()=>setDrawer(false)} aria-label={t('common.close')}><IconClose/></button></div>
@@ -162,6 +175,7 @@ export function Editor() {
         </div>
       </main>
       <aside className="cut-properties">
+        <div className="cut-props-resize" role="separator" aria-orientation="vertical" aria-label={t('ui.resizePanel')} title={t('ui.resizePanel')} onPointerDown={startPropsResize} onDoubleClick={()=>{setPropsWidth(0);try{localStorage.removeItem('gloaming-editor-props-width');}catch{/* Storage may be disabled. */}}}/>
         <section><h3>{t('editor.soundSection')}</h3><p>{t('editor.soundHelp')}</p>
           {audioTracks.length ? audioTracks.map(track=><div className="cut-source" key={track.id}>
             <span title={track.label}>{displaySource(track.label)}</span>
@@ -582,8 +596,7 @@ function ExportModal({
           <p className="ed-export-summary mono">{summary}</p>
           {recording ? (
             <p className="ed-export-warn">
-              Gloaming is recording right now. Exporting will compete with the encoder for the GPU, so
-              expect the game to stutter.
+              {t('ui.exportWhileRecording')}
             </p>
           ) : null}
         </>
@@ -623,9 +636,10 @@ function AddTrackButton({onAdd}: {onAdd: (type: 'video' | 'audio') => void}) {
     // entry animation and a live rect reports the transformed box.
     const w = node.offsetWidth;
     const h = node.offsetHeight;
+    const zoom = zoomOf(node);
     setAt({
-      x: Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8)),
-      y: Math.max(8, r.top - h - 6),
+      x: Math.max(8, Math.min(r.right / zoom - w, window.innerWidth / zoom - w - 8)),
+      y: Math.max(8, r.top / zoom - h - 6),
     });
   }, [open]);
 

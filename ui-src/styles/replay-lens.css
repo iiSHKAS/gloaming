@@ -56,3 +56,126 @@
 .lab-seek-hint kbd{width:30px;height:28px;font-size:19px}
 .lab-seek-hint strong{font-weight:650;color:#fff;font-variant-numeric:tabular-nums}
 @media(max-width:650px){.lab-footnote{column-gap:12px;row-gap:10px;font-size:10px}.lab-seek-hints{gap:12px}.lab-seek-hint+ .lab-seek-hint{padding-left:12px}.lab-seek-hint{font-size:12px}.lab-footnote kbd{font-size:11px}.lab-seek-hint kbd{font-size:19px}}
+
+/* Light theme: the dock is a light glass card instead of a dark one. */
+html[data-theme='light'] .lab-dock{background:#e4e6eaf2;border-color:#0000002e;color:#1c2025;box-shadow:0 18px 55px #0005}
+html[data-theme='light'] .lab-dock button:hover:not(:disabled){background:#0000000f}
+html[data-theme='light'] .lab-dock kbd{color:#1c2025;border-color:#00000030;background:#00000008}
+html[data-theme='light'] .lab-dock .lab-play{background:var(--studio-accent);color:var(--studio-on-accent)}
+html[data-theme='light'] .lab-dock .lab-play:hover{background:var(--studio-accent);filter:brightness(1.08)}
+html[data-theme='light'] .lab-play kbd,html[data-theme='light'] .lab-play .pad-glyph{background:#e4e6ea;border-color:#00000040;color:#1c2025}
+html[data-theme='light'] .lab-trim svg{color:#1c2025}
+html[data-theme='light'] .lab-boundaries b{color:#1c2025}
+html[data-theme='light'] .lab-boundaries button>span,html[data-theme='light'] .lab-dock .lab-cancel{color:#4a505a}
+html[data-theme='light'] .lab-duration-menu{background:#e4e6eaf7;border-color:#0000002e;color:#1c2025}
+html[data-theme='light'] .lab-duration-menu>span{color:#4a505a}
+
+/* Windowed overlay: the HUD is drawn for a full monitor, so inside the floating
+   panel every part is scaled down and the keyboard legend is dropped. Fullscreen
+   (data-fullscreen) keeps the large sizes above. */
+.replay-overlay-page:not([data-fullscreen]) .controller-top{top:10px;left:12px;right:12px}
+.replay-overlay-page:not([data-fullscreen]) .controller-tools{padding:2px;border-radius:16px}
+.replay-overlay-page:not([data-fullscreen]) .controller-tools button,
+.replay-overlay-page:not([data-fullscreen]) .controller-tools .replay-tool-shortcut{min-width:0;width:auto;height:28px;padding:0 6px;gap:6px;font-size:11px}
+.replay-overlay-page:not([data-fullscreen]) .replay-tool-key kbd{min-width:18px;height:18px;font-size:10px;border-bottom-width:2px}
+.replay-overlay-page:not([data-fullscreen]) .replay-tool-key .pad-glyph{height:18px;max-width:52px}
+.replay-overlay-page:not([data-fullscreen]) .replay-video-badge{top:12px;left:14px;font-size:9px;padding:4px 8px}
+.replay-overlay-page:not([data-fullscreen]) .controller-spinner,
+.replay-overlay-page:not([data-fullscreen]) .lab-context{font-size:10px}
+.replay-overlay-page:not([data-fullscreen]) .controller-flash{font-size:15px;padding:8px 16px;border-radius:10px}
+
+/* Bottom: seek rail, then a slim dock. */
+.replay-overlay-page:not([data-fullscreen]) .controller-bottom{width:calc(100% - 28px);bottom:12px}
+.replay-overlay-page:not([data-fullscreen]) .controller-timeline{height:34px;padding:8px 0 16px;margin:0 0 6px}
+.replay-overlay-page:not([data-fullscreen]) .controller-rail{height:5px}
+.replay-overlay-page:not([data-fullscreen]) .controller-thumb{width:14px;height:14px;border-width:3px;box-shadow:0 0 0 3px #ffffff12,0 1px 5px #0008}
+.replay-overlay-page:not([data-fullscreen]) .controller-tick{height:9px;top:-2px}
+.replay-overlay-page:not([data-fullscreen]) .controller-tick em{top:13px;font-size:9px}
+.replay-overlay-page:not([data-fullscreen]) .controller-hover{font-size:10px;padding:3px 7px;top:-22px}
+
+.replay-overlay-page:not([data-fullscreen]) .lab-dock{gap:8px;padding:6px 10px;border-radius:16px}
+.replay-overlay-page:not([data-fullscreen]) .lab-dock button{padding:6px 10px;gap:6px;font-size:12px;border-radius:8px}
+.replay-overlay-page:not([data-fullscreen]) .lab-dock .lab-play{width:38px;height:38px;padding:0}
+.replay-overlay-page:not([data-fullscreen]) .lab-play>svg:not(.pad-glyph){width:17px;height:17px}
+.replay-overlay-page:not([data-fullscreen]) .lab-play kbd,
+.replay-overlay-page:not([data-fullscreen]) .lab-play .pad-glyph{display:none}
+.replay-overlay-page:not([data-fullscreen]) .lab-dock kbd{font-size:10px;min-width:16px;padding:2px 4px}
+.replay-overlay-page:not([data-fullscreen]) .lab-dock .pad-glyph{width:20px;height:20px}
+.replay-overlay-page:not([data-fullscreen]) .lab-dock svg{width:16px;height:16px}
+.replay-overlay-page:not([data-fullscreen]) .lab-dock .lab-trim,
+.replay-overlay-page:not([data-fullscreen]) .lab-dock .lab-save,
+.replay-overlay-page:not([data-fullscreen]) .lab-dock .lab-duration-toggle,
+.replay-overlay-page:not([data-fullscreen]) .lab-dock .lab-boundaries button,
+.replay-overlay-page:not([data-fullscreen]) .lab-dock .lab-cancel{min-height:36px}
+.replay-overlay-page:not([data-fullscreen]) .lab-dock .lab-save{padding:6px 12px}
+.replay-overlay-page:not([data-fullscreen]) .lab-dock .lab-duration-toggle{padding:6px 10px;font-size:12px}
+.replay-overlay-page:not([data-fullscreen]) .lab-boundaries b{font-size:12px}
+.replay-overlay-page:not([data-fullscreen]) .lab-boundaries button>span{font-size:8px;gap:3px}
+.replay-overlay-page:not([data-fullscreen]) .lab-duration-menu{bottom:calc(100% + 12px);width:170px}
+.replay-overlay-page:not([data-fullscreen]) .lab-duration-menu button{font-size:12px;padding:8px}
+
+/* The key legend is for the fullscreen view; here it only covers the picture. */
+.replay-overlay-page:not([data-fullscreen]) .lab-footnote{display:none}
+
+/* One glass look for every piece of HUD over the picture: badge, "watching live"
+   pill, Live button, tools, tooltip, dock. The colours come from four variables,
+   so the light theme only has to change them. Sizes: readable at a glance, still
+   small enough to leave the picture visible. */
+.replay-overlay-page{--hud-bg:#151b23d9;--hud-border:#ffffff26;--hud-text:#f1f5f9;--hud-muted:#aeb9c7}
+html[data-theme='light'] .replay-overlay-page{--hud-bg:#e4e6eaf0;--hud-border:#0000002e;--hud-text:#1c2025;--hud-muted:#4a505a}
+.replay-overlay-page .replay-video-badge,
+.replay-overlay-page .lab-context>span,
+.replay-overlay-page .lab-context button,
+.replay-overlay-page .controller-tools,
+.replay-overlay-page .controller-hover,
+.replay-overlay-page .controller-spinner,
+.replay-overlay-page .controller-flash,
+.replay-overlay-page .lab-dock{background:var(--hud-bg);border:1px solid var(--hud-border);color:var(--hud-text);backdrop-filter:blur(18px)}
+.replay-overlay-page .replay-video-badge,
+.replay-overlay-page .lab-context>span,
+.replay-overlay-page .lab-context button,
+.replay-overlay-page .controller-tools{border-radius:999px}
+.replay-overlay-page .replay-video-badge{font-size:11px;font-weight:600;letter-spacing:.06em;padding:6px 12px}
+.replay-overlay-page .replay-video-badge i{background:var(--studio-accent)}
+.replay-overlay-page .lab-context>span{font-size:11px;font-weight:600;letter-spacing:.06em;padding:6px 12px}
+.replay-overlay-page .lab-context button{font-size:12px;font-weight:600;padding:6px 14px;min-height:0}
+.replay-overlay-page .controller-tools button{color:var(--hud-text)}
+.replay-overlay-page .controller-tools button:hover{background:color-mix(in srgb,var(--hud-text) 12%,transparent)}
+.replay-overlay-page .replay-tool-key kbd{border-color:var(--hud-border);color:var(--hud-text);background:transparent}
+
+.replay-overlay-page:not([data-fullscreen]) .controller-top{top:14px;left:16px;right:16px}
+.replay-overlay-page:not([data-fullscreen]) .replay-video-badge{top:14px;left:16px}
+.replay-overlay-page:not([data-fullscreen]) .controller-tools{padding:3px}
+.replay-overlay-page:not([data-fullscreen]) .controller-tools button,
+.replay-overlay-page:not([data-fullscreen]) .controller-tools .replay-tool-shortcut{height:34px;padding:0 9px;gap:8px;font-size:12px}
+.replay-overlay-page:not([data-fullscreen]) .controller-tools svg{width:18px;height:18px}
+.replay-overlay-page:not([data-fullscreen]) .replay-tool-key kbd{min-width:22px;height:22px;font-size:11px}
+.replay-overlay-page:not([data-fullscreen]) .controller-bottom{width:calc(100% - 32px);bottom:16px}
+.replay-overlay-page:not([data-fullscreen]) .lab-context{padding-bottom:10px}
+.replay-overlay-page:not([data-fullscreen]) .controller-timeline{height:40px;padding:10px 0 18px;margin-bottom:8px}
+.replay-overlay-page:not([data-fullscreen]) .controller-rail{height:6px}
+.replay-overlay-page:not([data-fullscreen]) .controller-thumb{width:17px;height:17px}
+.replay-overlay-page:not([data-fullscreen]) .controller-tick{height:11px}
+.replay-overlay-page:not([data-fullscreen]) .controller-tick em{top:16px;font-size:10px}
+.replay-overlay-page:not([data-fullscreen]) .lab-dock{gap:10px;padding:8px 12px;border-radius:20px}
+.replay-overlay-page:not([data-fullscreen]) .lab-dock button{padding:8px 12px;font-size:13px}
+.replay-overlay-page:not([data-fullscreen]) .lab-dock .lab-play{width:46px;height:46px;padding:0}
+.replay-overlay-page:not([data-fullscreen]) .lab-play>svg:not(.pad-glyph){width:20px;height:20px}
+.replay-overlay-page:not([data-fullscreen]) .lab-dock svg{width:18px;height:18px}
+.replay-overlay-page:not([data-fullscreen]) .lab-dock kbd{font-size:11px;min-width:20px;padding:3px 5px}
+.replay-overlay-page:not([data-fullscreen]) .lab-dock .lab-trim,
+.replay-overlay-page:not([data-fullscreen]) .lab-dock .lab-save,
+.replay-overlay-page:not([data-fullscreen]) .lab-dock .lab-duration-toggle,
+.replay-overlay-page:not([data-fullscreen]) .lab-dock .lab-boundaries button,
+.replay-overlay-page:not([data-fullscreen]) .lab-dock .lab-cancel{min-height:42px}
+.replay-overlay-page:not([data-fullscreen]) .lab-boundaries b{font-size:13px}
+.replay-overlay-page:not([data-fullscreen]) .lab-duration-menu button{font-size:13px}
+
+/* The LIVE badge: same glass as the rest, red dot. Selectors are heavier than the
+   older studio-player and light-theme badge rules. */
+html .replay-overlay-page.replay-lens-page .studio-player .replay-video-badge{background:var(--hud-bg);border:1px solid var(--hud-border);color:var(--hud-text);border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.06em;padding:6px 12px;backdrop-filter:blur(18px)}
+html .replay-overlay-page .replay-video-badge i,
+html .replay-overlay-page .lab-context i{background:#ff4d4f;box-shadow:0 0 0 3px #ff4d4f33}
+html .replay-overlay-page .replay-video-badge i{width:7px;height:7px}
+html .replay-overlay-page .lab-context i{width:7px;height:7px}
+.replay-overlay-page:focus{outline:none}

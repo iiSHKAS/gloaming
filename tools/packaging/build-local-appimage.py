@@ -45,9 +45,13 @@ for source in venv_site.iterdir():
         shutil.copytree(source, site/source.name, ignore=ignore)
     else:
         shutil.copy2(source, site/source.name)
-# GI, Cairo, psutil and their native dependencies match the target host.
+# GI, Cairo and their native dependencies match the target host.
 (site/'host-desktop.pth').write_text('/usr/lib/python3/dist-packages\n')
 shutil.copytree(repo/'gloaming', site/'gloaming', ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+# The tray icon is resolved as <package>/../assets/gloaming.png.
+(site/'assets').mkdir(exist_ok=True)
+shutil.copy2(repo/'assets/gloaming.png', site/'assets/gloaming.png')
+shutil.copy2(repo/'assets/gloaming.svg', site/'assets/gloaming.svg')
 shutil.copytree(Path.home()/'.local/share/gloaming-dev/gstreamer-1.0', app/'usr/lib/gstreamer-1.0')
 shutil.copy2(repo/'assets/gloaming.png', app/'gloaming.png')
 (app/'.DirIcon').symlink_to('gloaming.png')
@@ -75,7 +79,7 @@ exec "$bundle_dir/usr/bin/python3.12" -I -m gloaming.app "$@"
 ''')
 (app/'AppRun').chmod(0o755)
 (app/'self-test.py').write_text('''import pathlib, sys, subprocess
-import gloaming, gloaming.app, gloaming.main, aiohttp, evdev, click, tomli_w, webview, psutil, cairo, gi
+import gloaming, gloaming.app, gloaming.main, aiohttp, evdev, click, tomli_w, webview, cairo, gi
 root = pathlib.Path(__file__).resolve().parent
 assert pathlib.Path(gloaming.__file__).is_relative_to(root), gloaming.__file__
 assert pathlib.Path(sys.prefix).is_relative_to(root), sys.prefix

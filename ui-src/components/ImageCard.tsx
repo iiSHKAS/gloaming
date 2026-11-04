@@ -3,7 +3,7 @@ import {useState} from 'react';
 import {endClipDrag, startImageDrag} from '../lib/clipDrag';
 import {formatBytes} from '../lib/format';
 import {imageTitle, type Image} from '../lib/types';
-import {t} from '../lib/i18n';
+import {t, dateLocale} from '../lib/i18n';
 import {InlineRename} from './InlineRename';
 import {IconImages} from './Icons';
 import {SelectCheck, selectionClick, type CardSelect} from './ClipCard';
@@ -48,7 +48,7 @@ export function ImageCard({
 
   const meta = [
     image.created_at
-      ? new Date(image.created_at).toLocaleDateString(undefined, {
+      ? new Date(image.created_at).toLocaleDateString(dateLocale(), {
           month: 'short',
           day: 'numeric',
           hour: '2-digit',

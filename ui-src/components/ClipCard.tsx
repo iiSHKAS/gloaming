@@ -5,7 +5,7 @@ import {formatBytes, formatDuration} from '../lib/format';
 import {clipTitle, type Clip} from '../lib/types';
 import {H264_SUPPORTED, IS_NATIVE_WEBKIT} from '../lib/env';
 import {playbackUrl} from '../lib/playback';
-import {t} from '../lib/i18n';
+import {t, dateLocale} from '../lib/i18n';
 import {InlineRename} from './InlineRename';
 
 /**
@@ -126,7 +126,7 @@ export function ClipCard({
 
   const meta = [
     clip.created_at
-      ? new Date(clip.created_at).toLocaleDateString(undefined, {
+      ? new Date(clip.created_at).toLocaleDateString(dateLocale(), {
           month: 'short',
           day: 'numeric',
           hour: '2-digit',

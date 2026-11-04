@@ -3,6 +3,7 @@ import {LiveReplay, type InputKind} from './LiveReplay';
 import type {PadLayout} from './ControllerGlyph';
 import '../styles/replay-overlay.css';
 import '../styles/replay-lens.css';
+import {t} from '../lib/i18n';
 
 /** Keyboard keys mapped onto the same actions the controller buttons drive. */
 const KEY_ACTIONS: Record<string, string> = {
@@ -13,10 +14,10 @@ const KEY_ACTIONS: Record<string, string> = {
 };
 
 /** One replay overlay for mouse, keyboard and controller. The picture fills the panel and the HUD adapts to whichever you used last. */
-export function ReplayOverlay({experimental = false}: {experimental?: boolean} = {}) {
-  const [closed,setClosed]=useState(false);
+export function ReplayOverlay() {
   const [fullscreen,setFullscreen]=useState(false);
   const fullscreenRef=useRef(false);
+  const page=useRef<HTMLElement>(null);
   const toggleFullscreen=()=>{
     const next=!fullscreenRef.current;
     fullscreenRef.current=next;
@@ -30,7 +31,6 @@ export function ReplayOverlay({experimental = false}: {experimental?: boolean} =
   const [input,setInput]=useState<InputKind>(new URLSearchParams(location.search).get('controller')==='1'?'pad':'keyboard');
   const close = (reason = 'close') => {
     const host = window as unknown as {webkit?: {messageHandlers?: {gloamingOverlay?: {postMessage: (message: string) => void}}}};
-    if(experimental)setClosed(true);
     host.webkit?.messageHandlers?.gloamingOverlay?.postMessage(reason);
   };
   /** Back: leave fullscreen, then cancel trimming, then close. Same for Esc, B/○ and the on-screen chip. */
@@ -44,7 +44,7 @@ export function ReplayOverlay({experimental = false}: {experimental?: boolean} =
     const key = (event: KeyboardEvent) => {
       if(event.metaKey||event.ctrlKey||event.altKey)return;
       setInput('keyboard');
-      if((event.target as HTMLElement)?.closest('input,select') || ((event.target as HTMLElement)?.closest('button') && [' ','Enter'].includes(event.key)))return;
+      if((event.target as HTMLElement)?.closest('input:not([type=range]),select') || ((event.target as HTMLElement)?.closest('button') && [' ','Enter'].includes(event.key)))return;
       if(event.key === 'Escape' || event.key === 'Backspace') {
         event.preventDefault();
         back(`${event.key} key in page`);
@@ -59,10 +59,12 @@ export function ReplayOverlay({experimental = false}: {experimental?: boolean} =
         window.dispatchEvent(new CustomEvent('gloaming-controller',{detail:button}));
       }
     };
-    const pointer=()=>setInput('keyboard');
-    window.addEventListener('keydown',key);
+    const pointer=()=>{setInput('keyboard');if(!document.activeElement||document.activeElement===document.body)page.current?.focus({preventScroll:true});};
+    window.focus();
+    page.current?.focus({preventScroll:true});
+    window.addEventListener('keydown',key,true);
     window.addEventListener('pointerdown',pointer,true);
-    return () => {window.removeEventListener('keydown',key);window.removeEventListener('pointerdown',pointer,true);document.documentElement.classList.remove('replay-overlay-host');};
+    return () => {window.removeEventListener('keydown',key,true);window.removeEventListener('pointerdown',pointer,true);document.documentElement.classList.remove('replay-overlay-host');};
   }, []);
   useEffect(()=>{
     let alive=true;
@@ -99,9 +101,8 @@ export function ReplayOverlay({experimental = false}: {experimental?: boolean} =
     },40);
     return()=>{alive=false;clearTimeout(retry);clearInterval(repeat);held.clear();socket.close();};
   },[]);
-  if(closed)return <main className="replay-overlay-page"><button className="btn" onClick={()=>setClosed(false)}>Reopen test overlay</button></main>;
-  return <main className="replay-overlay-page replay-lens-page" data-controller="true" data-input={input} data-fullscreen={fullscreen || undefined} onClick={event=>{if(event.target===event.currentTarget)close('click outside the panel');}}>
-    <section className="overlay-floating-panel" aria-label="Replay">
+  return <main ref={page} tabIndex={-1} className="replay-overlay-page replay-lens-page" data-controller="true" data-input={input} data-fullscreen={fullscreen || undefined} onClick={event=>{if(event.target===event.currentTarget)close('click outside the panel');}}>
+    <section className="overlay-floating-panel" aria-label={t('ui.replay')}>
       <LiveReplay fullscreen={fullscreen} onToggleFullscreen={toggleFullscreen} lens studio compact controllerMode layout={layout} input={input} onExit={()=>back('close button')}/>
     </section>
   </main>;

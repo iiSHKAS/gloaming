@@ -93,6 +93,10 @@ def _load_default_games() -> list[dict]:
 _DEFAULT_GAMES: list[dict] = _load_default_games()
 
 
+def _on_wayland() -> bool:
+    return os.environ.get("XDG_SESSION_TYPE", "").lower() == "wayland" or bool(os.environ.get("WAYLAND_DISPLAY"))
+
+
 def _best_game_match(entries, haystacks) -> Optional[str]:
     """Name of the entry whose longest needle matches, or None.
 
@@ -214,6 +218,8 @@ class GloamingDaemon:
         # recognized game (games.json) is focused. None means full display.
         self._window_capture_id: Optional[str] = None
         self._window_capture_task: Optional[asyncio.Task] = None
+        # Window ids whose pin attempt failed, so the loop doesn't retry them.
+        self._window_capture_failed: set[str] = set()
 
     @staticmethod
     def _output_dir_problem(out_dir: Path) -> str:
@@ -910,7 +916,7 @@ class GloamingDaemon:
                     # Asking X11 for focus again here would pin whatever the
                     # user tabbed to in between (Discord) under the game's name.
                     current = win.get("window_id")
-                    if not current or current == self._window_capture_id:
+                    if not current or current == self._window_capture_id or current in self._window_capture_failed:
                         pending_switch = None
                         continue
                     if self._window_capture_id and current != pending_switch:
@@ -928,6 +934,9 @@ class GloamingDaemon:
                                 await self._restart_recorder_for_config()
                             except Exception as exc:
                                 self._window_capture_id = previous
+                                # Don't retry this window: every attempt restarts
+                                # the recorder and throws the buffer away.
+                                self._window_capture_failed.add(current)
                                 log.warning("Could not pin capture to %s: %s", game, exc)
                     continue
 
@@ -1158,6 +1167,7 @@ class GloamingDaemon:
             self._discord_task = asyncio.create_task(self._discord_presence_loop())
 
     def _discord_activity(self, game: str) -> dict:
+        from .discord_rpc import DISCORD_LOGO_URL as _DISCORD_LOGO_URL
         icon = None
         if self.cfg.discord.game_icons:
             from .game_icons import discord_icon_url
@@ -1166,12 +1176,12 @@ class GloamingDaemon:
             assets = {
                 "large_image": icon,
                 "large_text": game,
-                "small_image": "vice_logo",
+                "small_image": _DISCORD_LOGO_URL,
                 "small_text": "Gloaming",
             }
         else:
             assets = {
-                "large_image": "vice_logo",
+                "large_image": _DISCORD_LOGO_URL,
                 "large_text": "Gloaming, Linux clip recorder",
             }
         return {
@@ -1621,8 +1631,26 @@ class GloamingDaemon:
                 if getattr(self.cfg.overlay, kind+'_recording_only') else 'off'
                 for kind in ('keys', 'pad')}
 
+    def _game_capture_issue(self) -> Optional[str]:
+        """Why Game Capture can't work here, for the UI. None when nothing is
+        known to be wrong."""
+        from .active_window import detection_tools_status, uses_x11_adapter
+
+        if _on_wayland():
+            # gpu-screen-recorder refuses window capture of XWayland windows,
+            # and native Wayland windows have no id to pin to.
+            return "wayland"
+        if uses_x11_adapter():
+            tools = detection_tools_status()
+            if not (tools["xdotool"] and tools["xprop"]):
+                return "tools"
+        if self._window_capture_failed:
+            return "failed"
+        return None
+
     def _get_status(self) -> dict:
         return {
+            "game_capture_issue": self._game_capture_issue(),
             "ready":          self._ready,
             "recording":      self._ready,
             "recorder_error": self._recorder_error,
@@ -1655,7 +1683,7 @@ class GloamingDaemon:
         if _installed_via_nix():
             return {"method": "nix", "command": "nix flake update gloaming && sudo nixos-rebuild switch"}
         if _using_install_script_venv():
-            return {"method": "script", "command": "cd Vice && git pull && ./install.sh"}
+            return {"method": "script", "command": "cd gloaming && git pull && ./install.sh"}
         return {"method": "unknown", "command": ""}
 
     async def run_update_check(self, force: bool = False) -> Optional[dict]:

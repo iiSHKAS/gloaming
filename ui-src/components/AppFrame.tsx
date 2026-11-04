@@ -101,7 +101,7 @@ export function AppFrame({children}: {children: ReactNode}) {
   const bottomRow = windowControls && !IS_CUSTOM_CHROME;
   const frame = (
     <div className="frame studio-frame" data-capture-home={state.view==='home' || undefined} data-sidebar={state.view!=='settings' || undefined}>
-      {state.view==='settings' ? <header className="settings-return-bar"><button type="button" onClick={()=>dispatch({type:'setView', ...settingsOrigin.current})} aria-label="Back to previous section"><span className="settings-return-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m10 6-6 6 6 6M4 12h16"/></svg></span><span>Back</span></button></header> : (
+      {state.view==='settings' ? <header className="settings-return-bar"><button type="button" onClick={()=>dispatch({type:'setView', ...settingsOrigin.current})} aria-label={t('ui.backToPreviousSection')}><span className="settings-return-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m10 6-6 6 6 6M4 12h16"/></svg></span><span>{t('ui.back')}</span></button></header> : (
       <StudioNav
         onShowTutorial={() => setTutorial(true)}
         onShowUpdate={() => setUpdateOpen(true)}
